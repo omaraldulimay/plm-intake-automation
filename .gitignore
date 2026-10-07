@@ -1,0 +1,35 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.rtf
+*.pem
+*.key
+
+# Scans und Rohdaten
+scans/
+exports/
+output/
+review/
+
+# Exportdateien / Importvorlagen aus Lifecycle
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.webp
+*.tiff
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# OS / Editor
+.DS_Store
+.idea/
