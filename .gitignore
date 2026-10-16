@@ -33,3 +33,6 @@ __pycache__/
 # OS / Editor
 .DS_Store
 .idea/
+
+# lokale Claude-Einstellungen (enthalten Token)
+.claude/settings.local.json
