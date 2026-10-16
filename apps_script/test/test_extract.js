@@ -180,7 +180,7 @@ t('Wiederholung nach Abbruch: genau eine aktive Datei und eine aktive Review-Zei
   s.run(); assert.equal(s.inbox().length, 1); assert.equal(s.rows('Review').filter(r => r[10] !== 'Ersetzt').length, 1);
 });
 t('Migration: Ergebnisse der alten Version werden automatisch ersetzt, veraltete Dateien in den Papierkorb, Review-Zeilen "Ersetzt"', () => {
-  const s = fresh({ api: [resp([okDoc()])] }); s.addMail('m1', { atts: ['PI.xlsx'] }); s.addMail('m2', { atts: ['Fracht.pdf'], date: '2026-10-11 10:00' });
+  const s = fresh({ api: [resp([okDoc()])] }); s.addMail('m1', { atts: ['PI.xlsx'], date: '2026-10-10 10:00' }); s.addMail('m2', { atts: ['Fracht.pdf'], date: '2026-10-11 10:00' });
   s.run();                                           // Version 2 liefert fuer beide ein Dokument
   // alten Zustand herstellen: Fortschritt ohne Versionsspalte (wie vor dem Update)
   s.ss.getSheetByName('Ausgelesen').rows.forEach((r, i) => { if (i > 0) r.length = 6; });
@@ -200,11 +200,11 @@ t('Migration: schlaegt das Neu-Auslesen fehl, bleibt das alte Ergebnis erhalten'
   s.apiScript.length = 0; s.apiScript.push({ code: 500, text: 'x' }); s.run();
   assert.equal(s.inbox().length, 1); assert.equal(s.rows('Review').filter(r => r[10] === 'Neu').length, 1);
 });
-t('Echte Datumsobjekte aus dem Sheet: Filter ab START_DATE_MIN greift, neueste Mail kommt zuerst', () => {
+t('Echte Datumsobjekte aus dem Sheet: Filter ab START_DATE_MIN greift, aelteste Mail kommt zuerst', () => {
   const s = fresh({ api: [() => resp([])] });
   s.addMail('alt', { atts: ['A.xlsx'], date: '2025-11-02 10:00', asDate: true }); s.addMail('mittel', { atts: ['B.xlsx'], date: '2026-03-02 10:00', asDate: true }); s.addMail('neu', { atts: ['C.xlsx'], date: '2026-10-12 10:00', asDate: true });
   s.run(); assert.equal(s.api.length, 2, 'die Mail von 2025 darf nicht gelesen werden');
-  assert.ok(s.api[0].body.messages[0].content.pop().text.includes('id=neu')); assert.ok(s.api[1].body.messages[0].content.pop().text.includes('id=mittel'));
+  assert.ok(s.api[0].body.messages[0].content.pop().text.includes('id=mittel')); assert.ok(s.api[1].body.messages[0].content.pop().text.includes('id=neu'));
   assert.ok(!s.rows('Ausgelesen').some(r => r[0] === 'alt'));
 });
 t('Frachtrechnung ohne Warenmenge wird nicht als Bestellung gespeichert', () => {
@@ -226,16 +226,16 @@ t('Dedupe: gleiche PDF in zweiter Mail (Fwd) wird nicht erneut gesendet, Mailtex
   s.addMail('orig', { atts: ['PI.pdf'], date: '2026-10-10 10:00', contents: { 'PI.pdf': 'GLEICHER INHALT' } });
   s.addMail('fwd', { atts: ['2026-10-12_fwd_PI.pdf'], date: '2026-10-12 10:00', subject: 'Fwd: PI', body: 'Bitte beachten: Zahlung erfolgt Freitag', contents: { '2026-10-12_fwd_PI.pdf': 'GLEICHER INHALT' } });
   s.run();
-  // neueste zuerst: fwd wird zuerst gelesen und voll gesendet; orig danach als Duplikat erkannt
+  // aelteste zuerst: orig wird zuerst gelesen und voll gesendet; fwd danach als Duplikat erkannt (Mailtext von fwd wird trotzdem gesendet)
   assert.ok(hasDoc(s.api[0])); assert.ok(!hasDoc(s.api[1])); assert.ok(lastText(s.api[1]).includes('IDENTISCH_MIT_BEREITS_AUSGELESENER_DATEI'));
-  assert.ok(lastText(s.api[1]).includes('id=orig'));
+  assert.ok(lastText(s.api[1]).includes('id=fwd')); assert.ok(lastText(s.api[1]).includes('Bitte beachten: Zahlung erfolgt Freitag'));
 });
 t('Dedupe: Mailtext der Duplikat-Mail wird weiterhin gelesen (neue Information geht nicht verloren)', () => {
   const s = fresh({ api: [() => resp([])] });
   s.addMail('a', { atts: ['PI.pdf'], date: '2026-10-10 10:00', contents: { 'PI.pdf': 'X' } });
   s.addMail('b', { atts: ['Kopie.pdf'], date: '2026-10-12 10:00', body: 'Anzahlung 30 Prozent wurde heute bezahlt', contents: { 'Kopie.pdf': 'X' } });
-  s.run(); assert.equal(s.api.length, 2); assert.ok(lastText(s.api[0]).includes('Anzahlung 30 Prozent wurde heute bezahlt'));
-  assert.ok(lastText(s.api[1]).includes('IDENTISCH') && lastText(s.api[1]).includes('Mail b'));
+  s.run(); assert.equal(s.api.length, 2); assert.ok(lastText(s.api[1]).includes('Anzahlung 30 Prozent wurde heute bezahlt'));
+  assert.ok(lastText(s.api[1]).includes('IDENTISCH') && lastText(s.api[1]).includes('Mail a'));
 });
 t('Dedupe: gleicher Dateiname, anderer Inhalt wird BEIDE Male gesendet (z. B. neue PI-Fassung)', () => {
   const s = fresh({ api: [() => resp([])] });
@@ -277,7 +277,7 @@ t('Budget: Antwort ohne usage-Feld bringt nichts durcheinander', () => {
   const s = fresh({ api: [() => resp([])] }); s.addMail('a', { atts: ['A.pdf'] }); s.run(); assert.equal(s.rows('Ausgelesen')[0][1], 'Keine PO');
 });
 t('Modell (ESCALATE aus): Mail mit Anhang nutzt MODEL, reine Textmail das guenstige MODEL_LIGHT', () => {
-  const s = fresh({ api: [() => resp([])] }); s.ctx.EX_CONFIG.ESCALATE = false; s.addMail('a', { atts: ['A.pdf'], date: '2026-10-12 10:00' }); s.addMail('b', { subject: 'PI bezahlt', atts: [], date: '2026-10-11 10:00' }); s.run();
+  const s = fresh({ api: [() => resp([])] }); s.ctx.EX_CONFIG.ESCALATE = false; s.addMail('a', { atts: ['A.pdf'], date: '2026-10-11 10:00' }); s.addMail('b', { subject: 'PI bezahlt', atts: [], date: '2026-10-12 10:00' }); s.run();
   assert.equal(s.api[0].body.model, 'claude-sonnet-5-5'); assert.equal(s.api[1].body.model, 'claude-haiku-5-5');
 });
 t('Modell (ESCALATE aus): Anhang, der nur als IDENTISCH markiert wird, schaltet auf das guenstige Modell (nur Text wird gelesen)', () => {
@@ -305,10 +305,10 @@ t('Leistung: 13.000 Zeilen mit Datumsobjekten - Lauf kommt zum Auslesen, formatD
   assert.equal(s.api.length, 25, 'es muessen Mails ausgelesen werden'); assert.ok(s.fmt < 200, 'formatDate-Aufrufe: ' + s.fmt);
   assert.ok(s.api[0].body.messages[0].content.pop().text.includes('id=x12950') || true);
 });
-t('Reihenfolge: neueste Mail zuerst auch bei gemischten Datumsformaten (Date-Objekt und Text)', () => {
+t('Reihenfolge: aelteste Mail zuerst auch bei gemischten Datumsformaten (Date-Objekt und Text)', () => {
   const s = fresh({ api: [() => resp([])] });
   s.addMail('text_neu', { atts: ['A.pdf'], date: '2026-10-13 10:00' }); s.addMail('obj_neuer', { atts: ['B.pdf'], date: '2026-10-14 08:00', asDate: true }); s.addMail('text_alt', { atts: ['C.pdf'], date: '2026-02-01 10:00' });
-  s.run(); const ids = s.api.map(c => c.body.messages[0].content.pop().text.match(/id=(\w+)/)[1]); assert.deepEqual(ids, ['obj_neuer', 'text_neu', 'text_alt']);
+  s.run(); const ids = s.api.map(c => c.body.messages[0].content.pop().text.match(/id=(\w+)/)[1]); assert.deepEqual(ids, ['text_alt', 'text_neu', 'obj_neuer']);
 });
 
 const EV = (o = {}) => ({ type: 'SCHEDULE', vendor: 'Lieferant C', ref: { po_number: 'XW-SM260513' }, date: '2026-10-15', summary: 'ETD von 27.09. auf 15.10. verschoben', details: { old_etd: '2026-09-27', new_etd: '2026-10-15' }, action_needed: null, confidence: 0.9, source_quote: 'ETD changed', ...o });
@@ -325,7 +325,7 @@ t('Ereignisse: Dokument und Ereignis aus derselben Mail werden beide gespeichert
 });
 t('Ereignisse: dasselbe Ereignis aus einer zweiten Mail (zitierter Verlauf) wird nicht doppelt aufgenommen', () => {
   const s = fresh({ api: [() => resp([], null, null, [EV()])] }); s.addMail('a', { subject: 'ETD update', date: '2026-10-12 10:00' }); s.addMail('b', { subject: 'Re: ETD update', date: '2026-10-13 10:00' });
-  s.run(); assert.equal(s.rows('Ereignisse').length, 1); assert.equal(s.rows('Ausgelesen').find(r => r[0] === 'a')[1], 'Keine PO'); assert.equal(s.rows('Ausgelesen').find(r => r[0] === 'b')[1], 'Ausgelesen');
+  s.run(); assert.equal(s.rows('Ereignisse').length, 1); assert.equal(s.rows('Ausgelesen').find(r => r[0] === 'a')[1], 'Ausgelesen'); assert.equal(s.rows('Ausgelesen').find(r => r[0] === 'b')[1], 'Keine PO');
 });
 t('Ereignisse: gleicher Text, anderes Datum/Bezug ist ein anderes Ereignis', () => {
   const s = fresh({ api: [(n) => resp([], null, null, [n === 0 ? EV() : EV({ date: '2026-11-01', ref: { po_number: 'ANDERE' } })])] }); s.addMail('a', { subject: 'ETD update', date: '2026-10-12 10:00' }); s.addMail('b', { subject: 'ETD update 2', date: '2026-10-13 10:00' });
@@ -412,14 +412,14 @@ t('Word nicht lesbar (Konvertierung/Berechtigung fehlt): sichtbar markiert statt
 t('Netzwerkfehler (UrlFetch wirft): zaehlt als Fehlversuch, Lauf geht mit der naechsten Mail weiter', () => {
   const s = fresh({ api: [(n, u, o) => { if (o.payload && o.payload.includes('id=a ')) throw new Error('Timeout: https://api.anthropic.com'); return resp([]); }] });
   s.addMail('a', { atts: ['A.pdf'], date: '2026-10-12 10:00' }); s.addMail('b', { atts: ['B.pdf'], date: '2026-10-11 10:00' }); s.run();
-  const st = Object.fromEntries(s.rows('Ausgelesen').map(r => [r[0], r[1]])); assert.equal(st.a, 'Fehler'); assert.equal(st.b, 'Keine PO'); assert.ok(String(s.rows('Ausgelesen')[0][4]).includes('Timeout'));
+  const st = Object.fromEntries(s.rows('Ausgelesen').map(r => [r[0], r[1]])); assert.equal(st.a, 'Fehler'); assert.equal(st.b, 'Keine PO'); assert.ok(String(s.rows('Ausgelesen').find(r => r[0] === 'a')[4]).includes('Timeout'));
 });
 t('Zitierter Verlauf (> Zeilen) wird entfernt; reine Weiterleitung ohne eigenen Text bleibt vollstaendig', () => {
   const s = fresh({ api: [() => resp([])] });
   s.addMail('a', { subject: 'Re: PI', atts: [], date: '2026-10-12 10:00', body: 'Neuer Liefertermin ist der 20.10. bitte bestaetigen Sie das heute noch\n> alter Text von frueher XYZ123\n> noch mehr alter Text' });
   s.addMail('b', { subject: 'Fwd: PI', atts: [], date: '2026-10-11 10:00', body: '> Nur zitiert: Anzahlung 30% eingegangen am 5.10.' }); s.run();
-  assert.ok(lastTxt(s, 0).includes('Neuer Liefertermin')); assert.ok(!lastTxt(s, 0).includes('XYZ123'));
-  assert.ok(lastTxt(s, 1).includes('Anzahlung 30% eingegangen'));
+  assert.ok(lastTxt(s, 1).includes('Neuer Liefertermin')); assert.ok(!lastTxt(s, 1).includes('XYZ123'));
+  assert.ok(lastTxt(s, 0).includes('Anzahlung 30% eingegangen'));
 });
 t('Leistung: Mails derselben Textdatei lesen die Datei nur einmal je Lauf', () => {
   const s = fresh({ api: [() => resp([])] }); for (let i = 0; i < 6; i++) s.addMail('m' + i, { atts: ['A' + i + '.pdf'], date: '2026-10-1' + i + ' 10:00' });
@@ -500,7 +500,7 @@ function batchServer(opts = {}) {
 }
 const batchRun = (srv, setup) => { const s = fresh({ api: [srv.fn] }); s.ctx.EX_CONFIG.USE_BATCH = true; if (setup) setup(s); return s; };
 t('Batch: Mails werden gesammelt eingereicht (kein Direktaufruf), als "In Batch" markiert, Meta-Datei und Batches-Blatt geschrieben', () => {
-  const srv = batchServer(); const s = batchRun(srv); s.addMail('a', { atts: ['A.pdf'], date: '2026-10-12 10:00' }); s.addMail('b', { atts: ['B.pdf'], date: '2026-10-11 10:00' }); s.run();
+  const srv = batchServer(); const s = batchRun(srv); s.addMail('a', { atts: ['A.pdf'], date: '2026-10-11 10:00' }); s.addMail('b', { atts: ['B.pdf'], date: '2026-10-12 10:00' }); s.run();
   assert.equal(srv.posts.length, 1); assert.deepEqual(srv.posts[0].map(r => r.custom_id), ['a', 'b']); assert.equal(srv.posts[0][0].params.model, 'claude-sonnet-5-5'); assert.ok(srv.posts[0][0].params.system.length > 100);
   assert.deepEqual(s.rows('Ausgelesen').map(r => r[1]), ['In Batch', 'In Batch']); assert.equal(s.rows('Batches')[0][1], 'submitted'); assert.equal(s.rows('Batches')[0][3], 2);
   assert.ok(s.root.subs.find(f => f.name === 'Batches').files.find(f => f.name === 'batch_batch_1.json')); assert.equal(s.inbox().length, 0);
@@ -607,7 +607,7 @@ t('Parallel: Mail und ihre Weiterleitung in derselben Gruppe senden die Datei nu
 });
 t('Parallel: scheitert die erste Mail, wird die Datei in der zweiten voll gesendet (nichts geht verloren)', () => {
   const s = fresh({ api: [(n, u, o) => (o.payload && o.payload.includes('id=fwd ') ? { code: 400, text: 'bad' } : resp([okDoc()]))] });
-  s.addMail('orig', { atts: ['PI.pdf'], date: '2026-10-10 10:00', contents: { 'PI.pdf': 'X' } }); s.addMail('fwd', { atts: ['PI2.pdf'], date: '2026-10-12 10:00', contents: { 'PI2.pdf': 'X' } }); s.run();
+  s.addMail('orig', { atts: ['PI.pdf'], date: '2026-10-12 10:00', contents: { 'PI.pdf': 'X' } }); s.addMail('fwd', { atts: ['PI2.pdf'], date: '2026-10-10 10:00', contents: { 'PI2.pdf': 'X' } }); s.run();
   assert.equal(s.rows('Review').length, 1); assert.equal(s.rows('Review')[0][0], 'orig'); assert.ok(hasDoc(s.api[s.api.length - 1]));
 });
 t('Parallel: Speicherschutz - Rest einer zu grossen Gruppe geht nacheinander', () => {
@@ -661,7 +661,7 @@ t('Eskalation: schlaegt auch der zweite Aufruf fehl, gilt das als normaler Fehlv
   const s = fresh({ api: [(n, u, o) => o.payload.includes('sonnet') ? { code: 500, text: 'x' } : resp([docSum(999, 10, 0.9)])] }); s.addMail('a', { atts: ['PI.pdf'] }); s.run(); assert.equal(s.rows('Ausgelesen')[0][1], 'Fehler'); assert.equal(s.inbox().length, 0);
 });
 t('Batch: nutzt weiter das zum Inhalt passende Modell (kein Nachfassen moeglich)', () => {
-  const srv = batchServer(); const s = batchRun(srv); s.addMail('a', { atts: ['A.pdf'], date: '2026-10-12 10:00' }); s.addMail('b', { subject: 'ETD update', atts: [], date: '2026-10-11 10:00' }); s.run();
+  const srv = batchServer(); const s = batchRun(srv); s.addMail('a', { atts: ['A.pdf'], date: '2026-10-11 10:00' }); s.addMail('b', { subject: 'ETD update', atts: [], date: '2026-10-12 10:00' }); s.run();
   assert.deepEqual(srv.posts[0].map(r => r.params.model), ['claude-sonnet-5-5', 'claude-haiku-5-5']);
 });
 t('Anhangsfilter: Logo, Katalog, Newsletter, Techpack, New collection werden nicht gesendet; echte PI schon', () => {
@@ -701,9 +701,9 @@ t('Verlauf: normale Saetze mit "von" oder "from" mitten im Text loesen keinen Sc
   const tx = body('Wir haben von der Fabrik gehoert, dass es klappt.\nFrom my side everything is fine: shipping on Friday.\nBitte die Packliste von gestern pruefen.\nENDE123'); assert.ok(tx.includes('ENDE123'));
 });
 
-t('Startdatum: Standard ist der 01.10.2026; aeltere Mails werden nicht gelesen, auch wenn sie Kandidaten sind', () => {
-  const s = fresh({ api: [() => resp([])] }); vmRead = require('fs').readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8'); assert.ok(/START_DATE_MIN: '2026-10-01'/.test(vmRead));
-  s.ctx.EX_CONFIG.START_DATE_MIN = '2026-10-01'; s.addMail('alt', { atts: ['A.pdf'], date: '2026-09-30 23:59' }); s.addMail('neu', { atts: ['B.pdf'], date: '2026-10-01 00:00' }); s.run();
+t('Startdatum: Standard ist der 16.10.2026; aeltere Mails werden nicht gelesen, auch wenn sie Kandidaten sind', () => {
+  const s = fresh({ api: [() => resp([])] }); vmRead = require('fs').readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8'); assert.ok(/START_DATE_MIN: '2026-10-16'/.test(vmRead));
+  s.ctx.EX_CONFIG.START_DATE_MIN = '2026-10-16'; s.addMail('alt', { atts: ['A.pdf'], date: '2026-10-15 23:59' }); s.addMail('neu', { atts: ['B.pdf'], date: '2026-10-16 00:00' }); s.run();
   assert.equal(s.api.length, 1); assert.ok(lastTxt(s).includes('id=neu'));
 });
 /* ============ Gemini ============ */

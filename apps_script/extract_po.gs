@@ -71,7 +71,7 @@ var EX_CONFIG = {
   ATTACH_FOLDER_NAME: 'Anhaenge',
   INBOX_FOLDER_NAME: 'Inbox',
   LOG_NAME: 'PLM-Mails Protokoll',
-  START_DATE_MIN: '2026-10-01',       // aeltere Mails nicht auslesen (Kosten!). Rueckstand seit 01.01.: ca. 5.900 Mails, seit 01.10.: ca. 870. Spaeter schrittweise nach hinten schieben, z. B. '2026-09-01'
+  START_DATE_MIN: '2026-10-16',       // Omar 16.10.: nur Mails ab heute auslesen, danach laufend vorwaerts (aelteste zuerst). Aeltere nicht (Kosten, Rueckstand wird nicht nachgeholt)
   CANDIDATE_ATT: /\.(xlsx|xls|xlsm|csv|ods|pdf|docx?|odt)$/i,
   CANDIDATE_WORDS: /(purchase order|\bpo\b|\bp\.o\b|\bpi\b|proforma|invoice|rechnung|packing list|bestellung|\border\b|commercial invoice|\bci\b|etd|eta\b|exw|ex-factory|shipment|shipping|container|booking|vessel|b\/l|awb|forwarder|spedition|sample|muster|fitting|approval|freigabe|delay|verz(?:[oö]|oe)gerung|delivery|lieferung|payment|zahlung|deposit|anzahlung|production|produktion|quality|qualit(?:[aä]|ae)t|photo|foto|picture|defect|complaint|reklamation|schedule|update|inspection|inspektion|freight|fracht|barcode|carton|karton|packag|verpack|label|etikett|tracking|invo[a-z]{1,4}e|comments?\b|kommentar|confirm|best[aä]tig|price|preis|quantit|\bqty\b|units|\b[24]0'?\s?hc\b|\bfcl\b|\blcl\b|\bhbl\b|\bmbl\b)/i,
   // Kandidatenregel (Omar 15.10., Auswertung der Mails seit 01.10.: 59 % hatten weder Anhang noch Stichwort im Betreff, darunter echte Lieferantenmails): zusaetzlich zu Anhang/Stichwort gilt JEDE eingehende Mail (Absender nicht intern)
@@ -141,12 +141,12 @@ function extractMails() {
     ctx.usage = { inTok: 0, outTok: 0, calls: 0, cost: 0 };
     EX_SPEND = null;
     if (!exIsGemini_()) exCollectBatches_(ctx, key, done, start);   // fertige Claude-Batches zuerst abholen (Gemini: kein Batch-Modus in diesem Skript)
-    // neueste zuerst. WICHTIG: nach Zahl (Zeitstempel) sortieren, nicht Datumstext formatieren: Utilities.formatDate ist langsam
+    // aelteste zuerst (Omar 16.10.: vorwaerts abarbeiten, Rueckstand ab START_DATE_MIN der Reihe nach). WICHTIG: nach Zahl (Zeitstempel) sortieren, nicht Datumstext formatieren: Utilities.formatDate ist langsam
     // (bei 13.000 Zeilen kostete das Sortieren mit formatDate im Vergleich >5 Minuten und der Lauf kam nie zum Auslesen).
     var minTs = exTs_(EX_CONFIG.START_DATE_MIN);
     var order = [];
     for (var k = 0; k < rows.length; k++) { var ts = exTs_(rows[k][1]); if (ts >= minTs) order.push([ts, k]); }
-    order.sort(function (a, b) { return b[0] - a[0]; });
+    order.sort(function (a, b) { return a[0] - b[0]; });
     for (var oi = 0; oi < order.length; oi++) {
       if (Date.now() - start >= EX_CONFIG.MAX_RUNTIME_MS || calls >= EX_CONFIG.MAX_CALLS_PER_RUN) break;
       var row = rows[order[oi][1]];
