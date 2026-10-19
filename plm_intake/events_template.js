@@ -10,7 +10,7 @@
     t: o.title, c: o.totalCost, n: o.totalNumberOfPieces, m: o.manufacturer && o.manufacturer.id,
     items: (o.items || []).map(i => ({ n: i.name, p: i.product && i.product.id || null, v: (i.variants || []).map(v => ({ n: v.name, id: v.variantId || null, a: (v.amounts || []).map(a => [a.key, a.quantity, a.price, a.cost]) })) })),
     pay: (o.payments || []).map((p, i) => [p.name, i === skipPayIdx ? null : p.status, p.amount, p.dueDate]) });
-  const ms = x => (x === null || x === undefined) ? null : (typeof x === 'number' ? x : Date.parse(x));
+  const ms = x => (x === null || x === undefined || x === '') ? null : (typeof x === 'number' ? x : /^\d+$/.test(String(x)) ? Number(x) : Date.parse(x));   // PLM liefert Datum teils als ms-Zahl in Textform
   for (const p of PLAN) {
     try {
       const b = await window.__fetchOrder(p.id);

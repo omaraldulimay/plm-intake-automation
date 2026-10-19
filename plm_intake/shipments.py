@@ -262,6 +262,14 @@ def plan_from_events(order_id, order_title, ship_events, orders_detail, shipment
     return create, update, human
 
 
+def mcp_create_args(c):
+    """Eintrag aus plan_* (create) -> Argumente fuer Lifecycle-MCP create_record recordType=shipment (lines mit orderId, PO-Verknuepfung + trackingNumber).
+    VORBEREITET, NICHT eingebunden: erst umstellen, wenn an einer echten PO belegt ist, dass der Versand-Zaehler (totalShippedPieces) steigt (siehe MIGRATION_STATE 19.10.)."""
+    lines = [{"orderId": l["orderId"], "product": l["id"], "variant": v.get("id") or v["name"], "sizes": [{"size": q["size"], "quantity": q["quantityToShip"]} for q in v["sizes"]]}
+             for l in c["products"] for v in l["variants"]]
+    return {"recordType": "shipment", "title": c["title"], "method": c["method"], "trackingNumber": c.get("trackingNumber") or "", "notes": c.get("notes") or "", "lines": lines}
+
+
 def apply(create, update, call):
     """Schreibt per REST (call = plm_client.call). Gibt Protokollzeilen zurueck; bricht bei unerwartetem Status ab."""
     log = []

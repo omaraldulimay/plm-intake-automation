@@ -33,6 +33,8 @@ def num_variants(v):
     i = int(round(f)); dec = abs(f - i) > 1e-9
     plain = ("%.2f" % f) if dec else str(i)
     out.add(plain); out.add(plain.replace(".", ","))
+    if not dec:   # ganzer Betrag ohne Tausendertrenner, aber mit Nachkommastellen (5415.00 / 5415,00)
+        out.add(plain + ".00"); out.add(plain + ",00")
     for extra in (repr(f).rstrip("0").rstrip(".") if dec else str(i) + ".0", ("%.3f" % f).rstrip("0") if dec else str(i) + ",0"):
         out.add(extra); out.add(extra.replace(".", ","))
     if dec and abs(f * 10 - round(f * 10)) < 1e-9:
@@ -57,7 +59,35 @@ def value_in(v, text):
             if re.search(r"(?<![\d.,])" + re.escape(s.lower()) + r"(?![\d]|[.,]\d)", t):
                 return True
         return False
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)):
+        return date_in(str(v), t)
+    if re.fullmatch(r"[A-Za-z]{3}", str(v)) and str(v).upper() in CURRENCY:
+        return norm_text(v) in t or any(sym in t for sym in CURRENCY[str(v).upper()])
     return norm_text(v) in t
+
+
+CURRENCY = {"USD": ("$", "us$", "usd"), "EUR": ("€", "eur"), "GBP": ("£", "gbp"), "CNY": ("¥", "rmb", "cny")}
+MONTHS = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+
+
+def date_in(iso, t):
+    """ISO-Datum im Zitat in üblichen Schreibweisen (13.10.2026, 10/13/26, 2026/10/13, Oct.13,2026, 13 Oct 2026) - Tag/Monat-Reihenfolge ist durch das ISO-Datum eindeutig."""
+    y, m, d = (int(x) for x in iso.split("-"))
+    ok = lambda yy, mm, dd: (yy % 100 == y % 100 if yy < 100 else yy == y) and mm == m and dd == d
+    for a, b, c in re.findall(r"(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})(?!\d)", t):
+        a, b, c = int(a), int(b), int(c)
+        if ok(c, b, a) or ok(c, a, b):
+            return True
+    for a, b, c in re.findall(r"(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)", t):
+        if ok(int(a), int(b), int(c)):
+            return True
+    for mon, dd, yy in re.findall(r"([a-z]{3})[a-z]*[. ]*(\d{1,2})(?:st|nd|rd|th)?[, ]+(\d{4})", t):
+        if MONTHS.get(mon) and ok(int(yy), MONTHS[mon], int(dd)):
+            return True
+    for dd, mon, yy in re.findall(r"(\d{1,2})(?:st|nd|rd|th)?[ .-]*([a-z]{3})[a-z]*[ .,-]*(\d{4})", t):
+        if MONTHS.get(mon) and ok(int(yy), MONTHS[mon], int(dd)):
+            return True
+    return False
 
 
 def check_quotes(extract, src_text):

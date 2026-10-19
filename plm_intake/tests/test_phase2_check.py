@@ -27,6 +27,20 @@ class Quotes(unittest.TestCase):
         e, _ = pc.check_quotes({"facts": [fact("total", 7000, "Total USD 70,000.00")]}, SRC)
         self.assertTrue(e and "nicht im Zitat" in e[0])
 
+    def test_ganzer_betrag_ohne_tausendertrenner(self):
+        self.assertTrue(pc.value_in(5415.0, "AN-43-A2\nS\n1900\n2.85 \n5415.00"))
+        self.assertTrue(pc.value_in(5415, "5415,00"))
+        self.assertFalse(pc.value_in(541, "5415.00"))
+
+    def test_datum_und_waehrung(self):
+        self.assertTrue(pc.value_in("2026-10-13", "Oct.13,2026"))
+        self.assertTrue(pc.value_in("2026-09-30", "9/30/26"))
+        self.assertTrue(pc.value_in("2026-03-09", "DATE: 09-03-2026"))
+        self.assertTrue(pc.value_in("2026-07-31", "31.07.2026"))
+        self.assertFalse(pc.value_in("2026-10-14", "Oct.13,2026"))
+        self.assertTrue(pc.value_in("USD", "$104.325,00"))
+        self.assertFalse(pc.value_in("EUR", "$104.325,00"))
+
     def test_teilzahl_zaehlt_nicht(self):
         e, _ = pc.check_quotes({"facts": [fact("x", 500, "Black 3,500 pcs x 14.00 USD")]}, SRC)
         self.assertTrue(e)

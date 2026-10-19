@@ -4,6 +4,7 @@
 # Bericht: output/intake/auto_report.md, Status: output/intake/STATUS.md, Warnungen: output/intake/alerts.log, Protokoll je Lauf: output/intake/logs/
 cd "/path/to/project Produktion" || exit 1
 export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+[ -f .venv/bin/activate ] && source .venv/bin/activate   # gleiche Python-Umgebung wie von Hand (requests usw.), auch wenn launchd startet
 mkdir -p output/intake/logs
 MODE="${PLM_MODE:-dry}"
 LOG="output/intake/logs/auto_$(date +%Y%m%d_%H%M).log"

@@ -169,7 +169,7 @@ def main(argv=None):
             applied["orders"] = [r["title"] for r in res if r.get("orderNumber")]
         if js_ev:
             res = browser(js_ev); rep += ["## Ergebnis Notizen", "```", json.dumps(res, ensure_ascii=False, indent=1), "```"]
-            bad = [r for r in res if r.get("error") or r.get("fatal") or r.get("dataUnchanged") is False or r.get("notesOk") is False]
+            bad = [r for r in res if r.get("error") or r.get("fatal") or r.get("ABBRUCH") or r.get("dataUnchanged") is False or r.get("notesOk") is False or r.get("datesOk") is False or r.get("statusOk") is False]
             if bad:
                 rep += ["", "ABBRUCH: Rueckpruefung der Notizen meldet Abweichung: %s" % bad]
                 (intake / "auto_report.md").write_text("\n".join(rep)); print("\n".join(rep)); return 1
@@ -180,11 +180,27 @@ def main(argv=None):
         for stem in ev_files:
             f = inbox / (stem + ".json")
             if f.exists() and applied["event_orders"]: ledger.mark(led, f, "applied")
-        matched = {l["marker"] for o in pl["orders"] for l in o["lines"]}
+        done_titles = set(applied["event_orders"])   # nur wirklich geschriebene Orders (Lauf kann vorher abbrechen)
+        matched = {l["marker"] for o in pl["orders"] if o.get("title") in done_titles for l in o["lines"]}
         for f in evs:
             ids = [events.marker(e) for e in events.load_events([f])]
             if ids and all(m in matched for m in ids) and applied["event_orders"]: ledger.mark(led, f, "applied")
         ledger.save(led_path, led)
+    # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
+    try:
+        from plm_intake import klaerfaelle
+        if klaerfaelle.CFG.exists():
+            if a.apply:
+                def _run(js):
+                    p_ = intake / ("klaerfaelle_%s.js" % dt.datetime.now().strftime("%Y%m%d_%H%M%S")); p_.write_text(js); return browser(p_)
+                kf_rows, kf_res = klaerfaelle.sync(pl, ctx, ctx.get("aliases"), runner=_run)
+                rep += ["", "## Klärfälle (PLM-Tabelle)", "- Kandidaten %d, neu eingetragen %s, abgehakt %s, offen gesamt %s%s" % (
+                    len(kf_rows), kf_res.get("created"), kf_res.get("closed"), kf_res.get("open_total"), (" | Fehler: %s" % kf_res["errors"][:3]) if kf_res.get("errors") else "")]
+            else:
+                kf_rows = klaerfaelle.select(pl["unmatched"], ctx["vendors"], ctx.get("aliases"), events.domain_vendors(ctx["vendors"]))
+                rep += ["", "## Klärfälle (PLM-Tabelle)", "- %d Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)" % len(kf_rows)]
+    except (Exception, SystemExit) as e:   # Klaerfaelle duerfen den Lauf nie abbrechen
+        rep += ["", "## Klärfälle (PLM-Tabelle)", "- FEHLER: %s" % str(e)[:200]]
     # Menschen-Liste
     human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER")]
     blocked = [(n, r) for n, r in results if r.decision != "CREATE" and n not in {x["file"] for x in rows}]

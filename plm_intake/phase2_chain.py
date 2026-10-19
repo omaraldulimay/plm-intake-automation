@@ -78,7 +78,9 @@ def select(sources):
 def claude(prompt, d):
     cmd = ["claude", "-p", prompt, "--model", "sonnet", "--permission-mode", "acceptEdits",
            "--allowedTools", "Read", "Write", "Edit", "Glob", "Grep", "Bash(python3:*)", "--add-dir", str(d)]
-    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=3600)
+    import os
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}  # Claude-Login statt (ungueltigem) API-Key aus .env
+    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=3600, env=env, stdin=subprocess.DEVNULL)
     return r.returncode, (r.stdout or "")[-1500:] + (r.stderr or "")[-500:]
 
 
@@ -97,6 +99,8 @@ def read_round(d, ids, role):
         rc, out = claude(p, d)
         if rc:
             log("  claude Fehler rc=%s: %s" % (rc, out[-300:]))
+            if any(k in out.lower() for k in ("api key", "login", "rate limit", "usage limit", "session limit", "hit your", "limit reached", "credit")):
+                raise RuntimeError("claude -p nicht nutzbar: " + out[-200:])
 
 
 def cross_ok(d):
@@ -111,7 +115,52 @@ def r2(x):
     return None if x in (None, "") else round(float(x), 2)
 
 
-def build_inbox(d, slug, vendor, ok, meta, products):
+def used_elsewhere(slug, m):
+    """Gleiche Anhang-Datei (Originalname + Groesse) schon bei einem ANDEREN Lieferanten verwendet? -> nicht automatisch schreiben."""
+    key = (str(m.get("name", "")).lower(), m.get("groesse_bytes"))
+    hits = []
+    for f in P2.glob("*/sources.json"):
+        other = f.parent.name
+        if other == slug:
+            continue
+        for s in json.loads(f.read_text()):
+            if (str(s.get("name", "")).lower(), s.get("groesse_bytes")) == key and s.get("typ") != "Mail":
+                hits.append(other)
+                break
+    return hits
+
+
+def order_keys(x):
+    """Echte Kennungen einer bestehenden Order (PO-/PI-Nummer aus poNumber und Titel, ohne Lieferantenkuerzel und ohne von Claude vergebene Datum-Hash-Nummern)."""
+    keys = set()
+    if x.get("poNumber"):
+        keys.add(str(x["poNumber"]))
+    t = re.sub(r"^PO-", "", str(x.get("title") or ""), flags=re.I)
+    rest = t.split("-", 1)[1] if "-" in t else t
+    if not re.fullmatch(r"20\d\d-\d\d-\d\d-[0-9A-Fa-f]{4}", rest):
+        for tok in re.split(r"[-_ ]", rest) + [rest]:
+            if len(tok) >= 6 and re.search(r"\d{3}", tok) and re.search(r"[A-Za-z]", tok):
+                keys.add(tok)
+    return {re.sub(r"[^A-Z0-9]", "", k.upper()) for k in keys if k}
+
+
+def dup_order(o, orders, vendor=None, src_text=""):
+    """Bestehende Order DESSELBEN Lieferanten mit gleicher Stueckzahl (+-1 %%) oder gleicher Summe -> Dubletten-Verdacht."""
+    pcs, tot = float(o.get("pieces") or 0), float(o.get("total") or 0)
+    for x in orders:
+        if vendor and ((x.get("manufacturer") or {}).get("name") or "").lower() != vendor.lower():
+            continue
+        xp, xt = float(x.get("totalNumberOfPieces") or 0), float(x.get("totalCost") or 0)
+        if (pcs and xp and abs(xp - pcs) <= 0.01 * pcs) or (tot and xt and abs(xt - tot) < 0.01):
+            return x
+        flat = re.sub(r"[^A-Z0-9]", "", src_text.upper())
+        if flat and any(k and k in flat for k in order_keys(x)):
+            return x  # Beleg nennt die PO-/PI-Nummer einer bestehenden Order dieses Lieferanten
+    return None
+
+
+def build_inbox(d, slug, vendor, ok, meta, products, orders=(), mensch=None, names=()):
+    mensch = mensch if mensch is not None else []
     inbox = d / "p2inbox"
     inbox.mkdir(exist_ok=True)
     known = {re.sub(r"[^A-Z0-9]", "", str(p.get("sku") or "").upper()) for p in products}
@@ -120,6 +169,20 @@ def build_inbox(d, slug, vendor, ok, meta, products):
         x = json.loads((d / "extract" / (i + ".json")).read_text())
         o, inv, kind = x.get("order") or {}, x.get("invoice") or {}, x.get("doc_kind")
         m = meta.get(i, {})
+        other = used_elsewhere(slug, m)
+        if other:
+            mensch.append("%s (%s): Datei auch bei %s -> Lieferant unklar, nicht geschrieben" % (i, m.get("name"), ",".join(other)))
+            continue
+        if kind == "order":
+            txt = (d / "src" / (i + ".txt")).read_text(errors="replace").lower() if (d / "src" / (i + ".txt")).exists() else ""
+            own = [t.lower() for t in names] + [vendor.lower().split()[0]]
+            if txt and not any(t in txt for t in own):
+                mensch.append("%s (%s): Lieferantenname (%s) steht nicht im Beleg -> Lieferant unklar, nicht angelegt" % (i, m.get("name"), "/".join(own)))
+                continue
+            dup = dup_order(o, orders, vendor, txt)
+            if dup:
+                mensch.append("%s (%s): %s Stk / %s wie bestehende #%s %s -> Dubletten-Verdacht, nicht angelegt" % (i, m.get("name"), o.get("pieces"), o.get("total"), dup.get("orderNumber"), dup.get("title")))
+                continue
         src = {"doc": m.get("name"), "mail_id": m.get("mail_id"), "mail_date": m.get("datum")}
         if kind == "order" and o.get("items") and o.get("total"):
             items = []
@@ -165,7 +228,9 @@ def auto_run(d, inbox, apply):
         if (ROOT / "output/intake" / f).exists() and not (intake / f).exists():
             (intake / f).write_text((ROOT / "output/intake" / f).read_text())
     cmd = [sys.executable, "-m", "plm_intake.auto_run", "--inbox", str(inbox), "--intake", str(intake)] + (["--apply"] if apply else [])
-    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=3600)
+    import os
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}  # Claude-Login statt (ungueltigem) API-Key aus .env
+    r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=3600, env=env, stdin=subprocess.DEVNULL)
     return r.returncode, r.stdout + r.stderr
 
 
@@ -185,6 +250,8 @@ def one(slug, cfg, dry):
     (d / "auswahl.json").write_text(json.dumps({"ids": ids, "uebersprungen": [[s["id"], s["name"], why] for s, why in skipped]}, ensure_ascii=False, indent=1))
     read_round(d, ids, "leser")
     read_round(d, ids, "pruefer")
+    if ids and not list((d / "extract").glob("*.json")):
+        raise RuntimeError("Leser hat keine Extrakte geliefert (Limit/Fehler) - Lieferant NICHT fertig")
     ok, bad = cross_ok(d)
     ok &= set(ids) | {f.stem for f in (d / "extract").glob("*.json")}
     rep += ["Gegenprobe: %d gleich, %d Abweichung (STOPP.md)" % (len(ok), len(bad)), ""]
@@ -192,8 +259,22 @@ def one(slug, cfg, dry):
         (d / "STOPP.md").write_text("# STOPP %s: Leser und Pruefer weichen ab, NICHT geschrieben\n\n" % slug + "\n".join("- %s (%s)\n%s" % (k, meta.get(k, {}).get("name"), v) for k, v in sorted(bad.items())))
     import plm_client
     from plm_intake.context import fetch_all
-    products = fetch_all(plm_client.call, "products")
-    inbox, made = build_inbox(d, slug, cfg["vendor"], ok, meta, products)
+    for t in range(5):
+        try:
+            products = fetch_all(plm_client.call, "products")
+            break
+        except Exception as e:  # noqa: BLE001 - PLM-Timeout: kurz warten, erneut
+            log("PLM-Lesefehler (%s), Versuch %d" % (str(e)[:80], t + 1))
+            import time
+            time.sleep(60)
+    else:
+        raise RuntimeError("PLM nicht erreichbar")
+    orders = fetch_all(plm_client.call, "orders")
+    mensch = []
+    inbox, made = build_inbox(d, slug, cfg["vendor"], ok, meta, products, orders, mensch, cfg["name"] + cfg["domain"])
+    if mensch:
+        (d / "MENSCH.md").write_text("# %s: nicht automatisch geschrieben\n\n" % slug + "\n".join("- " + x for x in mensch))
+        rep.append("Mensch (MENSCH.md): %d" % len(mensch))
     rep.append("Inbox: %d Bestellungen, %d Belege" % (made["order"], made["invoice"]))
     rc, out = auto_run(d, inbox, False)
     (d / "p2_dry.txt").write_text(out)
@@ -231,6 +312,9 @@ def main(argv=None):
             (P2 / s).mkdir(parents=True, exist_ok=True)
             (P2 / s / "STOPP.md").write_text("# ABBRUCH %s\n\n%s\n" % (s, e))
             state("PHASE2 ABBRUCH %s: %s" % (s, str(e)[:200]))
+            if "nicht nutzbar" in str(e) or "keine Extrakte" in str(e):
+                log("Claude nicht verfuegbar -> gesamter Lauf gestoppt")
+                break
 
 
 if __name__ == "__main__":

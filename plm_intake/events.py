@@ -65,11 +65,11 @@ TITLE_STOP = {"order", "reorder", "extra", "first", "second", "third", "main", "
 
 
 def id_tokens(text):
-    """Kennungen (Container, B/L, AWB, Rechnungs-/PO-Nummern) aus Freitext: mindestens 8 Zeichen mit Buchstaben UND Ziffern. Mail-IDs und Marker-Hashes zaehlen nicht."""
+    """Kennungen (Container, B/L, AWB, Rechnungs-/PO-Nummern) aus Freitext: mindestens 7 Zeichen mit Buchstaben UND Ziffern. Mail-IDs und Marker-Hashes zaehlen nicht."""
     out = set()
     for t in re.findall(r"[A-Za-z0-9][A-Za-z0-9._/\-]{5,}", str(text or "")):
         n = core.norm(t)
-        if len(n) >= 8 and re.search(r"[a-z]", n) and re.search(r"\d", n) and not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{16}", n):
+        if len(n) >= 7 and re.search(r"[a-z]", n) and re.search(r"\d", n) and not re.fullmatch(r"[0-9a-f]{8}|[0-9a-f]{16}", n):
             out.add(n)
     return out
 
@@ -107,7 +107,60 @@ def title_words(o, vendor_name=""):
     return {w for w in re.findall(r"[a-z]{4,}", str(o.get("title") or "").lower()) if w not in skip}
 
 
-def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None):
+TEST_ORDER = re.compile(r"ZZ|(?:^|-)T1(?:-|$)", re.I)   # Testobjekte (ZZ-*, *-T1, *-KH-T1-EXTRA) nie als Ziel: sonst Scheinmehrdeutigkeit (LIEFERANT_D-T1 vs. LIEFERANT_D-ALI...)
+TR = str.maketrans("İıŞşĞğÜüÖöÇç", "IiSsGgUuOoCc")
+CODE = re.compile(r"[A-Za-z]{0,6}[-_ ]?\d{3,}[A-Za-z0-9_\-]*")
+
+
+def codes(*vals):
+    """Einzelne Kennungen aus Feldern wie 'GT0301, GT0302', '26022(GT0303)', 'Siera Pant (Style 26385)', 'XW26-008, XW26-009'."""
+    out = []
+    for v in vals:
+        if not v:
+            continue
+        for part in [str(v)] + re.split(r"[,;/()\s]+", str(v)) + CODE.findall(str(v)):
+            n = core.norm(part)
+            if len(n) >= 4 and re.search(r"\d", n) and n not in out:
+                out.append(n)
+    return out
+
+
+def domain_vendors(vendors):
+    """Mail-Domain -> Vendor-IDs (Kontakte im PLM + output/phase2/lieferanten.json)."""
+    m = {}
+    for v in vendors:
+        for c in v.get("contacts") or []:
+            if "@" in str(c.get("email") or ""):
+                m.setdefault(c["email"].split("@")[-1].lower(), set()).add(v["id"])
+    try:
+        cfg = json.load(open(Path(__file__).resolve().parents[1] / "output" / "phase2" / "lieferanten.json"))
+        byname = {core.norm(v["name"]): v["id"] for v in vendors}
+        for c in cfg["lieferanten"].values():
+            vid = byname.get(core.norm(c["vendor"]))
+            for d in c.get("domain") or []:
+                if vid:
+                    m.setdefault(d.lower(), set()).add(vid)
+    except Exception:
+        pass
+    return m
+
+
+def vendor_of(e, vendors, vendor_aliases=None, dom=None):
+    """Lieferant aus dem Ereignis (tuerkische Sonderzeichen tolerant), sonst aus der Absender-Domain der Mail (nicht smilodox)."""
+    if e.get("vendor"):
+        v, _ = core.match_vendor(str(e["vendor"]).translate(TR), vendors, vendor_aliases)
+        if v:
+            return v
+    m = re.search(r"@([\w.-]+)", str((e.get("_mail") or {}).get("from") or ""))
+    d = m.group(1).lower() if m else ""
+    ids = (dom or {}).get(d) or set()
+    if d and "smilodox" not in d and len(ids) == 1:
+        vid = next(iter(ids))
+        return next((v for v in vendors if v["id"] == vid), None)
+    return None
+
+
+def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None):
     """Genau eine Order oder None (+ Grund). Zaehlt: PO-Nummer/Titel, Style (Positionsname oder Produkt-SKU), bekannte Kennung (Container/HBL/Rechnungsnr. aus den Notizen).
     Lieferant allein reicht nur schwach und nur bei vendor_only (mehrdeutig sonst)."""
     ref = e.get("ref") or {}
@@ -122,23 +175,24 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             if len(hits) == 1:
                 return hits[0], "alias"
             hits = []
-    if po and len(po) >= 4:
+    pos = codes(ref.get("po_number")) + ([po] if po and len(po) >= 4 else [])
+    if pos:
+        raw = [str(ref.get("po_number"))] + re.split(r"[,;/()\s]+", str(ref.get("po_number")))
         for o in orders:
-            if po == core.norm(o.get("poNumber")) or core.po_in_title(ref.get("po_number"), o.get("title")):   # Wortgrenze: '...-2' trifft nicht '...-2EXTRA'
+            if any(c == core.norm(o.get("poNumber")) for c in pos) or any(core.po_in_title(r, o.get("title")) for r in raw if len(core.norm(r)) >= 4):   # Wortgrenze: '...-2' trifft nicht '...-2EXTRA'
                 hits.append(o)
-    if not hits and ref.get("style"):
-        st = core.norm(ref["style"])
-        if len(st) >= 4:
-            for o in orders:
-                if any(st in core.norm(i.get("name")) for i in o.get("items") or []) or (idx and st in idx.get(o["id"], {}).get("skus", ())):
-                    hits.append(o)
+    if not hits:   # Style: auch eine 'PO-Nr', die in Wahrheit eine Stylenummer ist (26M10_001, AL29008), und Listen 'GT0301, GT0302'
+        sts = codes(ref.get("style"), ref.get("po_number")) + [x for x in [core.norm(ref.get("style"))] if len(x) >= 4]   # auch beschreibende Styles ('fleece kenna jacket')
+        for o in orders:
+            names = [core.norm(i.get("name")) for i in o.get("items") or []]
+            skus = idx.get(o["id"], {}).get("skus", ()) if idx else ()
+            if any(any(st in n for n in names) or any(k == st or k.startswith(st) for k in skus) for st in sts):
+                hits.append(o)
     if not hits and idx:   # bekannte Kennung (z. B. HBL/Container aus frueheren Notizen derselben Order)
         toks = event_tokens(e)
         if toks:
             hits = [o for o in orders if toks & idx.get(o["id"], {}).get("idents", set())]
-    v = None
-    if e.get("vendor"):
-        v, _ = core.match_vendor(e["vendor"], vendors, vendor_aliases)
+    v = vendor_of(e, vendors, vendor_aliases, dom)
     if v and len(hits) > 1:   # Lieferant als Tiebreaker, wenn er die Treffer eindeutig macht
         by_v = [o for o in hits if (o.get("manufacturer") or {}).get("id") == v["id"]]
         if len(by_v) == 1:
@@ -199,7 +253,9 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
     per = {}
     unmatched = []
     seen = set()
+    orders = [o for o in orders if not TEST_ORDER.search(str(o.get("title") or ""))]
     idx = order_index(orders, products) if products is not None else None
+    dom = domain_vendors(vendors)
     evs = []
     for e in sorted(events, key=lambda x: str(x["_mail"].get("date") or "")):
         mk = marker(e)
@@ -207,7 +263,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             continue
         seen.add(mk)
         evs.append(e)
-    results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx)) for e in evs]
+    results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom)) for e in evs]
     if vendor_only:   # Verlaufs-Zuordnung: Ereignisse ohne eigenen Bezug erben die Order, auf die BELEGTE Ereignisse desselben Mail-Verlaufs eindeutig zeigen (nur Notiz, nie Termin/Status/Zahlung)
         by_thread = {}
         for e, (o, why) in results:

@@ -364,3 +364,38 @@ class Skript(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ZuordnungVerbesserungen1910(unittest.TestCase):
+    """19.10.: Fehlzuordnungen aus dem Rueckstand (Kennungslisten, Style als PO-Nr, Testobjekte, tuerkische Namen, Absender-Domain)."""
+    V = [{"id": "v1", "name": "Xiamen Lieferant G Industry Co., Ltd", "contacts": [{"email": "kontakt@lieferant-g.example"}]},
+         {"id": "v2", "name": "Lieferant AG"}, {"id": "v3", "name": "Ningbo Lieferant D Co., Ltd"}]
+    O = [{"id": "o1", "title": "PO-LIEFERANT_G-MC-26SM002", "manufacturer": {"id": "v1"}, "items": [{"name": "GT0303 Sport Travel Bag"}], "status": {"status": "In Production"}},
+         {"id": "o2", "title": "PO-LIEFERANT_D-ALI20260821", "manufacturer": {"id": "v3"}, "items": [{"name": "F-3 Fleece Kenna Jacket"}], "status": {"status": "In Transit"}},
+         {"id": "o3", "title": "PO-LIEFERANT_D-T1", "manufacturer": {"id": "v3"}, "items": [{"name": "F-3 Fleece Kenna Jacket"}], "status": {"status": "In Transit"}},
+         {"id": "o4", "title": "PO-LIEFERANT_AG-2026-06-24", "manufacturer": {"id": "v2"}, "items": [{"name": "YK-002 Pants"}], "status": {"status": "In Production"}}]
+
+    def e(self, **kw):
+        d = {"type": "SHIPMENT", "vendor": None, "ref": {"po_number": None, "style": None, "container": None}, "date": "2026-10-12", "summary": "x", "key": "k", "_mail": {"id": "m", "date": "2026-10-12 10:00", "from": "kontakt@firma.example", "subject": "s"}}
+        d.update(kw); return d
+
+    def test_kennungsliste_und_klammern_werden_zerlegt(self):
+        o, why = events.find_order(self.e(ref={"po_number": "26022(GT0303)", "style": None, "container": None}), self.O, self.V)
+        self.assertEqual((o or {}).get("id"), "o1", why)
+        o, why = events.find_order(self.e(ref={"po_number": None, "style": "GT0301, GT0303", "container": None}), self.O, self.V)
+        self.assertEqual((o or {}).get("id"), "o1", why)
+
+    def test_testobjekte_erzeugen_keine_mehrdeutigkeit(self):
+        pl = events.plan([self.e(ref={"po_number": None, "style": "fleece kenna jacket", "container": None})], self.O, self.V)
+        self.assertEqual([p["id"] for p in pl["orders"]], ["o2"])
+
+    def test_tuerkischer_lieferantenname(self):
+        self.assertEqual((events.vendor_of(self.e(vendor="LIEFERANT_AG"), self.V) or {}).get("id"), "v2")
+
+    def test_lieferant_ueber_absender_domain(self):
+        dom = events.domain_vendors(self.V)
+        self.assertEqual((events.vendor_of(self.e(_mail={"from": "Wendy <kontakt@lieferant-g.example>"}), self.V, None, dom) or {}).get("id"), "v1")
+        self.assertIsNone(events.vendor_of(self.e(_mail={"from": "kontakt@firma.example"}), self.V, None, dom))
+
+    def test_kurze_belegnummer_zaehlt_als_kennung(self):
+        self.assertIn("ak62326", events.id_tokens("Rechnung AK/623/26"))

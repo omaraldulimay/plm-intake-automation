@@ -126,6 +126,44 @@ function extractPOs() {   // Trigger-Einstieg: nur an Werktagen (Omar 15.10.); v
 /* Montag bis Freitag in der Zeitzone des Skripts ('u' = ISO-Wochentag 1..7). */
 function exIsWorkday_(d) { return Number(Utilities.formatDate(d, Session.getScriptTimeZone(), 'u')) <= 5; }
 
+/* ---------------- Waechter: meldet, wenn der lokale Einpflege-Lauf (Mac) ausbleibt ----------------
+   Der lokale Lauf schreibt nach jedem Durchlauf plm_intake.health -> PLM-Mails/lokaler_lauf_heartbeat.json (JSON: last_run, state, mode, text).
+   plmWatchdog() (taeglich 10 Uhr, nur Mo-Fr) prueft: Datei fehlt / zu alt (Di-Fr 30 h, Mo 66 h) / state ALARM / mode nicht 'apply' -> E-Mail an Omar (hoechstens 1x pro Tag). */
+var EX_WATCHDOG = { FILE: 'lokaler_lauf_heartbeat.json', TO: 'kontakt@firma.example', MAX_AGE_H: 30, MAX_AGE_H_MONDAY: 66 };
+
+/* Reine Entscheidung (testbar): gibt null oder einen Text zurueck. nowMs = Date.now(), hb = geparstes Heartbeat-Objekt oder null, isoDay 1..7. */
+function exWatchdogDecision_(nowMs, hb, isoDay) {
+  if (isoDay > 5) return null;
+  if (!hb || !hb.last_run) return 'Es gibt keinen Herzschlag des lokalen Einpflege-Laufs (Datei ' + EX_WATCHDOG.FILE + '). Der Lauf auf dem Mac hat noch nie oder zu lange nicht gearbeitet.';
+  var ageH = (nowMs - Date.parse(hb.last_run)) / 3600000;
+  var limit = isoDay === 1 ? EX_WATCHDOG.MAX_AGE_H_MONDAY : EX_WATCHDOG.MAX_AGE_H;
+  if (isNaN(ageH)) return 'Herzschlag nicht lesbar: ' + hb.last_run;
+  if (ageH > limit) return 'Der lokale Einpflege-Lauf hat seit ' + Math.round(ageH) + ' Stunden nicht mehr gearbeitet (letzter Lauf ' + hb.last_run + '). Neue Mails landen in der Inbox, werden aber nicht ins PLM eingepflegt. Pruefen: Mac an? Zeitplan (launchd/Terminal-Schleife) aktiv? Google Drive fuer Desktop gestartet? PLM-Browser eingeloggt?';
+  if (hb.state && hb.state !== 'OK') return 'Der letzte lokale Lauf (' + hb.last_run + ') endete mit Problem: ' + (hb.text || hb.state);
+  if (hb.mode && hb.mode !== 'apply') return 'Der lokale Lauf laeuft nur im Trockenmodus (' + hb.mode + ') und schreibt nichts ins PLM (letzter Lauf ' + hb.last_run + ').';
+  return null;
+}
+
+function plmWatchdog() {
+  var now = new Date(Date.now());
+  var isoDay = Number(Utilities.formatDate(now, Session.getScriptTimeZone(), 'u'));
+  var hb = null;
+  var it = DriveApp.getFoldersByName(EX_CONFIG.FOLDER_NAME).next().getFilesByName(EX_WATCHDOG.FILE);
+  if (it.hasNext()) { try { hb = JSON.parse(it.next().getBlob().getDataAsString()); } catch (e) { hb = { last_run: 'unlesbar' }; } }
+  var msg = exWatchdogDecision_(now.getTime(), hb, isoDay);
+  if (!msg) { Logger.log('Waechter: alles in Ordnung'); return; }
+  var props = PropertiesService.getScriptProperties(), today = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  if (props.getProperty('LAST_WATCHDOG_MAIL') === today) { Logger.log('Waechter: heute schon gemeldet'); return; }
+  MailApp.sendEmail(EX_WATCHDOG.TO, 'PLM-Einpflege: Lauf auf dem Mac prueft nicht / steht', msg + '\n\nDiese Warnung kommt hoechstens einmal pro Tag.');
+  props.setProperty('LAST_WATCHDOG_MAIL', today);
+  Logger.log('Waechter: Mail gesendet: ' + msg);
+}
+
+function installWatchdogTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'plmWatchdog') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('plmWatchdog').timeBased().atHour(10).everyDays(1).create();
+}
+
 function extractMails() {
   var start = Date.now();
   var lock = LockService.getScriptLock();

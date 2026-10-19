@@ -164,6 +164,21 @@ def write_status(intake, state, text, mode="", now=None):
         state, st["last_run"].replace("T", " "), st["mode"] or "-", text, (st.get("last_ok") or "noch nie").replace("T", " "), alerts or "- keine"))
 
 
+HEARTBEAT = "lokaler_lauf_heartbeat.json"
+
+
+def write_heartbeat(intake, state, mode, text, now=None, inbox=None):
+    """Herzschlag fuer den Waechter in Apps Script (plmWatchdog): liegt im Drive-Ordner PLM-Mails (Elternordner der Inbox). Scheitert still."""
+    now = now or _now()
+    try:
+        from plm_intake import daily
+        folder = Path(inbox or daily.resolve_inbox(None, Path(intake))).resolve().parent
+        (folder / HEARTBEAT).write_text(json.dumps({"last_run": now.astimezone().isoformat(timespec="seconds"), "state": state, "mode": mode, "text": str(text)[:300]}, ensure_ascii=False))
+        return True
+    except Exception:
+        return False
+
+
 def finish(intake, exit_code, mode="dry", now=None):
     now = now or _now()
     intake = Path(intake)
@@ -173,6 +188,7 @@ def finish(intake, exit_code, mode="dry", now=None):
         rep = ""
     state, text = summarize(rep, int(exit_code))
     write_status(intake, state, text, mode, now)
+    write_heartbeat(intake, state, mode, text, now)
     wrote = mode == "apply" and re.search(r"Erledigt|Ergebnis ", rep)
     if state == "ALARM":
         alert(intake, "Lauf mit Problem (%s)" % mode, text, now)

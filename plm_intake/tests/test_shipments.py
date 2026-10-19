@@ -162,3 +162,12 @@ class AusEreignissen(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class McpArgs(unittest.TestCase):
+    def test_lines_mit_order_und_menge(self):
+        c = {"title": "S", "method": "sea", "trackingNumber": "T1", "notes": "n",
+             "products": [{"id": "P1", "orderId": "O1", "variants": [{"id": "V1", "name": "Black", "sizes": [{"size": "M", "quantityToShip": 5}]}]}]}
+        a = sh.mcp_create_args(c)
+        self.assertEqual(a["lines"], [{"orderId": "O1", "product": "P1", "variant": "V1", "sizes": [{"size": "M", "quantity": 5}]}])
+        self.assertEqual(a["trackingNumber"], "T1")

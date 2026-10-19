@@ -129,3 +129,16 @@ class Audit(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Heartbeat(unittest.TestCase):
+    def test_heartbeat_wird_im_elternordner_der_inbox_geschrieben(self):
+        import json, tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as d:
+            inbox = Path(d) / "PLM-Mails" / "Inbox"; inbox.mkdir(parents=True)
+            self.assertTrue(health.write_heartbeat(Path(d) / "intake", "OK", "apply", "3 neue", inbox=inbox))
+            hb = json.loads((Path(d) / "PLM-Mails" / health.HEARTBEAT).read_text())
+            self.assertEqual((hb["state"], hb["mode"]), ("OK", "apply"))
+            self.assertIn("last_run", hb)
+            self.assertFalse(list(inbox.glob("*.json")))   # darf nicht in der Inbox landen (sonst wird er als Dokument gelesen)
