@@ -2,10 +2,10 @@
 # Variante ohne Systemeinstellungen: in einem Terminal-Fenster starten und offen lassen (Terminal hat Zugriff auf Dokumente).
 #   PLM_MODE=dry ./plm_intake/scheduler_loop.sh      # nur berichten (Standard)
 #   PLM_MODE=apply ./plm_intake/scheduler_loop.sh    # schreibt ins PLM
-# Laeuft taeglich um 13:30 und 19:30 (lokale Zeit) plm_intake/scheduled_run.sh. Mac darf nicht schlafen (caffeinate wird mitgestartet).
+# Laeuft taeglich um 08:00 und 13:30 (lokale Zeit) plm_intake/scheduled_run.sh. Mac darf nicht schlafen (caffeinate wird mitgestartet).
 cd "$(dirname "$0")/.." || exit 1
 caffeinate -i -w $$ &
-HOURS=("13:30" "19:30")
+HOURS=("08:00" "13:30")
 last=""
 while true; do
   now=$(date +%H:%M); day=$(date +%Y%m%d)

@@ -36,3 +36,7 @@ __pycache__/
 
 # lokale Claude-Einstellungen (enthalten Token)
 .claude/settings.local.json
+
+# Cloud-Zustandsordner (Checkout des Zweigs einpflege-zustand)
+_state/
+node_modules/.cache/

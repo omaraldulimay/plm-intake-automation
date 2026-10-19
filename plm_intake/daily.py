@@ -22,6 +22,9 @@ INTAKE = ROOT / "output" / "intake"
 def resolve_inbox(arg, intake=INTAKE):
     if arg:
         return Path(arg).expanduser()
+    from plm_intake import cloud
+    if cloud.is_cloud_inbox():   # PLM_INBOX_MODE=drive_api: Dateien per Drive-API in ein Temp-Verzeichnis (einmal je Prozess); lokaler Modus bleibt Standard
+        return cloud.inbox_dir()
     cfg = intake / "config.json"
     if cfg.exists():
         v = json.load(open(cfg)).get("inbox")

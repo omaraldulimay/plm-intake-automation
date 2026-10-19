@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 INTAKE = ROOT / "output" / "intake"
 BROWSER = ROOT / "plm_intake" / "browser"
-STALE_HOURS = 26   # laenger ohne erfolgreichen Lauf = Warnung (3 Laeufe/Tag)
+STALE_HOURS = 26   # laenger ohne erfolgreichen Lauf = Warnung (2 Laeufe/Tag, 08:00 und 13:30)
 
 
 def notify(title, body):
@@ -171,8 +171,8 @@ def write_heartbeat(intake, state, mode, text, now=None, inbox=None):
     """Herzschlag fuer den Waechter in Apps Script (plmWatchdog): liegt im Drive-Ordner PLM-Mails (Elternordner der Inbox). Scheitert still."""
     now = now or _now()
     try:
-        from plm_intake import daily
-        folder = Path(inbox or daily.resolve_inbox(None, Path(intake))).resolve().parent
+        from plm_intake import cloud, daily
+        folder = Path(intake) if cloud.is_cloud_inbox() else Path(inbox or daily.resolve_inbox(None, Path(intake))).resolve().parent   # Cloud: Heartbeat im Zustandsordner (Drive nur lesbar)
         (folder / HEARTBEAT).write_text(json.dumps({"last_run": now.astimezone().isoformat(timespec="seconds"), "state": state, "mode": mode, "text": str(text)[:300]}, ensure_ascii=False))
         return True
     except Exception:
