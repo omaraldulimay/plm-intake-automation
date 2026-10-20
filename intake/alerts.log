@@ -1,1 +1,1 @@
-2026-10-20T06:42:22 | Lauf abgebrochen (Vorabpruefung) | PLM-Browser NICHT eingeloggt: einmal 'cd plm_intake/browser && node run_in_plm.js --login' ausfuehren und im Fenster einloggen
+2026-10-19T14:19:51 | Lauf mit Problem (apply) | "ABBRUCH": "Abweichung nach Update: Backup output/backup/ pruefen" | 20 neue Dokumente, 376 Ereignis-Dateien | neue POs 0, Sendungen 3 | Mensch entscheidet: 175
