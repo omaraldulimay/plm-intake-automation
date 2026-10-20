@@ -26,4 +26,15 @@ t('Cloud: Lauf laeuft noch: keine Warnung', () => assert.strictEqual(cw(T('2026-
 t('Cloud: Wochenende nie', () => { assert.strictEqual(cw(T('2026-10-24T08:30:00Z'), [], 6, 5), null); assert.strictEqual(cw(T('2026-10-25T08:30:00Z'), [], 7, 5), null); });
 t('Cloud: Lauf von gestern zaehlt nicht fuer heute', () => assert.ok(cw(T('2026-10-21T08:30:00Z'), [run('2026-10-20T12:00:00Z', 540)], 3, 5)));
 t('Cloud: Handlauf (dispatch) zaehlt wie geplanter Lauf', () => assert.strictEqual(cw(T('2026-10-21T13:00:00Z'), [Object.assign(run('2026-10-21T11:40:00Z', 500), { event: 'workflow_dispatch' })], 3, 11), null));
+// ---- Cloud-Ausloeser
+const tr = ctx.exCloudTriggerDecision_;
+t('Ausloeser: kein Lauf im Fenster: starten', () => assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [], 3, 5, 0), true));
+t('Ausloeser: echter Lauf schon da: nichts', () => assert.strictEqual(tr(T('2026-10-21T08:30:00Z'), [run('2026-10-21T06:07:05Z', 540)], 3, 5, 0), false));
+t('Ausloeser: nur uebersprungener Lauf (10 s): starten', () => assert.strictEqual(tr(T('2026-10-21T12:45:00Z'), [run('2026-10-21T12:30:04Z', 10)], 3, 11, 0), true));
+t('Ausloeser: Lauf laeuft/wartet: nichts', () => { assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [run('2026-10-21T07:25:00Z', 30, null, 'in_progress')], 3, 5, 0), false); assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [run('2026-10-21T07:29:00Z', 0, null, 'queued')], 3, 5, 0), false); });
+t('Ausloeser: vor 10 Min schon gestartet: nichts (kein Doppelstart)', () => assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [], 3, 5, T('2026-10-21T07:20:00Z')), false));
+t('Ausloeser: vor 40 Min gestartet, kein Lauf entstanden: erneut starten', () => assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [], 3, 5, T('2026-10-21T06:50:00Z')), true));
+t('Ausloeser: Wochenende nie', () => { assert.strictEqual(tr(T('2026-10-24T07:30:00Z'), [], 6, 5, 0), false); assert.strictEqual(tr(T('2026-10-25T07:30:00Z'), [], 7, 5, 0), false); });
+t('Ausloeser: fehlgeschlagener Lauf heute: erneut starten', () => assert.strictEqual(tr(T('2026-10-21T08:00:00Z'), [run('2026-10-21T06:07:05Z', 300, 'failure')], 3, 5, 0), true));
+t('Ausloeser: Lauf von gestern zaehlt nicht', () => assert.strictEqual(tr(T('2026-10-21T07:30:00Z'), [run('2026-10-20T12:00:00Z', 540)], 3, 5, 0), true));
 console.log(res.join('\n')); if (res.some(l => l.startsWith('FEHL'))) process.exit(1);

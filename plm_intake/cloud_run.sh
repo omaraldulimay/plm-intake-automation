@@ -12,14 +12,17 @@ mkdir -p output/intake/logs
 export PLM_DEBUG_DIR="$PWD/output/intake/logs"
 LOG="output/intake/logs/auto_$(date -u +%Y%m%d_%H%M).log"
 python3 -m plm_intake.cloud pull "$STATE_DIR" >> "$LOG" 2>&1
-if [ "${SKIP_IF_RECENT_MIN:-0}" -gt 0 ] && python3 - "$SKIP_IF_RECENT_MIN" >> "$LOG" 2>&1 <<'PY'
+if [ "${SKIP_IF_RECENT_MIN:-0}" -gt 0 ] && python3 - "$SKIP_IF_RECENT_MIN" "$MODE" >> "$LOG" 2>&1 <<'PY'
 import json, sys, datetime as dt
+# Nur ueberspringen, wenn der letzte Lauf im GLEICHEN Modus erfolgreich war (ein Trockenlauf von Hand darf einen Schreiblauf nicht blockieren).
 try:
-    ok = json.load(open("output/intake/status.json")).get("last_ok")
-    age = (dt.datetime.utcnow() - dt.datetime.fromisoformat(ok)).total_seconds() / 60 if ok else 1e9
+    st = json.load(open("output/intake/status.json"))
+    ok = st.get("last_ok")
+    same = st.get("state") == "OK" and st.get("mode") == sys.argv[2]
+    age = (dt.datetime.utcnow() - dt.datetime.fromisoformat(ok)).total_seconds() / 60 if ok and same else 1e9
 except Exception:
     age = 1e9
-print("Letzter erfolgreicher Lauf vor %.0f Min" % age)
+print("Letzter erfolgreicher Lauf im Modus %s vor %s Min" % (sys.argv[2], "%.0f" % age if age < 1e8 else "?"))
 sys.exit(0 if age < int(sys.argv[1]) else 1)
 PY
 then

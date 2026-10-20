@@ -205,11 +205,70 @@ function exCloudWatchdog_(slot, sinceUtcHour) {
 function plmCloudWatchdogMorning() { exCloudWatchdog_('morgens', 5); }     // Lauf seit 05:30 UTC (Zeitplan 06:00/07:00 UTC) -> ab 05 zaehlt
 function plmCloudWatchdogAfternoon() { exCloudWatchdog_('mittags', 11); }  // Lauf seit 11:00 UTC (Zeitplan 11:30/12:30 UTC)
 
-/* Einmal ausfuehren: entfernt den alten Mac-Waechter (plmWatchdog) und legt die zwei Cloud-Kontrollen an (10 Uhr und 15 Uhr, Skript-Zeitzone). */
+/* ---------------- Cloud-Ausloeser (GitHub Actions) ----------------
+   GitHubs Zeitplan ist nicht verlaesslich (20.10.). Darum startet dieses Skript den Lauf selbst (workflow_dispatch), wenn im Zeitfenster noch kein echter erfolgreicher Lauf da ist.
+   Braucht das Token in GITHUB_TOKEN mit "Actions: Read and write". Laeuft zu Berliner 08, 09, 13 und 14 Uhr (Skript-Zeitzone); vor 12 Uhr zaehlt ein Lauf seit 05:00 UTC, danach seit 11:00 UTC.
+   Nie doppelt: laeuft oder wartet schon ein Lauf, oder wurde in den letzten 30 Minuten gestartet, passiert nichts; zusaetzlich ueberspringt cloud_run.sh Wiederholungen. */
+function exCloudTriggerDecision_(nowMs, runs, isoDay, sinceUtcHour, lastDispatchMs) {
+  if (isoDay > 5) return false;
+  if (lastDispatchMs && nowMs - lastDispatchMs < 30 * 60 * 1000) return false;
+  var d = new Date(nowMs);
+  var since = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), sinceUtcHour, 0, 0);
+  var recent = (runs || []).filter(function (r) { return Date.parse(r.created_at) >= since; });
+  var secs = function (r) { return (Date.parse(r.updated_at) - Date.parse(r.run_started_at || r.created_at)) / 1000; };
+  if (recent.some(function (r) { return r.status && r.status !== 'completed'; })) return false;   // laeuft oder wartet
+  if (recent.some(function (r) { return r.conclusion === 'success' && secs(r) >= EX_CLOUD_WD.MIN_SECONDS; })) return false;   // echter Lauf war schon da
+  return true;
+}
+
+function exGithubFetch_(method, path, payload) {
+  var token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!token) throw new Error('Skripteigenschaft GITHUB_TOKEN fehlt');
+  var opt = { method: method, muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } };
+  if (payload) { opt.contentType = 'application/json'; opt.payload = JSON.stringify(payload); }
+  return UrlFetchApp.fetch('https://api.github.com/repos/' + EX_CLOUD_WD.REPO + path, opt);
+}
+
+function exCloudDispatch_(mode, quelle) {
+  var resp = exGithubFetch_('post', '/actions/workflows/' + EX_CLOUD_WD.WORKFLOW + '/dispatches', { ref: 'main', inputs: { plm_mode: mode, quelle: quelle } });
+  return resp.getResponseCode();   // 204 = gestartet
+}
+
+function plmCloudTrigger() {
+  var now = new Date(Date.now()), props = PropertiesService.getScriptProperties();
+  var isoDay = Number(Utilities.formatDate(now, Session.getScriptTimeZone(), 'u'));
+  if (isoDay > 5) return;
+  var hour = Number(Utilities.formatDate(now, Session.getScriptTimeZone(), 'H')), sinceUtc = hour < 12 ? 5 : 11;
+  var today = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  try {
+    var resp = exGithubFetch_('get', '/actions/workflows/' + EX_CLOUD_WD.WORKFLOW + '/runs?per_page=15');
+    if (resp.getResponseCode() !== 200) throw new Error('Laeufe lesen: HTTP ' + resp.getResponseCode());
+    var runs = JSON.parse(resp.getContentText()).workflow_runs || [];
+    if (!exCloudTriggerDecision_(now.getTime(), runs, isoDay, sinceUtc, Number(props.getProperty('LAST_CLOUD_DISPATCH')) || 0)) { Logger.log('Cloud-Ausloeser: nichts zu tun (Lauf vorhanden, laeuft oder gerade gestartet)'); return; }
+    var code = exCloudDispatch_('auto', 'script');
+    if (code !== 204) throw new Error('Start: HTTP ' + code + ' (Token ohne "Actions: Read and write"?)');
+    props.setProperty('LAST_CLOUD_DISPATCH', String(now.getTime()));
+    Logger.log('Cloud-Ausloeser: Lauf gestartet (GitHub hatte den Zeitplan nicht ausgeloest)');
+  } catch (e) {
+    Logger.log('Cloud-Ausloeser Fehler: ' + e);
+    var key = 'LAST_CLOUD_TRIGGER_ERR';
+    if (props.getProperty(key) !== today) { MailApp.sendEmail(EX_WATCHDOG.TO, 'PLM-Einpflege (Cloud): Auslöser konnte den Lauf nicht starten', String(e) + '\n\nBitte von Hand starten: GitHub > Actions > PLM-Einpflege > Run workflow.'); props.setProperty(key, today); }
+  }
+}
+
+/* Test von Hand: startet einen TROCKENLAUF (schreibt nichts ins PLM) und meldet, ob GitHub ihn angenommen hat (204 = ja). */
+function plmCloudDispatchTest() {
+  var code = exCloudDispatch_('dry', 'hand');
+  Logger.log('GitHub-Antwort: HTTP ' + code + (code === 204 ? ' = Trockenlauf wurde gestartet (Token darf Laeufe starten)' : ' = NICHT gestartet: Token braucht "Actions: Read and write" fuer das Repo'));
+}
+
+/* Einmal ausfuehren: entfernt den alten Mac-Waechter (plmWatchdog) und legt an: Cloud-Kontrollen (10 und 15 Uhr) und Cloud-Ausloeser (8, 9, 13, 14 Uhr, Skript-Zeitzone). */
 function installWatchdogTrigger() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { var h = t.getHandlerFunction(); if (h === 'plmWatchdog' || h === 'plmCloudWatchdogMorning' || h === 'plmCloudWatchdogAfternoon') ScriptApp.deleteTrigger(t); });
+  var mine = { plmWatchdog: 1, plmCloudWatchdogMorning: 1, plmCloudWatchdogAfternoon: 1, plmCloudTrigger: 1 };
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (mine[t.getHandlerFunction()]) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('plmCloudWatchdogMorning').timeBased().atHour(10).everyDays(1).create();
   ScriptApp.newTrigger('plmCloudWatchdogAfternoon').timeBased().atHour(15).everyDays(1).create();
+  [8, 9, 13, 14].forEach(function (h) { ScriptApp.newTrigger('plmCloudTrigger').timeBased().atHour(h).everyDays(1).create(); });
 }
 
 function extractMails() {
