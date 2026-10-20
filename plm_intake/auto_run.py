@@ -50,7 +50,8 @@ def main(argv=None):
 
     # (1) Lieferanten
     st, vl = plm_client.call("GET", "vendors"); vl = vl if isinstance(vl, list) else vl.get("data", vl)
-    vres = vendors_new.auto(inbox, vl, a.apply)
+    valias = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
+    vres = vendors_new.auto(inbox, vl, a.apply, valias)
     rep += ["## Lieferanten"] + (["- %s: %s %s" % (v["name"], v["status"], v.get("why") or v.get("hint") or "") for v in vres] or ["- keine neuen"]) + [""]
 
     # (2) PLM-Stand
@@ -69,6 +70,7 @@ def main(argv=None):
     force = {n for n, v in overrides.items() if v == "CREATE"}
     results = run.process(items, ctx, force=force)
     style_aliases = json.load(open(intake / "style_aliases.json")) if (intake / "style_aliases.json").exists() else {}
+    ctx["style_aliases"] = style_aliases
     docs_by_name = dict(items)
     specs_all, skipped_all = {}, []
     allowed = [n for n, r in results if r.decision == "CREATE"][:MAX_NEW_POS_PER_RUN]   # Produkte nur fuer POs, die in diesem Lauf wirklich angelegt werden (Limit)
@@ -118,7 +120,7 @@ def main(argv=None):
         if r.get("pid") and r.get("po") and r["pid"] in by_id:
             po_aliases.setdefault(str(r["po"]), by_id[r["pid"]])
     evt = events.load_events(evs) + events.load_events(doc_event_paths)
-    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"])
+    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases)
     rep += ["## Notizen/Ereignisse", events.report(pl)]
 
     # (5b) Sendungen: Packlisten/Rechnungen -> Sendung je Beleg (pending), Versand-Meilensteine -> in_transit/delivered + Tracking

@@ -24,7 +24,8 @@ SCHEMA = """{
 CURRENCIES = {"USD", "EUR", "GBP", "CNY", "TRY"}
 PLACEHOLDER_SIZE = "ONE SIZE"
 TOL = 0.01          # Euro/Dollar-Toleranz bei Summen
-LEGAL = {"co", "ltd", "limited", "inc", "gmbh", "kg", "llc", "pvt", "private", "company", "corp", "sp", "zoo", "san", "tic", "as", "sti"}
+LEGAL = {"co", "ltd", "limited", "inc", "gmbh", "kg", "llc", "pvt", "private", "company", "corp", "sp", "zoo", "san", "tic", "as", "sti",
+         "sanayi", "ticaret", "anonim", "sirketi", "ve", "a", "s", "and"}   # tuerkische Rechtsform: "Sanayi ve Ticaret Anonim Sirketi"
 GENERIC = {"textile", "textiles", "tekstil", "sport", "sports", "industry", "trading", "trade", "group", "garment", "enterprise", "enterprises",
            "china", "hong", "kong", "outdoor", "housewares", "company", "international"}
 
@@ -63,8 +64,15 @@ def norm(s):
     return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
 
 
+def _ascii(text):
+    """Tuerkische/diakritische Zeichen vereinfachen (TEKSTIL = TEKSTIL mit Punkt-I, Sirketi mit Cedille), damit Namensvarianten gleich tokenisiert werden."""
+    import unicodedata
+    t = str(text or "").replace("\u0131", "i").replace("\u0130", "I")
+    return "".join(c for c in unicodedata.normalize("NFKD", t) if not unicodedata.combining(c))
+
+
 def vendor_tokens(name):
-    toks = re.findall(r"[a-z0-9]+", str(name or "").lower())
+    toks = re.findall(r"[a-z0-9]+", _ascii(name).lower())
     return [t for t in toks if t not in LEGAL]
 
 

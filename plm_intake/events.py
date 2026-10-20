@@ -160,7 +160,48 @@ def vendor_of(e, vendors, vendor_aliases=None, dom=None):
     return None
 
 
-def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None):
+STYLE_TOKEN = re.compile(r"[A-Za-z]{1,6}[-_ ]?\d{2,}[A-Za-z0-9_\-]*")
+
+
+def style_alias_map(style_aliases):
+    """Artikel-Aliase (HD189 = SNM26-006) in beide Richtungen: norm -> {norm, ...}."""
+    m = {}
+    for a, b in (style_aliases or {}).items():
+        na, nb = core.norm(a), core.norm(b)
+        if na and nb and na != nb:
+            m.setdefault(na, set()).add(nb); m.setdefault(nb, set()).add(na)
+    return m
+
+
+def text_codes(e, alias_map=None):
+    """Style-/Artikelcodes aus dem Ereignistext (Zusammenfassung, Zitat, Details) inkl. Alias-Varianten; nur Codes mit Buchstaben und Ziffern, mind. 5 Zeichen."""
+    d = e.get("details") or {}
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")] + [str(v) for v in d.values() if isinstance(v, (str, int))])
+    out = set()
+    for t in STYLE_TOKEN.findall(txt):
+        n = core.norm(t)
+        if len(n) >= 5 and re.search(r"[a-z]", n) and re.search(r"\d", n):
+            out.add(n)
+            out |= (alias_map or {}).get(n, set())
+    return out
+
+
+def mentioned_pieces(e):
+    """Stueckzahlen im Text: '10,000', '85.290', '32-33k', 'ca. 4500 pcs'."""
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
+    nums = set()
+    for m in re.findall(r"\b\d{1,3}(?:[.,]\d{3})+\b", txt):
+        nums.add(int(re.sub(r"[.,]", "", m)))
+    for m in re.findall(r"\b\d{4,6}\b", txt):
+        nums.add(int(m))
+    for a, b in re.findall(r"\b(\d{1,3})(?:-(\d{1,3}))?\s?k\b", txt, flags=re.I):
+        nums.add(int(a) * 1000)
+        if b:
+            nums.add(int(b) * 1000)
+    return {n for n in nums if n >= 500}
+
+
+def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None, style_aliases=None):
     """Genau eine Order oder None (+ Grund). Zaehlt: PO-Nummer/Titel, Style (Positionsname oder Produkt-SKU), bekannte Kennung (Container/HBL/Rechnungsnr. aus den Notizen).
     Lieferant allein reicht nur schwach und nur bei vendor_only (mehrdeutig sonst)."""
     ref = e.get("ref") or {}
@@ -192,6 +233,17 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
         toks = event_tokens(e)
         if toks:
             hits = [o for o in orders if toks & idx.get(o["id"], {}).get("idents", set())]
+    via_text = False
+    if not hits and idx:   # Stylecodes im Ereignistext (auch Artikel-Aliase wie HD189 = SNM26-006): gegen Produkt-SKUs und Positionsnamen der Orders
+        amap = style_alias_map(style_aliases)
+        tcs = text_codes(e, amap)
+        if tcs:
+            for o in orders:
+                names = [core.norm(i.get("name")) for i in o.get("items") or []]
+                skus = idx.get(o["id"], {}).get("skus", ())
+                if any(k in tcs for k in skus) or any(len(t) >= 6 and t in n for t in tcs for n in names):
+                    hits.append(o)
+            via_text = bool(hits)
     v = vendor_of(e, vendors, vendor_aliases, dom)
     if v and len(hits) > 1:   # Lieferant als Tiebreaker, wenn er die Treffer eindeutig macht
         by_v = [o for o in hits if (o.get("manufacturer") or {}).get("id") == v["id"]]
@@ -201,8 +253,15 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
         running = [o for o in hits if _status(o) not in ACTIVE_NOT]
         if len(running) == 1:
             hits = running
+    by_qty = False
+    if len(hits) > 1:   # genannte Stueckzahl passt (+-1,5 %) zu genau EINER der Kandidaten-Orders
+        want = mentioned_pieces(e)
+        if want:
+            q = [o for o in hits if any(abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n for n in want)]
+            if len(q) == 1:
+                hits, by_qty = q, True
     if len(hits) == 1:
-        return hits[0], "ok"
+        return hits[0], ("menge" if by_qty else "text" if via_text else "ok")
     if hits:
         return None, "mehrdeutig: " + ", ".join(o["title"] for o in hits[:5])
     if vendor_only and not po and not hits and CARRIER.search(str(e.get("vendor") or "")) and not (v and v.get("name") and CARRIER.search(v["name"]) is None):
@@ -215,6 +274,11 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             if len(mine) == 1:
                 return mine[0], "vendor_only"
             if len(mine) > 1:
+                want = mentioned_pieces(e)   # genannte Stueckzahl passt (+-1,5 %) zu genau EINER laufenden Order des Lieferanten
+                if want:
+                    q = [o for o in mine if any(abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n for n in want)]
+                    if len(q) == 1:
+                        return q[0], "menge"
                 words = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")]).lower()
                 named = [o for o in mine if any(re.search(r"\b%s\b" % re.escape(w), words) for w in title_words(o, v["name"]))]
                 if len(named) == 1:   # Text nennt ein unterscheidendes Wort aus genau EINEM Order-Titel (z. B. Projektname)
@@ -246,10 +310,12 @@ def status_objects(orders):
 
 WEAK = {"vendor_only": " [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]",
         "vendor_title": " [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]",
-        "thread": " [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]"}
+        "thread": " [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]",
+        "text": " [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]",
+        "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]"}
 
 
-def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None):
+def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None):
     per = {}
     unmatched = []
     seen = set()
@@ -263,7 +329,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             continue
         seen.add(mk)
         evs.append(e)
-    results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom)) for e in evs]
+    results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom, style_aliases)) for e in evs]
     if vendor_only:   # Verlaufs-Zuordnung: Ereignisse ohne eigenen Bezug erben die Order, auf die BELEGTE Ereignisse desselben Mail-Verlaufs eindeutig zeigen (nur Notiz, nie Termin/Status/Zahlung)
         by_thread = {}
         for e, (o, why) in results:

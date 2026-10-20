@@ -108,10 +108,10 @@ def spec_from_info(name, info, goods_hint=None):
             "contacts": [c for c in info.get("contacts") or []]}
 
 
-def auto(inbox, vendors, apply=False):
+def auto(inbox, vendors, apply=False, aliases=None):
     """propose + create: legt NEU-Faelle an, Alias-Verdacht bleibt beim Menschen. Nach jedem Anlegen wird die Lieferantenliste neu gelesen (keine Dubletten im selben Lauf)."""
     results = []
-    for e in propose(inbox, vendors):
+    for e in propose(inbox, vendors, aliases):
         if not e["suggestion"].startswith("NEU_ANLEGEN"):
             results.append({"name": e["name"], "status": "MENSCH", "why": e["suggestion"]}); continue
         r = create(spec_from_info(e["name"], e.get("vendor_info")), vendors, apply)
@@ -122,14 +122,14 @@ def auto(inbox, vendors, apply=False):
     return results
 
 
-def propose(inbox, vendors):
+def propose(inbox, vendors, aliases=None):
     seen = {}
     for f in sorted(Path(inbox).glob("*.json")):
         if f.name.endswith("_events.json"): continue
         try: po = json.load(open(f))
         except ValueError: continue
         name = po.get("vendor")
-        if not name or core.match_vendor(name, vendors, {})[0]: continue
+        if not name or core.match_vendor(name, vendors, aliases or {})[0]: continue
         e = seen.setdefault(norm(name), {"name": name, "files": [], "items": 0, "vendor_info": po.get("vendor_info")})
         e["files"].append(f.name); e["items"] += len(po.get("items") or [])
         if po.get("vendor_info") and not e["vendor_info"]: e["vendor_info"] = po["vendor_info"]

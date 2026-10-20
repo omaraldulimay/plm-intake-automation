@@ -362,6 +362,76 @@ class Skript(unittest.TestCase):
         r, _ = self.run_js(plan, mock=mock); self.assertEqual(len(r), 1)
 
 
+class ZuordnungA2(unittest.TestCase):
+    """A2: Stylecode im Ereignistext, Artikel-Alias (HD189 = SNM26-006), genannte Stueckzahl."""
+    V = [{"id": "VA", "name": "Lieferant A"}]
+    O = [{"id": "O1", "title": "PO-ALPHA-1", "manufacturer": {"id": "VA"}, "status": {"status": "In Production"}, "totalNumberOfPieces": 4812,
+          "items": [{"name": "SNM26-006", "product": {"id": "P6"}}]},
+         {"id": "O2", "title": "PO-ALPHA-2", "manufacturer": {"id": "VA"}, "status": {"status": "In Production"}, "totalNumberOfPieces": 10000,
+          "items": [{"name": "SNM26-001", "product": {"id": "P1"}}]},
+         {"id": "O3", "title": "PO-ALPHA-3", "manufacturer": {"id": "VA"}, "status": {"status": "In Production"}, "totalNumberOfPieces": 12000,
+          "items": [{"name": "SNM26-001", "product": {"id": "P1"}}]}]
+    P = [{"id": "P6", "sku": "SNM26-006"}, {"id": "P1", "sku": "SNM26-001"}]
+    AL = {"HD189": "SNM26-006"}
+
+    def e(self, summary, **kw):
+        base = {"type": "SHIPMENT", "vendor": "Lieferant A", "ref": {"po_number": None, "style": None, "container": None}, "summary": summary, "details": {}, "confidence": 0.9,
+                "_mail": {"id": "m", "date": "2026-10-15 10:00"}}
+        base.update(kw); return base
+
+    def find(self, e, **kw):
+        idx = events.order_index(self.O, self.P)
+        return events.find_order(e, self.O, self.V, None, None, True, idx, None, **kw)
+
+    def test_stylecode_im_text(self):
+        o, why = self.find(self.e("Fertigung SNM26-006 abgeschlossen"))
+        self.assertEqual((o["id"], why), ("O1", "text"))
+
+    def test_artikel_alias_im_text(self):
+        o, why = self.find(self.e("HD189 men T-shirt ready for pickup"), style_aliases=self.AL)
+        self.assertEqual((o["id"], why), ("O1", "text"))
+        self.assertIsNone(self.find(self.e("HD189 men T-shirt ready for pickup"))[0])   # ohne Alias kein Treffer
+
+    def test_menge_entscheidet_zwischen_zwei_orders(self):
+        o, why = self.find(self.e("SNM26-001: 10,000 pcs ready"))
+        self.assertEqual((o["id"], why), ("O2", "menge"))
+        self.assertIsNone(self.find(self.e("SNM26-001 ready"))[0])   # ohne Menge bleibt es mehrdeutig
+
+    def test_menge_unter_allen_laufenden_orders_des_lieferanten(self):
+        e = self.e("Ex-factory planned tomorrow, 4812 pcs, 1 container")   # kein Style, kein PO: nur die Menge
+        o, why = self.find(e)
+        self.assertEqual((o["id"], why), ("O1", "menge"))
+        self.assertIsNone(self.find(self.e("Ex-factory planned tomorrow, 1 container"))[0])
+
+    def test_text_zuordnung_ist_schwach(self):
+        self.assertIn("text", events.WEAK); self.assertIn("menge", events.WEAK)
+
+    def test_style_ohne_ziffern_und_kurze_codes_treffen_nicht(self):
+        self.assertIsNone(self.find(self.e("FW26 order status and Q3 planning"))[0])
+
+    def test_mentioned_pieces(self):
+        self.assertEqual(events.mentioned_pieces(self.e("10,000 T-Shirts, 32-33k pcs, 85.290 Stk, 12 cartons")), {10000, 32000, 33000, 85290})
+
+
+class LieferantenNamen(unittest.TestCase):
+    def test_tuerkische_namen_und_rechtsform(self):
+        from plm_intake import core
+        V = [{"id": "Y", "name": "Lieferant AG"}, {"id": "S", "name": "Lieferant I"}]
+        for n in ("LIEFERANT_AG", "LIEFERANT_AG SANAYİ VE TİCARET ANONİM ŞİRKETİ", "Lieferant AG Sanayi ve Ticaret A.Ş."):
+            self.assertEqual(core.match_vendor(n, V, {})[0]["id"], "Y", n)
+        self.assertIsNone(core.match_vendor("LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI", V, {})[0])   # Tippfehler: nur per Alias
+        self.assertEqual(core.match_vendor("LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI", V, {"LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI": "Lieferant I"})[0]["id"], "S")
+
+    def test_vendors_new_nutzt_alias_datei(self):
+        import json, tempfile
+        from plm_intake import vendors_new
+        V = [{"id": "W", "name": "LIEFERANT_AA"}]
+        with tempfile.TemporaryDirectory() as d:
+            json.dump({"vendor": "LIEFERANT_Z COMPANY LIMITED", "items": [{"name": "x"}]}, open(d + "/a.json", "w"))
+            self.assertTrue(vendors_new.propose(d, V, {}))   # ohne Alias: unbekannt
+            self.assertEqual(vendors_new.propose(d, V, {"LIEFERANT_Z COMPANY LIMITED": "LIEFERANT_AA"}), [])   # mit Alias: erkannt
+
+
 if __name__ == "__main__":
     unittest.main()
 
