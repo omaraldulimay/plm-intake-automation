@@ -836,16 +836,22 @@ function exValidateEvents_(obj, mail) {
   return out;
 }
 
-/* Style-/Artikelcodes aus Betreff und Anhangsnamen (Buchstaben+Ziffern, mind. 5 Zeichen; keine Saison-/Jahreskuerzel). Max. 3, sonst zu unscharf -> null. */
+/* Style-/Artikelcodes aus Betreff und Anhangsnamen: Buchstaben (1-6) + Ziffern (2-6) + hoechstens ein kurzer Zusatz, ganzes Wort (keine Bruchstuecke aus Dateinamen mit Datum/Hex-ID),
+   keine Saison-/Datei-/Fuellwoerter. Max. 3 Codes, sonst zu unscharf -> null. */
+var EX_CODE_STOP = /^(FW|SS|AW|HW|PO|Q|IMG|DSC|SCAN|PDF|FILE|INV|MAIL|SHEET|SECTION|PAGE|DRAFT|OFFER|VERSION|COPY|REV|SIZE|CHART|PACK|LIST|TEL|PHONE|FAX|WEEK|KW|CW|NO|NR|ORDER|BATCH|ITEM|PRICE|QTY|REF|ID)$/;
 function exMailCodes_(mail) {
   if (!mail) return null;
   var text = String(mail.subject || '') + ' ' + String(mail.atts || '');
   var found = [];
-  (text.match(/[A-Za-z]{1,6}[-_ ]?\d{2,}[A-Za-z0-9_\-]*/g) || []).forEach(function (t) {
+  (text.match(/(?:^|[^A-Za-z0-9])([A-Za-z]{1,6}[-_]?\d{2,6}(?:[-_]\d{1,3})?[A-Za-z]?)(?![A-Za-z0-9])/g) || []).forEach(function (m) {
+    var t = m.replace(/^[^A-Za-z0-9]/, '');
+    var letters = (t.match(/^[A-Za-z]+/) || [''])[0].toUpperCase();
     var n = t.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    if (n.length < 5 || !/[A-Z]/.test(n) || !/\d/.test(n)) return;
-    if (/^(FW|SS|AW|HW|PO|Q)\d{2,4}$/.test(n) || /^(IMG|DSC|SCAN|PDF|FILE|INV|MAIL)\d+$/.test(n)) return;
-    var norm = t.replace(/\s+/g, '').toUpperCase();
+    if (n.length < 5 || n.length > 12 || EX_CODE_STOP.test(letters)) return;
+    if (/^20\d{2}/.test(n.slice(letters.length)) && n.length - letters.length >= 4) return;   // Jahreszahl/Datum (z. B. SUNRISE2026)
+    if (/[0-9A-F]{12,}/.test(n)) return;   // Hex-Kennungen
+    if (/^(TH|ST|ND|RD)$/.test(n.slice(-2)) && /\d(TH|ST|ND|RD)$/.test(n)) return;   // Ordnungszahlen (14TH)
+    var norm = t.toUpperCase();
     if (found.indexOf(norm) < 0) found.push(norm);
   });
   return found.length >= 1 && found.length <= 3 ? found.join(', ') : null;

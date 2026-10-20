@@ -900,6 +900,10 @@ t('Referenzen: Prompt verlangt Nummern je Ereignis, Array-Styles werden verbunde
   assert.strictEqual(out[0].ref.style, 'SNM26-006'); assert.strictEqual(out[0].details.ref_quelle, 'betreff');
   out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'FW26 plan Q3 2026', atts: 'IMG1234.jpg' });
   assert.strictEqual(out[0].ref.style, null);   // Saison-/Datei-Kuerzel zaehlen nicht
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'Offer', atts: 'SUNRISE2026-10-20_1A158D2A2C0474FA_OFFER SHEET1018--IHI SECTION 14TH.pdf' });
+  assert.strictEqual(out[0].ref.style, null);   // Bruchstuecke aus Dateinamen (Datum, Hex-ID, Ordnungszahl, Fuellwoerter) sind keine Style-Codes
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'Re: GT0303 sample', atts: 'GT0304 fitting.pdf | XW-042 Rain Jacket size chart.xlsx' });
+  assert.strictEqual(out[0].ref.style, 'GT0303, GT0304, XW-042');
   out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'A1234 B2345 C3456 D4567', atts: '' });
   assert.strictEqual(out[0].ref.style, null);   // mehr als 3 Codes: zu unscharf
   out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] });
