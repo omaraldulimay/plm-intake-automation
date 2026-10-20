@@ -190,6 +190,13 @@ def mentioned_pieces(e):
     """Stueckzahlen im Text: '10,000', '85.290', '32-33k', 'ca. 4500 pcs'."""
     txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
     nums = set()
+    d = e.get("details") or {}
+    for k in ("qty", "quantity", "pieces", "total_pieces"):   # Auslese liefert die Stueckzahl seit dem Referenz-Prompt als Zahl in details.qty
+        try:
+            if d.get(k) not in (None, "", False) and float(d[k]) >= 500:
+                nums.add(int(float(d[k])))
+        except (TypeError, ValueError):
+            pass
     for m in re.findall(r"\b\d{1,3}(?:[.,]\d{3})+\b", txt):
         nums.add(int(re.sub(r"[.,]", "", m)))
     for m in re.findall(r"\b\d{4,6}\b", txt):
@@ -261,7 +268,8 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             if len(q) == 1:
                 hits, by_qty = q, True
     if len(hits) == 1:
-        return hits[0], ("menge" if by_qty else "text" if via_text else "ok")
+        subj_ref = str((e.get("details") or {}).get("ref_quelle") or "") == "betreff"   # Style nur aus Betreff/Anhangsnamen abgeleitet (Apps Script-Rueckfall): nur Notiz
+        return hits[0], ("menge" if by_qty else "text" if (via_text or subj_ref) else "ok")
     if hits:
         return None, "mehrdeutig: " + ", ".join(o["title"] for o in hits[:5])
     if vendor_only and not po and not hits and CARRIER.search(str(e.get("vendor") or "")) and not (v and v.get("name") and CARRIER.search(v["name"]) is None):

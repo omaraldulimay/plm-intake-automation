@@ -890,6 +890,21 @@ t('Prompt + Validierung: details.milestone wird mitgefuehrt, Bankdaten darin ent
   const s = fresh({ gemini: true }); const out = vm.runInContext('exValidateEvents_', s.ctx)({ events: [{ type: 'SHIPMENT', summary: 'B/L erhalten', details: { milestone: 'SHIPPED', note: 'IBAN DE89 3704 0044 0532 0130 00' }, confidence: 0.9 }] });
   assert.strictEqual(out[0].details.milestone, 'SHIPPED'); assert.ok(!/DE00 0000/.test(out[0].details.note));
 });
+t('Referenzen: Prompt verlangt Nummern je Ereignis, Array-Styles werden verbunden, Rueckfall aus Betreff nur ohne eigene Nummer', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8');
+  assert.ok(/REFERENZEN \(entscheidend/.test(src) && /details\.qty/.test(src) && /je Bestellung\/Style ein eigenes Ereignis/.test(src));
+  const s = fresh({ gemini: true }); const val = vm.runInContext('exValidateEvents_', s.ctx);
+  let out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: { style: ['SNM26-006', 'HD189'] } }] }, { subject: 'ABC123 ready', atts: '' });
+  assert.strictEqual(out[0].ref.style, 'SNM26-006, HD189'); assert.ok(!out[0].details.ref_quelle);   // eigene Nummer gewinnt
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'RE: SNM26-006 Shipping Mark', atts: 'SNM26-006 Shipping Marks Layout.pdf' });
+  assert.strictEqual(out[0].ref.style, 'SNM26-006'); assert.strictEqual(out[0].details.ref_quelle, 'betreff');
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'FW26 plan Q3 2026', atts: 'IMG1234.jpg' });
+  assert.strictEqual(out[0].ref.style, null);   // Saison-/Datei-Kuerzel zaehlen nicht
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] }, { subject: 'A1234 B2345 C3456 D4567', atts: '' });
+  assert.strictEqual(out[0].ref.style, null);   // mehr als 3 Codes: zu unscharf
+  out = val({ events: [{ type: 'SHIPMENT', summary: 'bereit', ref: {} }] });
+  assert.strictEqual(out[0].ref.style, null);   // ohne Mail-Info: wie bisher
+});
 t('Trigger: stuendlich 07 bis 19 statt stuendlich, alte Trigger werden entfernt', () => {
   const calls = { deleted: 0, created: [] };
   const s = fresh({ gemini: true });

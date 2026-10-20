@@ -103,6 +103,7 @@ var EX_SYSTEM_PROMPT = [
   'SHIPMENT-Ereignisse: details.mode = "sea" | "air" | "ground" (ground = Bahn/LKW), details.tracking = Trackingnummer/AWB/B/L-Nummer wenn genannt, details.container, details.vessel, details.etd, details.eta (YYYY-MM-DD) wenn genannt. Nichts erfinden.',
   'MEILENSTEIN: setze details.milestone NUR wenn das Ereignis eindeutig einen Produktionsschritt der BESTELLUNG belegt: PI_CONFIRMED (Lieferant hat PI/Bestellung bestaetigt), DEPOSIT_PAID (Anzahlung geleistet/eingegangen), PRODUCTION_STARTED (Fertigung/Zuschnitt/Naehen hat begonnen), INSPECTION (Endkontrolle/Pre-shipment-Inspection durchgefuehrt oder bestanden), SHIPPED (Ware der Bestellung hat den Hersteller verlassen: B/L, AWB oder Container verladen/uebergeben), DELIVERED (Ware ist bei Smilodox/im Lager eingegangen; NICHT bei Ankunft im Hafen). NICHT setzen bei Mustern, Entwuerfen (z. B. "B/L-Entwurf"), Packlisten-Versand, Terminplanung, ETA-Anfragen, Zahlungserinnerungen. Im Zweifel weglassen.',
   'EVENTS betreffen die PRODUKTION: Terminaenderungen (EXW/ETD/ETA), Zahlungen (angefordert/geleistet/Beleg), Versand (Container, Booking, B/L, AWB, Tracking, Spediteur), Muster/Fitting/Freigaben, Qualitaetsprobleme/Reklamationen, Verzoegerungen mit Grund, Aenderungen an Menge/Preis/Farbe/Material, Verpackung/Etiketten/Barcode-Entscheidungen. KEIN Event: Gruesse, Terminabsprachen fuer Telefonate, Werbung, reine Weiterleitungen ohne neue Information.',
+  'REFERENZEN (entscheidend, damit das Ereignis der richtigen Bestellung zugeordnet wird): Fuelle bei JEDEM Ereignis ref.po_number, ref.style und ref.container, sobald irgendeine passende Nummer in Betreff, Anhangsnamen oder Text steht; Betreff und Anhangsnamen enthalten sie oft. ref.style = Style-/Artikelcodes (z. B. SNM26-006, HD189, XW-042, 561873), mehrere als kommagetrennte Liste. B/L-, AWB-, Booking- und Rechnungsnummern: details.bl, details.awb, details.invoice_number. Nennt die Mail eine Stueckzahl der Lieferung/Bestellung, trage sie als Zahl in details.qty ein. Betrifft eine Mail MEHRERE Bestellungen oder Styles mit unterschiedlichem Inhalt, erzeuge je Bestellung/Style ein eigenes Ereignis. Erfinde keine Nummer: unbekannt = null.',
   'Lies nur, was in DIESER Mail NEU ist. Zitierter Verlauf (Zeilen mit ">", "Von:/From:", "Am ... schrieb") zaehlt nicht, ausser er enthaelt eine Information, die nirgends sonst steht.',
   'KEINE Bestellung (leeres documents-Array): Rechnungen von Spediteuren/Frachtfuehrern/Zoll/Versicherung/Banken, Versandbenachrichtigungen, Angebote ohne Menge, reine Musterabrechnungen ohne Warenpositionen. Es zaehlen nur Dokumente des WARENLIEFERANTEN mit Positionen und Mengen.',
   'Regeln: Erfinde nichts. Unbekanntes = null (Zahlen/Daten) bzw. in "open" nennen. Zahlen als Zahlen (ohne Tausenderpunkt, Dezimalpunkt). Mengen je Groesse und Farbe aus der Groessenverteilung. Gibt es keine Groessenverteilung, setze sizes = {} und trage die Gesamtmenge der Farbe als "quantity": <Zahl> an der Variante ein.',
@@ -459,7 +460,7 @@ function exFinish_(r, ctx, text, usage, prep, factor) {
   exCount_(ctx, usage, factor, prep.model);
   var obj = exParseJson_(text);
   var docs = exValidate_(obj);
-  var events = exValidateEvents_(obj);
+  var events = exValidateEvents_(obj, { subject: r.subject, atts: r.atts });
   exClearOld_(ctx, r.id);   // erst nach erfolgreicher Validierung: bei Fehler bleibt das alte Ergebnis unangetastet
   for (var d = 0; d < docs.length; d++) exSaveDoc_(ctx, r, docs[d], d + 1);
   var savedEvents = exSaveEvents_(ctx, r, events);
@@ -808,7 +809,7 @@ function exValidate_(obj) {
 var EX_EVENT_TYPES = ['SCHEDULE', 'PAYMENT', 'SHIPMENT', 'SAMPLE', 'QUALITY', 'DELAY', 'ORDER_CHANGE', 'OTHER'];
 
 /* Ereignisse pruefen/saeubern. Unbrauchbare (ohne Zusammenfassung) werden verworfen, nicht die ganze Mail. */
-function exValidateEvents_(obj) {
+function exValidateEvents_(obj, mail) {
   var out = [];
   var list = obj && Array.isArray(obj.events) ? obj.events : [];
   list.slice(0, 25).forEach(function (e) {
@@ -820,14 +821,34 @@ function exValidateEvents_(obj) {
     var date = /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || '')) ? String(e.date) : null;
     var ref = e.ref && typeof e.ref === 'object' ? e.ref : {};
     var det = {};
+    var refStyle = Array.isArray(ref.style) ? ref.style.filter(Boolean).join(', ') : (ref.style ? String(ref.style) : null);
     if (e.details && typeof e.details === 'object') Object.keys(e.details).slice(0, 20).forEach(function (k) { det[k] = typeof e.details[k] === 'string' ? exStripBank_(e.details[k]).slice(0, 300) : e.details[k]; });
     var conf = Number(e.confidence); conf = isFinite(conf) && e.confidence !== null && e.confidence !== '' ? Math.max(0, Math.min(1, conf)) : null;
     out.push({ type: type, vendor: e.vendor ? exStripBank_(String(e.vendor)) : null,
-               ref: { po_number: ref.po_number ? String(ref.po_number) : null, style: ref.style ? String(ref.style) : null, container: ref.container ? String(ref.container) : null },
+               ref: { po_number: ref.po_number ? String(ref.po_number) : null, style: refStyle ? refStyle.slice(0, 200) : null, container: ref.container ? String(ref.container) : null },
                date: date, summary: summary.slice(0, 600), details: det, action_needed: e.action_needed ? exStripBank_(String(e.action_needed)).slice(0, 300) : null,
                confidence: conf, source_quote: e.source_quote ? exStripBank_(String(e.source_quote)).slice(0, 250) : null });
   });
+  var fb = exMailCodes_(mail);   // Rueckfall ohne KI: Style-Codes aus Betreff/Anhangsnamen, nur wenn das Ereignis selbst keine Nummer hat
+  if (fb) out.forEach(function (ev) {
+    if (!ev.ref.po_number && !ev.ref.style && !ev.ref.container) { ev.ref.style = fb; ev.details.ref_quelle = 'betreff'; }
+  });
   return out;
+}
+
+/* Style-/Artikelcodes aus Betreff und Anhangsnamen (Buchstaben+Ziffern, mind. 5 Zeichen; keine Saison-/Jahreskuerzel). Max. 3, sonst zu unscharf -> null. */
+function exMailCodes_(mail) {
+  if (!mail) return null;
+  var text = String(mail.subject || '') + ' ' + String(mail.atts || '');
+  var found = [];
+  (text.match(/[A-Za-z]{1,6}[-_ ]?\d{2,}[A-Za-z0-9_\-]*/g) || []).forEach(function (t) {
+    var n = t.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (n.length < 5 || !/[A-Z]/.test(n) || !/\d/.test(n)) return;
+    if (/^(FW|SS|AW|HW|PO|Q)\d{2,4}$/.test(n) || /^(IMG|DSC|SCAN|PDF|FILE|INV|MAIL)\d+$/.test(n)) return;
+    var norm = t.replace(/\s+/g, '').toUpperCase();
+    if (found.indexOf(norm) < 0) found.push(norm);
+  });
+  return found.length >= 1 && found.length <= 3 ? found.join(', ') : null;
 }
 
 function exEventKey_(e) {

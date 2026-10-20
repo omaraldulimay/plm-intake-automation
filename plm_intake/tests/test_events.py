@@ -403,6 +403,18 @@ class ZuordnungA2(unittest.TestCase):
         self.assertEqual((o["id"], why), ("O1", "menge"))
         self.assertIsNone(self.find(self.e("Ex-factory planned tomorrow, 1 container"))[0])
 
+    def test_details_qty_als_menge(self):
+        self.assertEqual(events.mentioned_pieces(self.e("Lieferung bereit", details={"qty": 10000})), {10000})
+        o, why = self.find(self.e("SNM26-001 bereit", details={"qty": 10000}))
+        self.assertEqual((o["id"], why), ("O2", "menge"))
+
+    def test_style_aus_betreff_bleibt_schwach(self):
+        e = self.e("Fertigung abgeschlossen", ref={"po_number": None, "style": "SNM26-006", "container": None}, details={"ref_quelle": "betreff"})
+        o, why = self.find(e)
+        self.assertEqual((o["id"], why), ("O1", "text"))   # nicht "ok": keine Termin-/Status-Aenderung
+        e2 = self.e("Fertigung abgeschlossen", ref={"po_number": None, "style": "SNM26-006", "container": None})
+        self.assertEqual(self.find(e2)[1], "ok")
+
     def test_text_zuordnung_ist_schwach(self):
         self.assertIn("text", events.WEAK); self.assertIn("menge", events.WEAK)
 
