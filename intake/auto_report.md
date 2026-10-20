@@ -1,15 +1,9 @@
-# Alltagslauf 2026-10-20 08:13 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-20 12:48 (TROCKENLAUF)
 
-Neu: 17 Dokument-Dateien, 287 Ereignis-Dateien
+Neu: 17 Dokument-Dateien, 296 Ereignis-Dateien
 
 ## Lieferanten
-- LIEFERANT_Z COMPANY LIMITED: MENSCH ALIAS_PRUEFEN [('LIEFERANT_AA', 'Payee/Beschreibung')]
-- LIEFERANT_AG SANAYI VE TICARET ANONIM SIRKETI: MENSCH ALIAS_PRUEFEN [('Lieferant AG', 0.5)]
-- LIEFERANT_AG: MENSCH ALIAS_PRUEFEN [('Lieferant AG', 0.82)]
-- LIEFERANT_AG SANAYİ VE TİCARET ANONİM ŞİRKETİ: MENSCH ALIAS_PRUEFEN [('Lieferant AG', 0.5)]
-- LIEFERANT_AA CO., LTD.: MENSCH ALIAS_PRUEFEN [('LIEFERANT_AA', 1.0), ('Lieferant R Imp. & Exp. Co. Ltd', 0.72)]
-- Lieferant V (Myanmar) Co., Ltd / Lieferant V Co. Ltd: MENSCH ALIAS_PRUEFEN [('LIEFERANT_V LIMITED', 0.38)]
-- LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI: MENSCH ALIAS_PRUEFEN [('Lieferant I', 0.5)]
+- keine neuen
 
 PO-Nummern per Browser nachgeladen: 70
 
@@ -31,19 +25,22 @@ PO-Nummern per Browser nachgeladen: 70
 | 1a0f19e1626c8806_1.json | SKIP | - | #25 PO-LIEFERANT_D-ALI20260821 |
 | 1a0f2b92d12a769c_1.json | BLOCKER | - | Positionen 0.00 != angegebener Gesamtwert 2.00; Positionen 0 Stk != angegeben 1 Stk |
 | 1a0f2f5c1a0e0aa7_1.json | SKIP | - | #25 PO-LIEFERANT_D-ALI20260821 |
-| 1a130f55843e4fa3_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_AG SANAYI VE TICARET ANONIM SIRKETI (nicht gefunden) |
-| 1a130f5cbf1f16cf_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_AG (nicht gefunden) |
-| 1a130f64567930c6_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_AG SANAYİ VE TİCARET ANONİM ŞİRKETİ (nicht gefunden) |
+| 1a130f55843e4fa3_1.json | ORPHAN_DOC | - | - |
+| 1a130f5cbf1f16cf_1.json | DELIVERY_DOC | - | #31 PO-LIEFERANT_AG-2026-06-24 |
+| 1a130f64567930c6_1.json | ORPHAN_DOC | YIK2026000000158 | - |
 | 1a13103f670add8b_1.json | AMBIGUOUS_DOC | SMI2612 | passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-WINTER-2026-04-29 |
 | 1a13103fd472a81b_1.json | ORPHAN_DOC | 62092211 | - |
 | 1a1393b883f8eb5c_2.json | AMBIGUOUS_DOC | LIEFERANT_AA2674 | passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER |
-| 1a13b99baac29b3c_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI (nicht gefunden) |
+| 1a13b99baac29b3c_1.json | ORPHAN_DOC | SPR2026000000409 | - |
 | 1a1538b5bb3f6600_1.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a1538b5bb3f6600_2.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a158022cc4f34ad_1.json | ORPHAN_DOC | 26069 | - |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
+- 1a130f55843e4fa3_1.json (None)
+- 1a130f64567930c6_1.json (YIK2026000000158)
 - 1a13103fd472a81b_1.json (62092211)
+- 1a13b99baac29b3c_1.json (SPR2026000000409)
 - 1a158022cc4f34ad_1.json (26069)
 
 ## Dienstleister-Belege ohne Warenpositionen (Spedition, Zoll): kein PO-Bezug, nur zur Info
@@ -61,37 +58,16 @@ PO-Nummern per Browser nachgeladen: 70
 ## Notizen/Ereignisse
 # Ereignisse -> PLM
 
-## #16 PO-LIEFERANT_AG-2026-03-17
-- [2026-10-12 18:32 ev:94763980] SHIPMENT: Warenladung für den Transport am 11.09.2026 vorbereitet und Lkw-Daten mitgeteilt (Traktor: 34 NVV 280, Auflieger: 34 ZR 6698). (Mail 1a130f5cbf1f16cf) [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]
-## #25 PO-LIEFERANT_D-ALI20260821
-- [2026-10-12 18:37 ev:59287eba] SAMPLE: Revised samples for fleece kenna jacket (size XS) were sent via Fedex and are expected to arrive this Wednesday. Attached is a fitting video. (Mail 1a130f9b61384348)
-- [2026-10-12 18:37 ev:98d26bac] SAMPLE: Revised samples sent by FedEx with tracking number 8767 4657 6407. (Mail 1a130f9bd78eb3c8)
+## #31 PO-LIEFERANT_AG-2026-06-24
+- [2026-10-12 18:32 ev:1469896e] BELEG PACKING_LIST: PACKING_LIST ? | 13923 Stk | 112929.2 EUR | Zahlungen: MAL MUKABİLİ 112929.2 Unpaid: Yükleme şekli: TIR FOB. Ödeme şekli: Mal mukabili. (Mail 1a130f5cbf1f16cf)
 ## #30 PO-LIEFERANT_G-MC-26SM002
-- [2026-10-12 18:41 ev:c5045ea9] QUALITY: Embroidery quality issue reported with bulging/uneven areas, requesting a revision and replacement of lettering artwork. (Mail 1a130fda9f50a77c) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:41 ev:4a8d450c] QUALITY: Explanation regarding embroidery issue on black-on-black vs. white-thread version. (Mail 1a130fdc6ea61188)
-- [2026-10-12 18:41 ev:5244718b] SAMPLE: Wendy provided feedback on the embroidery logo and suggested using the regular version as before or switching to silkscreen due to wrinkling issues on the thick coated fabric. (Mail 1a130fde06007855)
-- [2026-10-12 18:49 ev:0a004c43] SAMPLE: Pre-production samples for GT0303 and GT0304-volcanic ash are not yet 100% correct and shipping was postponed due to high freight costs (> USD 500). (Mail 1a13105453aef277)
 - [2026-10-12 18:49 ev:825e091b] OTHER: Request to push the webbing supplier to complete the revised binding webbing for GT0304 as soon as possible. (Mail 1a1310554e320fa0)
-- [2026-10-13 14:16 ev:6bbd48ca] SHIPMENT: Wendy (lieferant_g) schlaegt vor, etwa 30 % der Ware (ca. 11 CBM) per Bahn und die restlichen 28 CBM in einem 20-Fuss-Container per Seefracht zu versenden, bei einem Gesamtvolumen von 38,7 CBM. Sie fragt, ob das fuer Smilodox funktioniert. (Mail 1a1353161646a1a7)
-- [2026-10-13 14:16 ev:5c3d68a7] OTHER: Wendy wartet weiterhin auf die Kontaktdaten des Seefrachtspediteurs, die fuer die Buchung benoetigt werden. Sie weist darauf hin, dass Cargo normalerweise 4-5 Tage vor ETD im Lager sein muss und eine Verspaetung den Schiffsabgang gefaehrden kann. (Mail 1a1353161646a1a7)
-- [2026-10-13 17:42 ev:5e1dc75e] SHIPMENT: Wendy schlägt vor, ca. 30 % der Ware (ca. 11 CBM) per Bahn und die restlichen 28 CBM in einem 20'-Container per See zu versenden, statt der bisher vorgeschlagenen 50/50-Aufteilung. Sie bittet um Bestätigung der Bahnmenge für die Buchung beim Forwarder. (Mail 1a135ee35d89aafb)
-- [2026-10-13 17:42 ev:1da44e1f] SHIPMENT: Die Kontaktdaten des Seespediteurs fehlen dem Lieferanten weiterhin; die Ware muss üblicherweise 4–5 Tage vor ETD im Lager sein, eine Verzögerung von einem Tag kann das Schiff kosten. (Mail 1a135ee35d89aafb)
-- [2026-10-14 09:22 ev:abdf27d8] SHIPMENT: Der Lieferant muss dringend Bahnfracht beim Spediteur buchen und bittet um Bestätigung der Bahn-CBM. Vorschlag: ca. 12 CBM per Bahn (ca. 30%), der Rest in einen 20'-Container. Alternative ist die von Smilodox genannte 50%-Variante (19 CBM Bahn). (Mail 1a1394accb2fcd73)
-## #19 PO-LIEFERANT_AA-WINTER-2026-04-29
-- [2026-10-12 18:48 ev:26f01536] SHIPMENT: Final shipping documents (packing list and invoice) received; waiting for B/L. Vessel: MSC IRIS GL635W, POL-POD: SHANGHAI-HAMBURG. (Mail 1a13103f670add8b) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:c2e0decd] PAYMENT: Supplier requested 15% payment of the total amount. (Mail 1a13103fd472a81b) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:f628ebf5] SHIPMENT: Bill of Lading Draft provided for shipment via MSC IRIS/GL635W from Shanghai to Hamburg. (Mail 1a13103fd472a81b) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:522affb4] PAYMENT: Smilodox plans to arrange the 15% deposit payment this week. (Mail 1a1310407c233805) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:9eda0178] SHIPMENT: Smilodox requested the packing list for the remaining 2,000 pcs to arrange the forwarder and plan shipment. (Mail 1a1310407c233805) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:a688700a] SCHEDULE: Shipment is expected to be made by train on September 30th. (Mail 1a131040aa2307c7) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:fcb6236c] SCHEDULE: Smilodox requests train departure on 30 September to be secured; otherwise, goods must be shipped by air freight at LIEFERANT_AA's cost. (Mail 1a1310410f6c749f)
-- [2026-10-12 18:48 ev:94aaa261] SHIPMENT: The train freight has been booked for September 30, and additional sea freight costs apply. (Mail 1a13104186b4eaaf) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:5de9d074] PAYMENT: Lieferant fragt nach dem Zahlungsstatus für die offenen Dokumente. (Mail 1a131042422142be) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 18:48 ev:c9d17673] SHIPMENT: Bill of Lading issued for shipment of MEN'S JACKET (Style SMI2612) in container MSNU6530944. (Mail 1a131042a7ab573e) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- DATUM: {'etdEstimatedDate': '2026-09-30T00:00:00.000Z'}
+- [2026-10-20 11:20 ev:cbe71c2b] SHIPMENT: Acknowledgement of invoice and packing list for railway shipment. (Mail 1a1589d09778b37a)
+- [2026-10-20 11:49 ev:3fcd7bcf] SHIPMENT: Wendy has contacted the sea shipment forwarder (the same company used for the previous railway shipment) and provided vessel information. (Mail 1a158b7bcae61f56)
 ## #37 PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER
 - [2026-10-12 18:55 ev:65364282] SHIPMENT: Versandbenachrichtigung mit HBL vom Spediteur EC Lontor erhalten (CMA CGM RIO GRANDE, ETD 14.08., ETA 13.09.). (Mail 1a1310a6ed02f60a)
 - [2026-10-12 22:02 ev:b26b8665] SHIPMENT: Sendung per Seefracht (4*40HQ) mit MBL XIA1965473 und HBL XIME26070257, ETD Xiamen 7. August, Spediteur fragt nach Palettierungs- und Sortieranweisungen. (Mail 1a131b5dbbcc7e59)
+- [2026-10-20 12:57 ev:698d8441] OTHER: Fadel Abdullah asked to wait until next Thursday for the signed and stamped authorization letter because Kemal is on holiday. (Mail 1a158f60bb3df5fa)
 ## #33 PO-WONDERS-XW-SM260730
 - [2026-10-12 22:00 ev:d1400af8] SCHEDULE: Production status update for XW-042 New (Crocodile/Cheetah Print): Dying fabric, EXW Dec 10, 2026. (Mail 1a131b40a276d682)
 - DATUM: {'exFactoryExpectedDate': '2026-12-10T00:00:00.000Z', 'etdEstimatedDate': '2026-12-20T00:00:00.000Z'}
@@ -99,23 +75,28 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-12 22:00 ev:4fc86c2b] SCHEDULE: Production status update for XW26-006 re order: Woven yard, EXW Dec 30, 2026. (Mail 1a131b40a276d682)
 - [2026-10-12 22:00 ev:f8f2a74a] SCHEDULE: Production status update for XW26-008: Woven yard, EXW Dec 30, 2026. (Mail 1a131b40a276d682)
 - [2026-10-12 22:00 ev:8229b2c6] SCHEDULE: Production status update for XW26-009: Woven yard, EXW Dec 30, 2026. (Mail 1a131b40a276d682)
-- [2026-10-12 22:01 ev:d173749a] OTHER: Fadel Abdullah asks for the latest deadline to provide complete barcode information for styles XW-042 Croco/Cheetah Print, XW26-006, XW26-008, and XW26-009 to avoid production impacts. (Mail 1a131b44a07811c6)
 - [2026-10-14 05:51 ev:55678539] OTHER: Der Lieferant meldet, dass XW26-008 (Long Sleeve) und XW26-009 (Tank Top) die Farbe light grey nicht haben, daher entfaellt die E-Serie fuer diese Styles. Er fragt, ob die anderen Farbgruppen die E-Serie ueberspringen oder ersetzen sollen. (Mail 1a138891a17b99d9)
 - [2026-10-14 12:54 ev:059ea0fd] OTHER: Smilodox bestaetigt, dass Light Grey nicht Teil dieser Bestellung ist. Die E-Serie der Barcodes fuer XW26-008 und XW26-009 soll fuer diese Bestellung entfallen. Die uebrigen Farbgruppen muessen nicht ersetzt oder neu nummeriert werden. (Mail 1a13a0cd5be2dac5)
 - [2026-10-14 13:01 ev:133a4173] ORDER_CHANGE: Light Grey ist in dieser Bestellung nicht enthalten, daher entfällt die E-Serie. Die anderen Farbgruppen werden nicht umnummeriert oder ersetzt. (Mail 1a13a133dd81f60d)
 - DATUM: {'exFactoryExpectedDate': '2026-12-30T00:00:00.000Z', 'etdEstimatedDate': '2027-01-10T00:00:00.000Z'}
 ## #36 PO-LIEFERANT_AA-26WJD-108-REORDER
 - [2026-10-12 22:00 ev:86a9fb5f] SCHEDULE: Style SMI2606 and SMI2612 will be delayed by around 10 days. (Mail 1a131b41523af8ff)
+- [2026-10-20 09:31 ev:a38974f7] PAYMENT: 35% payment of USD 6,880.65 made for order LIEFERANT_AA2688 (40 days after shipment). (Mail 1a1583954f10adee)
+- [2026-10-20 09:31 ev:b62e8cb7] PAYMENT: 15% payment of USD 4,046.63 made upon shipment for order LIEFERANT_AA26104 (Note: bank reference states LIEFERANT_AA226104). (Mail 1a1583954f10adee) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-20 09:31 ev:0e9780fa] PAYMENT: Sea freight payment of USD 2,630.00 made for order LIEFERANT_AA26104 (Note: bank reference states LIEFERANT_AA226104). (Mail 1a1583954f10adee) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-20 10:33 ev:69dac721] PAYMENT: Supplier confirmed receipt of remittance of 6151.6 USD for LIEFERANT_AA2674. (Mail 1a158718945a7330)
+- ZAHLUNG bezahlt: 6151.60
 ## #4 PO-LIEFERANT_X-JM260704
 - [2026-10-12 22:01 ev:e6b2bf67] SCHEDULE: Doreen Liu asks when the shipping will be arranged for reorders 26M10_001 and 26M10_002 and is waiting for forwarder information. (Mail 1a131b454cfe1d5e)
 ## #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03
-- [2026-10-14 11:11 ev:f847e19f] SHIPMENT: Lieferant meldet Luftfrachtsendung Multan nach Hannover (229 Kartons, 1.888 Stueck) mit Flug SV-801 am 16.10.2026. Rechnung und Packliste liegen vor, die Airway Bill steht noch aus. (Mail 1a139ae6379ca9e8)
-- [2026-10-14 11:11 ev:a480d84d] OTHER: Der Excel-Anhang enthaelt eine 'Custom Invoice' mit hoeheren Stueckpreisen (Summe 20.006,10 USD) neben der Buyer Invoice (13.145,50 USD). Auch der Betrag in Worten und die Zahlungsdokumente nennen 20.006,10 USD. (Mail 1a139ae6379ca9e8)
-- [2026-10-14 11:37 ev:8010d3d4] SHIPMENT: Lieferant A hat die Airway Bill 065-4958 9923 (Saudi Arabian Airline, Agent Sky Trax Cargo Services) für Invoice AK/623/26 übersandt. Luftfracht Multan (PKR) über JED nach Hannover, Flug SV-801 am 16.10.2026, 229 Kartons, 1888 Stück (1172 Hoodies, 716 Hosen), Bruttogewicht 1660 kg, Fracht prepaid. (Mail 1a139c642ee52d1e)
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
-- [2026-10-15 09:08 ev:0c257ff8] QUALITY: Final inspection report issued for AL29008 with overall result PASS under AQL 2.5. (Mail 1a13e648043ef214)
-- [2026-10-15 09:08 ev:06dcd57f] QUALITY: Final inspection report issued for 26498 with overall result PASS under AQL 2.5. (Mail 1a13e648043ef214)
-- [2026-10-19 13:26 ev:5fc02359] ORDER_CHANGE: Dark blue T-shirt quantity and Khaki color fleece were cancelled, but fabric is in-house. Vendor asks whether to proceed with production based on the first order quantities using the existing fabric. (Mail 1a153e9cfdad5fcf) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+## #28 PO-WONDERS-XW-SM260513
+- [2026-10-16 13:51 ev:df7911e0] SHIPMENT: Three styles of women sherpa fleece jacket with the same fabric as XW-124 and the printing short original sample have been sent out via FedEx. (Mail 1a1448d82196ef74) [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]
+## #9 PO-LIEFERANT_V-KCCN0513
+- [2026-10-20 10:31 ev:47a0488e] PAYMENT: Smilodox requested shipping documents to arrange the balance payment as previously agreed. (Mail 1a1586ff6a8b3210) [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]
+- [2026-10-20 14:19 ev:aa301025] PAYMENT: Lieferant fordert dringende Zahlung für Commercial Invoice der Styles KC-JK-00027 und KC-PT-00058 an, bevor der Versand arrangiert wird. (Mail 1a15941543d3ae95)
+## #10 PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN
+- [2026-10-20 11:18 ev:e0304f4f] SAMPLE: Final Tech Packs for Easy Fitness are confirmed with one measurement change for style SEW26-004 (reduce W1/2 Relaxed for size XL by 0,5cm). (Mail 1a1589b9764c96f8)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:32] SHIPMENT: Yükleme detayı, konşimento ve çeki listesi gönderildi. (None) -> keine Order gefunden
@@ -238,7 +219,7 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-16 10:17] PAYMENT: Lieferant fragt nach dem Zahlungsbeleg (bank slip). (China Lieferant X) -> mehrdeutig: 2 laufende Orders von LIEFERANT_X INDUSTRY CO.,LTD
 - [2026-10-16 11:02] SHIPMENT: Bill of Lading (Telex Release) issued for sea shipment of MEN'S WINDBREAKER JACKET (122 cartons, 1676.95 KGS, 8.784 CBM) from Xiamen to Hamburg. (FUJIAN LIEFERANT_H GARMENTS CO.,LTD.) -> keine Order gefunden
 - [2026-10-16 11:55] SAMPLE: The parcel with samples and shoe box has arrived, and the supplier is waiting for comments. (LIEFERANT_Y LIMITED) -> mehrdeutig: PO-LIEFERANT_Y-WS26245, PO-KUNDE_Y-Q2-2027-LIEFERANT_Y
-- [2026-10-16 13:51] SHIPMENT: Three styles of women sherpa fleece jacket with the same fabric as XW-124 and the printing short original sample have been sent out via FedEx. (LIEFERANT_C CO.,LTD.) -> mehrdeutig: 4 laufende Orders von Lieferant C
+- [2026-10-16 13:23] SCHEDULE: Smilodox requested an update on the quotation after the holiday period. (Nanjing Sutex) -> keine Order gefunden
 - [2026-10-16 17:12] ORDER_CHANGE: Rib products 55110, 55118, and 55119 moved into the FW26 production group with a requested completion date of December 30th, 2026. (None) -> keine Order gefunden
 - [2026-10-16 17:12] ORDER_CHANGE: Official color codes confirmed for Rib product group 55110 / 55118 / 55119: 265992-A, 265993-A, 265994-A. (None) -> keine Order gefunden
 - [2026-10-16 17:23] ORDER_CHANGE: Smilodox moved Rib products 55110, 55118, and 55119 into the FW26 production group and requested confirmation for production completion by December 30th, 2026. Additionally, official color codes were confirmed. (None) -> keine Order gefunden
@@ -255,121 +236,28 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-20 08:31] SHIPMENT: Shipment dispatched by air (Flight SV-801, MAWB 065-5830 7653) from Multan Airport to Hannover Airport. (LIEFERANT_A (PVT) LTD.) -> mehrdeutig: 26 laufende Orders von Lieferant A
 - [2026-10-20 08:35] SHIPMENT: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to Hannover. (AK/625/26) -> keine Order gefunden
 - [2026-10-20 08:35] SCHEDULE: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (AK/625/26) -> keine Order gefunden
+- [2026-10-20 11:22] SAMPLE: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physical samples have arrived; the rest are pending. (None) -> mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 178 Ereignisse
+- 200 Ereignisse
 
 ## Sendungen (Bereich Shipments)
-- keine
+- Mensch: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
 
-## Ergebnis Notizen
-```
-[
- {
-  "title": "PO-LIEFERANT_AG-2026-03-17",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-LIEFERANT_D-ALI20260821",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 2,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-LIEFERANT_G-MC-26SM002",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 9,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-LIEFERANT_AA-WINTER-2026-04-29",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 10,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER",
-  "unchanged": true
- },
- {
-  "title": "PO-WONDERS-XW-SM260730",
-  "unchanged": true
- },
- {
-  "title": "PO-WONDERS-XW-SM260811",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 4,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-LIEFERANT_AA-26WJD-108-REORDER",
-  "unchanged": true
- },
- {
-  "title": "PO-LIEFERANT_X-JM260704",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- },
- {
-  "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 7,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true
- }
-]
-```
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 64, neu eingetragen 3, abgehakt 0, offen gesamt 65
+- 63 Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)
 
-## Mensch entscheidet (149)
+## Mensch entscheidet (150)
+- Sendung: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
 - 1a0cd67bc7e8f28c_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-WINTER-2026-04-29
 - 1a0f2b92d12a769c_1.json: BLOCKER Positionen 0.00 != angegebener Gesamtwert 2.00; Positionen 0 Stk != angegeben 1 Stk
-- 1a130f55843e4fa3_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_AG SANAYI VE TICARET ANONIM SIRKETI (nicht gefunden)
-- 1a130f5cbf1f16cf_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_AG (nicht gefunden)
-- 1a130f64567930c6_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_AG SANAYİ VE TİCARET ANONİM ŞİRKETİ (nicht gefunden)
+- 1a130f55843e4fa3_1.json: ORPHAN_DOC 
+- 1a130f64567930c6_1.json: ORPHAN_DOC YIK2026000000158
 - 1a13103f670add8b_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-WINTER-2026-04-29
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1393b883f8eb5c_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER
-- 1a13b99baac29b3c_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI (nicht gefunden)
+- 1a13b99baac29b3c_1.json: ORPHAN_DOC SPR2026000000409
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a158022cc4f34ad_1.json: ORPHAN_DOC 26069
@@ -493,7 +381,7 @@ PO-Nummern per Browser nachgeladen: 70
 - Ereignis nicht zuordenbar: Lieferant fragt nach dem Zahlungsbeleg (bank slip). (mehrdeutig: 2 laufende Orders von LIEFERANT_X INDUSTRY CO.,LTD)
 - Ereignis nicht zuordenbar: Bill of Lading (Telex Release) issued for sea shipment of MEN'S WINDBREAKER JACKET (122 ca (keine Order gefunden)
 - Ereignis nicht zuordenbar: The parcel with samples and shoe box has arrived, and the supplier is waiting for comments (mehrdeutig: PO-LIEFERANT_Y-WS26245, PO-KUNDE_Y-Q2-2027-LIEFERANT_Y)
-- Ereignis nicht zuordenbar: Three styles of women sherpa fleece jacket with the same fabric as XW-124 and the printing (mehrdeutig: 4 laufende Orders von Lieferant C)
+- Ereignis nicht zuordenbar: Smilodox requested an update on the quotation after the holiday period. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Rib products 55110, 55118, and 55119 moved into the FW26 production group with a requested (keine Order gefunden)
 - Ereignis nicht zuordenbar: Official color codes confirmed for Rib product group 55110 / 55118 / 55119: 265992-A, 2659 (keine Order gefunden)
 - Ereignis nicht zuordenbar: Smilodox moved Rib products 55110, 55118, and 55119 into the FW26 production group and req (keine Order gefunden)
@@ -510,3 +398,4 @@ PO-Nummern per Browser nachgeladen: 70
 - Ereignis nicht zuordenbar: Shipment dispatched by air (Flight SV-801, MAWB 065-5830 7653) from Multan Airport to Hann (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to  (keine Order gefunden)
 - Ereignis nicht zuordenbar: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (keine Order gefunden)
+- Ereignis nicht zuordenbar: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physic (mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN)
