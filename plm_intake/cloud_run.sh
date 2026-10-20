@@ -12,6 +12,20 @@ mkdir -p output/intake/logs
 export PLM_DEBUG_DIR="$PWD/output/intake/logs"
 LOG="output/intake/logs/auto_$(date -u +%Y%m%d_%H%M).log"
 python3 -m plm_intake.cloud pull "$STATE_DIR" >> "$LOG" 2>&1
+if [ "${SKIP_IF_RECENT_MIN:-0}" -gt 0 ] && python3 - "$SKIP_IF_RECENT_MIN" >> "$LOG" 2>&1 <<'PY'
+import json, sys, datetime as dt
+try:
+    ok = json.load(open("output/intake/status.json")).get("last_ok")
+    age = (dt.datetime.utcnow() - dt.datetime.fromisoformat(ok)).total_seconds() / 60 if ok else 1e9
+except Exception:
+    age = 1e9
+print("Letzter erfolgreicher Lauf vor %.0f Min" % age)
+sys.exit(0 if age < int(sys.argv[1]) else 1)
+PY
+then
+  echo "=== Uebersprungen: Lauf in den letzten ${SKIP_IF_RECENT_MIN} Min schon erfolgt ===" >> "$LOG"
+  tail -n 5 "$LOG"; exit 0
+fi
 echo "=== $(date -u) Modus $MODE (Cloud) ===" >> "$LOG"
 RC=0
 if ! python3 -m plm_intake.health preflight >> "$LOG" 2>&1; then
