@@ -1,9 +1,9 @@
-# Alltagslauf 2026-10-20 12:48 (TROCKENLAUF)
+# Alltagslauf 2026-10-20 16:18 (TROCKENLAUF)
 
-Neu: 17 Dokument-Dateien, 296 Ereignis-Dateien
+Neu: 18 Dokument-Dateien, 307 Ereignis-Dateien
 
 ## Lieferanten
-- keine neuen
+- LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ.: ALIAS_VERDACHT Aehnlicher Lieferant existiert schon: Alias setzen oder Mensch entscheidet
 
 PO-Nummern per Browser nachgeladen: 70
 
@@ -35,6 +35,7 @@ PO-Nummern per Browser nachgeladen: 70
 | 1a1538b5bb3f6600_1.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a1538b5bb3f6600_2.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a158022cc4f34ad_1.json | ORPHAN_DOC | 26069 | - |
+| 1a159e3b788a4764_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ. (nicht gefunden) |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a130f55843e4fa3_1.json (None)
@@ -90,6 +91,8 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-12 22:01 ev:e6b2bf67] SCHEDULE: Doreen Liu asks when the shipping will be arranged for reorders 26M10_001 and 26M10_002 and is waiting for forwarder information. (Mail 1a131b454cfe1d5e)
 ## #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
+- [2026-10-20 15:37 ev:e9ab8c30] SAMPLE: Status check requested for missing photo samples across multiple styles and colors. (Mail 1a15988301969094)
+- [2026-10-20 16:53 ev:798ee69e] SAMPLE: Smilodox is requesting the status and expected delivery date for missing photo samples across multiple styles and colors. (Mail 1a159ce2c726cec4)
 ## #28 PO-WONDERS-XW-SM260513
 - [2026-10-16 13:51 ev:df7911e0] SHIPMENT: Three styles of women sherpa fleece jacket with the same fabric as XW-124 and the printing short original sample have been sent out via FedEx. (Mail 1a1448d82196ef74) [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]
 ## #9 PO-LIEFERANT_V-KCCN0513
@@ -237,18 +240,19 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-20 08:35] SHIPMENT: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to Hannover. (AK/625/26) -> keine Order gefunden
 - [2026-10-20 08:35] SCHEDULE: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (AK/625/26) -> keine Order gefunden
 - [2026-10-20 11:22] SAMPLE: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physical samples have arrived; the rest are pending. (None) -> mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN
+- [2026-10-20 17:17] SHIPMENT: Shipment documents and commercial invoice for 19,275 pieces issued on 20.10.2026. (LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ.) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 200 Ereignisse
+- 217 Ereignisse
 
 ## Sendungen (Bereich Shipments)
 - Mensch: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
 
 
 ## Klärfälle (PLM-Tabelle)
-- 63 Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)
+- 64 Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)
 
-## Mensch entscheidet (150)
+## Mensch entscheidet (152)
 - Sendung: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
 - 1a0cd67bc7e8f28c_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-WINTER-2026-04-29
 - 1a0f2b92d12a769c_1.json: BLOCKER Positionen 0.00 != angegebener Gesamtwert 2.00; Positionen 0 Stk != angegeben 1 Stk
@@ -261,6 +265,7 @@ PO-Nummern per Browser nachgeladen: 70
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a158022cc4f34ad_1.json: ORPHAN_DOC 26069
+- 1a159e3b788a4764_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ. (nicht gefunden)
 - Ereignis nicht zuordenbar: Yükleme detayı, konşimento ve çeki listesi gönderildi. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Export declaration and invoice for shipment issued. (keine Order gefunden)
 - Ereignis nicht zuordenbar: The schedule for the Kunde Y Black Friday Program development and delivery is getting del (keine Order gefunden)
@@ -399,3 +404,4 @@ PO-Nummern per Browser nachgeladen: 70
 - Ereignis nicht zuordenbar: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to  (keine Order gefunden)
 - Ereignis nicht zuordenbar: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physic (mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN)
+- Ereignis nicht zuordenbar: Shipment documents and commercial invoice for 19,275 pieces issued on 20.10.2026. (keine Order gefunden)
