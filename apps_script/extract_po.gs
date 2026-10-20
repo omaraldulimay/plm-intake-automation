@@ -160,9 +160,56 @@ function plmWatchdog() {
   Logger.log('Waechter: Mail gesendet: ' + msg);
 }
 
+/* ---------------- Cloud-Waechter (GitHub Actions) ----------------
+   Seit 20.10. laeuft die Einpflege in GitHub Actions (Mo-Fr morgens und mittags). GitHub loest geplante Laeufe nicht garantiert aus (20.10.: Lauf um 13:30 fiel aus). Dieser Waechter fragt die
+   GitHub-API (nur LESEN, Token mit "Actions: read" in der Skripteigenschaft GITHUB_TOKEN) und mailt an oa@, wenn bis zur Kontrollzeit kein ECHTER erfolgreicher Lauf da ist.
+   "Echt" = Ergebnis success UND Laufzeit >= 2 Minuten (ein vom Zeitfenster uebersprungener Lauf endet nach ~10 s und zaehlt nicht).
+   Morgens (Kontrolle um 10 Uhr): ein Lauf seit 05:30 UTC. Mittags (Kontrolle um 15 Uhr): ein Lauf seit 11:00 UTC. Je Termin hoechstens eine Mail pro Tag. */
+var EX_CLOUD_WD = { REPO: 'oa-smilodox/Dashboard-Produktion', WORKFLOW: 'plm-einpflege.yml', MIN_SECONDS: 120 };
+
+/* Reine Entscheidung (testbar). runs = workflow_runs der GitHub-API, isoDay 1..7, sinceUtcHour = ab wann ein Lauf zaehlt. Rueckgabe null oder Text. */
+function exCloudWatchdogDecision_(nowMs, runs, isoDay, sinceUtcHour) {
+  if (isoDay > 5) return null;
+  var d = new Date(nowMs);
+  var since = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), sinceUtcHour, 0, 0);
+  var recent = (runs || []).filter(function (r) { return Date.parse(r.created_at) >= since; });
+  var secs = function (r) { return (Date.parse(r.updated_at) - Date.parse(r.run_started_at || r.created_at)) / 1000; };
+  if (recent.some(function (r) { return r.conclusion === 'success' && secs(r) >= EX_CLOUD_WD.MIN_SECONDS; })) return null;
+  if (recent.some(function (r) { return r.status && r.status !== 'completed'; })) return null;   // laeuft gerade
+  var failed = recent.filter(function (r) { return r.conclusion && r.conclusion !== 'success'; });
+  if (failed.length) return 'Der Cloud-Lauf der Einpflege ist heute fehlgeschlagen (' + failed[0].conclusion + '). Details: ' + failed[0].html_url + '\nNeue Mails werden erst eingepflegt, wenn der Lauf wieder funktioniert. Von Hand starten: GitHub > Actions > PLM-Einpflege > Run workflow.';
+  var skipped = recent.filter(function (r) { return r.conclusion === 'success'; });
+  return 'Heute hat noch kein echter Cloud-Lauf der Einpflege stattgefunden' + (skipped.length ? ' (' + skipped.length + ' Lauf/Laeufe wurden vom Zeitfenster uebersprungen)' : ' (GitHub hat den geplanten Lauf nicht ausgeloest)') +
+    '. Neue Mails werden nicht eingepflegt. Von Hand starten: GitHub > Actions > PLM-Einpflege > Run workflow (Modus apply).';
+}
+
+function exCloudWatchdog_(slot, sinceUtcHour) {
+  var now = new Date(Date.now()), props = PropertiesService.getScriptProperties();
+  var isoDay = Number(Utilities.formatDate(now, Session.getScriptTimeZone(), 'u'));
+  if (isoDay > 5) return;
+  var today = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd'), key = 'LAST_CLOUD_WD_' + slot;
+  var token = props.getProperty('GITHUB_TOKEN'), msg;
+  if (!token) msg = 'Der Cloud-Waechter kann nicht pruefen: die Skripteigenschaft GITHUB_TOKEN fehlt (GitHub-Token mit Berechtigung Actions: Read-only fuer das Repo ' + EX_CLOUD_WD.REPO + ').';
+  else {
+    var resp = UrlFetchApp.fetch('https://api.github.com/repos/' + EX_CLOUD_WD.REPO + '/actions/workflows/' + EX_CLOUD_WD.WORKFLOW + '/runs?per_page=15',
+      { method: 'get', muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } });
+    if (resp.getResponseCode() !== 200) msg = 'Die GitHub-Abfrage des Cloud-Waechters ist fehlgeschlagen (HTTP ' + resp.getResponseCode() + '). Token abgelaufen oder ohne Berechtigung? Der Cloud-Lauf kann deshalb nicht geprueft werden.';
+    else msg = exCloudWatchdogDecision_(now.getTime(), (JSON.parse(resp.getContentText()).workflow_runs || []), isoDay, sinceUtcHour);
+  }
+  if (!msg) { Logger.log('Cloud-Waechter ' + slot + ': alles in Ordnung'); return; }
+  if (props.getProperty(key) === today) { Logger.log('Cloud-Waechter ' + slot + ': heute schon gemeldet'); return; }
+  MailApp.sendEmail(EX_WATCHDOG.TO, 'PLM-Einpflege (Cloud): ' + (slot === 'morgens' ? 'Morgenlauf' : 'Mittagslauf') + ' fehlt oder ist fehlgeschlagen', msg + '\n\nDiese Warnung kommt hoechstens einmal pro Termin und Tag.');
+  props.setProperty(key, today);
+  Logger.log('Cloud-Waechter ' + slot + ': Mail gesendet: ' + msg);
+}
+function plmCloudWatchdogMorning() { exCloudWatchdog_('morgens', 5); }     // Lauf seit 05:30 UTC (Zeitplan 06:00/07:00 UTC) -> ab 05 zaehlt
+function plmCloudWatchdogAfternoon() { exCloudWatchdog_('mittags', 11); }  // Lauf seit 11:00 UTC (Zeitplan 11:30/12:30 UTC)
+
+/* Einmal ausfuehren: entfernt den alten Mac-Waechter (plmWatchdog) und legt die zwei Cloud-Kontrollen an (10 Uhr und 15 Uhr, Skript-Zeitzone). */
 function installWatchdogTrigger() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'plmWatchdog') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('plmWatchdog').timeBased().atHour(10).everyDays(1).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) { var h = t.getHandlerFunction(); if (h === 'plmWatchdog' || h === 'plmCloudWatchdogMorning' || h === 'plmCloudWatchdogAfternoon') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('plmCloudWatchdogMorning').timeBased().atHour(10).everyDays(1).create();
+  ScriptApp.newTrigger('plmCloudWatchdogAfternoon').timeBased().atHour(15).everyDays(1).create();
 }
 
 function extractMails() {
