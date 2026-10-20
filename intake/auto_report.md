@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-20 07:14 (TROCKENLAUF)
+# Alltagslauf 2026-10-20 08:13 (AUSGEFUEHRT)
 
-Neu: 16 Dokument-Dateien, 284 Ereignis-Dateien
+Neu: 17 Dokument-Dateien, 287 Ereignis-Dateien
 
 ## Lieferanten
 - LIEFERANT_Z COMPANY LIMITED: MENSCH ALIAS_PRUEFEN [('LIEFERANT_AA', 'Payee/Beschreibung')]
@@ -40,9 +40,11 @@ PO-Nummern per Browser nachgeladen: 70
 | 1a13b99baac29b3c_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI (nicht gefunden) |
 | 1a1538b5bb3f6600_1.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a1538b5bb3f6600_2.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
+| 1a158022cc4f34ad_1.json | ORPHAN_DOC | 26069 | - |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a13103fd472a81b_1.json (62092211)
+- 1a158022cc4f34ad_1.json (26069)
 
 ## Dienstleister-Belege ohne Warenpositionen (Spedition, Zoll): kein PO-Bezug, nur zur Info
 - 1a0a957bca78ab0b_1.json (SI_2026_06_0047)
@@ -250,18 +252,115 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-19 12:09] SCHEDULE: Handover of goods at Karachi must be completed by 22.10.2026 to catch the CMA vessel. (Lieferant F) -> keine Order gefunden
 - [2026-10-19 17:15] SCHEDULE: Cut-off date for the first shipment batch of approx. 35,000 pcs (55 CBM) extended from 22nd to 23rd October on CMA vessel. (None) -> keine Order gefunden
 - [2026-10-19 17:15] SCHEDULE: Remaining quantities are expected to be completed by 30th October. (None) -> keine Order gefunden
+- [2026-10-20 08:31] SHIPMENT: Shipment dispatched by air (Flight SV-801, MAWB 065-5830 7653) from Multan Airport to Hannover Airport. (LIEFERANT_A (PVT) LTD.) -> mehrdeutig: 26 laufende Orders von Lieferant A
+- [2026-10-20 08:35] SHIPMENT: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to Hannover. (AK/625/26) -> keine Order gefunden
+- [2026-10-20 08:35] SCHEDULE: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (AK/625/26) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 177 Ereignisse
+- 178 Ereignisse
 
 ## Sendungen (Bereich Shipments)
 - keine
 
+## Ergebnis Notizen
+```
+[
+ {
+  "title": "PO-LIEFERANT_AG-2026-03-17",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_D-ALI20260821",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_G-MC-26SM002",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 9,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_AA-WINTER-2026-04-29",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 10,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER",
+  "unchanged": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260730",
+  "unchanged": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260811",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 4,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_AA-26WJD-108-REORDER",
+  "unchanged": true
+ },
+ {
+  "title": "PO-LIEFERANT_X-JM260704",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 7,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ }
+]
+```
 
 ## Klärfälle (PLM-Tabelle)
-- 61 Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)
+- Kandidaten 64, neu eingetragen 3, abgehakt 0, offen gesamt 65
 
-## Mensch entscheidet (145)
+## Mensch entscheidet (149)
 - 1a0cd67bc7e8f28c_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_AA-26WJD-108-REORDER, PO-LIEFERANT_AA-WINTER-2026-04-29
 - 1a0f2b92d12a769c_1.json: BLOCKER Positionen 0.00 != angegebener Gesamtwert 2.00; Positionen 0 Stk != angegeben 1 Stk
 - 1a130f55843e4fa3_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_AG SANAYI VE TICARET ANONIM SIRKETI (nicht gefunden)
@@ -273,6 +372,7 @@ PO-Nummern per Browser nachgeladen: 70
 - 1a13b99baac29b3c_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI (nicht gefunden)
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
+- 1a158022cc4f34ad_1.json: ORPHAN_DOC 26069
 - Ereignis nicht zuordenbar: Yükleme detayı, konşimento ve çeki listesi gönderildi. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Export declaration and invoice for shipment issued. (keine Order gefunden)
 - Ereignis nicht zuordenbar: The schedule for the Kunde Y Black Friday Program development and delivery is getting del (keine Order gefunden)
@@ -407,3 +507,6 @@ PO-Nummern per Browser nachgeladen: 70
 - Ereignis nicht zuordenbar: Handover of goods at Karachi must be completed by 22.10.2026 to catch the CMA vessel. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Cut-off date for the first shipment batch of approx. 35,000 pcs (55 CBM) extended from 22n (keine Order gefunden)
 - Ereignis nicht zuordenbar: Remaining quantities are expected to be completed by 30th October. (keine Order gefunden)
+- Ereignis nicht zuordenbar: Shipment dispatched by air (Flight SV-801, MAWB 065-5830 7653) from Multan Airport to Hann (mehrdeutig: 26 laufende Orders von Lieferant A)
+- Ereignis nicht zuordenbar: Airway Bill issued for shipment via Saudi Arabian Airlines, ETD 21-10-2026 from Multan to  (keine Order gefunden)
+- Ereignis nicht zuordenbar: ETD for shipment AK/625/26 is scheduled for 21-10-2026. (keine Order gefunden)
