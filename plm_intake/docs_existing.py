@@ -113,13 +113,40 @@ def parent_for(vendor, po, orders, ctx):
     return None, []
 
 
+def _doc_unit_price(po):
+    items = po.get("items") or []
+    try:
+        if len(items) == 1 and items[0].get("price"): return float(items[0]["price"])
+        if len(items) == 1 and po.get("total_cost") and po.get("total_pieces"): return float(po["total_cost"]) / float(po["total_pieces"])
+    except (TypeError, ValueError, ZeroDivisionError):
+        pass
+    return 0
+
+
+def _order_prices(o, po):
+    """Preise der Positionen einer Order, deren Name/SKU einen Style des Belegs enthaelt."""
+    styles = {core.norm(i.get("sku")) for i in po.get("items") or [] if i.get("sku")}
+    styles.discard("")
+    out = []
+    for it in o.get("items") or []:
+        nm = core.norm(it.get("name"))
+        if styles and not any(t in nm for t in styles): continue
+        for v in it.get("variants") or []:
+            out += [a["price"] for a in v.get("amounts") or [] if a.get("price")]
+    return out
+
+
 def narrow_candidates(po, titles, orders):
-    """Mehrere passende Orders: genau eine entscheidet (1) die Bestellnummer des Belegs steht in den Notizen nur EINER Kandidaten-Order (z. B. LIEFERANT_AA2674), sonst (2) nur EINE hat dieselbe Stueckzahl (+-1,5 %). Sonst None (Mensch)."""
+    """Mehrere passende Orders: genau eine entscheidet (1) die Bestellnummer des Belegs steht in den Notizen nur EINER Kandidaten-Order, (2) der Stueckpreis des Belegs passt (+-1 %) nur zu EINER, (3) nur EINE hat dieselbe Stueckzahl (+-1,5 %; Teillieferung = Mensch). Sonst None (Mensch)."""
     cands = [o for o in orders if o.get("title") in set(titles)]
     if len(cands) < 2: return None
     pn = core.norm(po.get("po_number"))
     if len(pn) >= 6:
         hit = [o for o in cands if pn in core.norm(o.get("notes") or o.get("_notes"))]
+        if len(hit) == 1: return hit[0]
+    unit = _doc_unit_price(po)   # Stueckpreis des Belegs = Preis genau einer Kandidaten-Order (z. B. Jacke 13,75 USD nur in der Winter-Order, 13,40 in der Nachbestellung)
+    if unit:
+        hit = [o for o in cands if any(abs(pr - unit) <= 0.01 * unit for pr in _order_prices(o, po))]
         if len(hit) == 1: return hit[0]
     pcs = po.get("total_pieces")
     try: pcs = float(pcs)

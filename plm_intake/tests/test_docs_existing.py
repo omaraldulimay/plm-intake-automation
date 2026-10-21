@@ -78,6 +78,11 @@ class ElternOrder(unittest.TestCase):
         self.assertEqual((row["kind"], row["pid"]), ("DELIVERY_DOC", "B"))
         row, _ = de.delivery_doc("f.json", {**base, "po_number": "ZZ999999", "total_pieces": 1005}, ctx, orders, {})   # Stueckzahl trifft nur A
         self.assertEqual((row["kind"], row["pid"]), ("DELIVERY_DOC", "A"))
+        for oo, pr in zip(o, (13.4, 13.75)):
+            oo["items"] = [{"name": "SMI2612 JACKET", "variants": [{"amounts": [{"quantity": 10, "price": pr}]}]}]
+        row, _ = de.delivery_doc("f.json", {**base, "po_number": "ZZ999999", "total_pieces": 100, "total_cost": 1375}, ctx, orders, {})   # Stueckpreis 13,75 nur in B
+        self.assertEqual((row["kind"], row["pid"]), ("DELIVERY_DOC", "B"))
+        for oo in o: oo["items"] = [{"name": "SMI2612 JACKET"}]
         row, _ = de.delivery_doc("f.json", {**base, "po_number": "ZZ999999", "total_pieces": 300}, ctx, orders, {})   # nichts eindeutig: Mensch
         self.assertEqual(row["kind"], "AMBIGUOUS_DOC")
 
