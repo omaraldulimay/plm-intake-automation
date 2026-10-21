@@ -170,10 +170,17 @@ class Sperren(unittest.TestCase):
     def test_po_nummer_fehlt(self): self.blocked(po(po_number=" "), "po_number_missing")
     def test_waehrung_unbekannt(self): self.blocked(po(currency="XYZ"), "currency")
     def test_keine_positionen(self): self.blocked(po(items=[]), "no_items")
-    def test_summe_stimmt_nicht(self): self.blocked(po(total_cost=999.0), "sum_mismatch")
-    def test_stueckzahl_stimmt_nicht(self): self.blocked(po(total_pieces=41), "pieces_mismatch")
+    def unstimmig(self, x, code):
+        """Unstimmigkeit sperrt die Bestellung nicht mehr: sie wird mit den Positionen angelegt, die Abweichung steht als UNSTIMMIG in den Notizen."""
+        r = core.build(x, CTX, TODAY)
+        self.assertEqual(r.decision, "CREATE", [i.msg for i in r.issues])
+        self.assertIn(code, [i.code for i in r.issues if i.level == "WARN"])
+        self.assertIn("UNSTIMMIG", r.payload["notes"])
+
+    def test_summe_stimmt_nicht(self): self.unstimmig(po(total_cost=999.0), "sum_mismatch")
+    def test_stueckzahl_stimmt_nicht(self): self.unstimmig(po(total_pieces=41), "pieces_mismatch")
     def test_zahlungssumme_stimmt_nicht(self):
-        self.blocked(po(payments=[{"name": "x", "status": "Unpaid", "amount": 100.0, "due": "2026-09-22"}]), "payment_sum")
+        self.unstimmig(po(payments=[{"name": "x", "status": "Unpaid", "amount": 100.0, "due": "2026-09-22"}]), "payment_sum")
     def test_zahlungsstatus_ungueltig(self):
         self.blocked(po(payments=[{"name": "x", "status": "Bezahlt", "amount": 400.0, "due": "2026-09-22"}]), "payment_status")
     def test_negative_menge(self):

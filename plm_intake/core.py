@@ -381,9 +381,11 @@ def build(po, ctx, today=None, force_create=False):
 
     # Summen gegen Quelle
     if po.get("total_cost") is not None and round(abs(r2(po["total_cost"]) - total_cost), 2) > TOL:
-        add("ERROR", "sum_mismatch", "Positionen %.2f != angegebener Gesamtwert %.2f" % (total_cost, po["total_cost"]))
+        add("WARN", "sum_mismatch", "Positionen %.2f != angegebener Gesamtwert %.2f" % (total_cost, po["total_cost"]))
+        open_items.append("UNSTIMMIG: Positionen %.2f != Gesamtwert laut Beleg %.2f (%+.2f), Quelle pruefen (moeglicherweise Lesefehler)" % (total_cost, po["total_cost"], total_cost - r2(po["total_cost"])))
     if po.get("total_pieces") is not None and int(po["total_pieces"]) != total_pieces:
-        add("ERROR", "pieces_mismatch", "Positionen %d Stk != angegeben %d Stk" % (total_pieces, po["total_pieces"]))
+        add("WARN", "pieces_mismatch", "Positionen %d Stk != angegeben %d Stk" % (total_pieces, po["total_pieces"]))
+        open_items.append("UNSTIMMIG: Positionen %d Stk != laut Beleg %d Stk (%+d), Quelle pruefen (moeglicherweise Lesefehler)" % (total_pieces, int(po["total_pieces"]), total_pieces - int(po["total_pieces"])))
     contract = po.get("contract_total")
     if contract and round(abs(total_cost - r2(contract)), 2) > TOL:
         diff = total_cost - r2(contract)
@@ -418,7 +420,8 @@ def build(po, ctx, today=None, force_create=False):
         pays = [{"name": "Gesamtbetrag (Platzhalter)", "status": "Unpaid", "amount": total_cost, "dueDate": ms(placeholder), "terms": ""}]
         psum = total_cost
     if pays and round(abs(r2(psum) - total_cost), 2) > TOL:
-        add("ERROR", "payment_sum", "Zahlungen %.2f != Gesamtwert %.2f" % (psum, total_cost))
+        add("WARN", "payment_sum", "Zahlungen %.2f != Gesamtwert %.2f" % (psum, total_cost))
+        open_items.append("UNSTIMMIG: Zahlungen %.2f != Gesamtwert %.2f (%+.2f), Zahlungsplan pruefen" % (psum, total_cost, psum - total_cost))
 
     # Notes + Bankdaten-Sperre
     notes = _notes(po, open_items)
