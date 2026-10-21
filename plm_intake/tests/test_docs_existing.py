@@ -68,6 +68,19 @@ class ElternOrder(unittest.TestCase):
         p, amb = de.parent_for(self.V, {"po_number": "26WJD-108"}, orders, {"products": []})   # ohne Positionen: Mensch
         self.assertIsNone(p); self.assertEqual(len(amb), 2)
 
+    def test_mehrdeutig_stueckzahl_oder_notiz_entscheidet(self):
+        ctx = {"vendors": [self.V], "products": [], "aliases": {}}
+        o = [{"id": "A", "title": "PO-LIEFERANT_AA-X", "manufacturer": {"id": "V1"}, "totalNumberOfPieces": 1000, "notes": "", "items": [{"name": "SMI2612 JACKET"}]},
+             {"id": "B", "title": "PO-LIEFERANT_AA-Y", "manufacturer": {"id": "V1"}, "totalNumberOfPieces": 2500, "notes": "Zahlung LIEFERANT_AA2674 erhalten", "items": [{"name": "SMI2612 JACKET"}]}]
+        orders = {x["id"]: x for x in o}
+        base = {"doc_type": "INVOICE", "vendor": "LIEFERANT_AA", "items": [{"sku": "SMI2612", "name": "JACKET"}], "payments": [], "total_cost": 5}
+        row, _ = de.delivery_doc("f.json", {**base, "po_number": "LIEFERANT_AA2674", "total_pieces": 100}, ctx, orders, {})   # Nummer steht nur in B
+        self.assertEqual((row["kind"], row["pid"]), ("DELIVERY_DOC", "B"))
+        row, _ = de.delivery_doc("f.json", {**base, "po_number": "ZZ999999", "total_pieces": 1005}, ctx, orders, {})   # Stueckzahl trifft nur A
+        self.assertEqual((row["kind"], row["pid"]), ("DELIVERY_DOC", "A"))
+        row, _ = de.delivery_doc("f.json", {**base, "po_number": "ZZ999999", "total_pieces": 300}, ctx, orders, {})   # nichts eindeutig: Mensch
+        self.assertEqual(row["kind"], "AMBIGUOUS_DOC")
+
     def test_fremder_lieferant_und_kurze_nummer_geben_nichts(self):
         self.assertEqual(de.parent_for(self.V, {"po_number": "12"}, self.O, {"products": []}), (None, []))
 

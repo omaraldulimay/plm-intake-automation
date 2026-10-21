@@ -113,12 +113,32 @@ def parent_for(vendor, po, orders, ctx):
     return None, []
 
 
+def narrow_candidates(po, titles, orders):
+    """Mehrere passende Orders: genau eine entscheidet (1) die Bestellnummer des Belegs steht in den Notizen nur EINER Kandidaten-Order (z. B. LIEFERANT_AA2674), sonst (2) nur EINE hat dieselbe Stueckzahl (+-1,5 %). Sonst None (Mensch)."""
+    cands = [o for o in orders if o.get("title") in set(titles)]
+    if len(cands) < 2: return None
+    pn = core.norm(po.get("po_number"))
+    if len(pn) >= 6:
+        hit = [o for o in cands if pn in core.norm(o.get("notes") or o.get("_notes"))]
+        if len(hit) == 1: return hit[0]
+    pcs = po.get("total_pieces")
+    try: pcs = float(pcs)
+    except (TypeError, ValueError): pcs = 0
+    if pcs > 0:
+        hit = [o for o in cands if o.get("totalNumberOfPieces") and abs(float(o["totalNumberOfPieces"]) - pcs) <= 0.015 * pcs]
+        if len(hit) == 1: return hit[0]
+    return None
+
+
 def delivery_doc(name, po, ctx, orders, overrides):
     """Rechnung/Packliste -> (row, Result-Ersatz). Eltern-PO ueber PO-Nr (find_parent) oder eindeutige Style-Ueberlappung beim selben Lieferanten."""
     if (overrides or {}).get(name) == "SKIP": return {"file": name, "kind": "SKIP"}, _R()
     vendor, why = core.match_vendor(po.get("vendor") or "", ctx.get("vendors") or [], ctx.get("aliases"))
     if not vendor: return {"file": name, "kind": "BLOCKER", "why": "Lieferant unbekannt: %s (%s)" % (po.get("vendor"), why)}, _R()
     parent, amb = parent_for(vendor, po, list(orders.values()), ctx)
+    if amb and not parent:
+        one = narrow_candidates(po, amb, list(orders.values()))
+        if one: parent, amb = one, []
     if amb: return {"file": name, "kind": "AMBIGUOUS_DOC", "po": po.get("po_number"), "why": "passt zu mehreren Orders: " + ", ".join(amb)}, _R()
     if parent: return {"file": name, "kind": "DELIVERY_DOC", "pid": parent["id"]}, _R()
     if not po.get("items"): return {"file": name, "kind": "SERVICE_DOC", "po": po.get("po_number"), "why": "keine Warenpositionen (Fracht/Zoll/Spedition)"}, _R()
