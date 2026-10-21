@@ -932,5 +932,14 @@ t('Validierung: doc_date nur als YYYY-MM-DD, sonst null; Prompt nennt doc_date',
   assert.strictEqual(v({ documents: [mk('2026-10-02')] })[0].doc_date, '2026-10-02'); assert.strictEqual(v({ documents: [mk('02.10.2026')] })[0].doc_date, null);
   assert.ok(/"doc_date": "YYYY-MM-DD/.test(fs.readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8')));
 });
+t('Mengenkontrolle: Positionsmenge laut Beleg gegen Groessensumme, Befund nennt die Position (Fall Lieferant I 26779: 4524 statt 4480)', () => {
+  const s = fresh({ gemini: true }); const P = vm.runInContext('exProblems_', s.ctx);
+  const doc = q => JSON.stringify({ documents: [{ po_number: 'X', total_pieces: 4480, total_cost: null, confidence: 0.95, items: [{ sku: '26779', name: 'SWEAT', qty: q, variants: [{ color: 'SCHWARZ', price: 6.8, sizes: { XS: 154, S: 180, M: 1910, L: 2004, XL: 182, '2XL': 54, '3XL': 40 } }] }] }] });
+  const bad = P(doc(4480)); assert.ok(bad.some(x => /Position 26779/.test(x) && /4524/.test(x) && /4480/.test(x)), bad.join('|'));
+  assert.ok(bad.some(x => /M 1910/.test(x)));
+  assert.deepStrictEqual(P(doc(4524)).filter(x => /Position 26779/.test(x)), []);   // stimmig
+  assert.deepStrictEqual(P(doc(null)).filter(x => /Position 26779/.test(x)), []);   // ohne qty keine Pruefung
+  const src = fs.readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8'); assert.ok(/"qty": <Gesamtmenge dieser Position/.test(src) && /MENGENKONTROLLE/.test(src));
+});
 let fail = 0; results.forEach(r => { console.log((r[1] ? 'OK    ' : 'FEHLER') + ' ' + r[0] + (r[1] ? '' : '\n      -> ' + r[2])); if (!r[1]) fail++; });
 console.log('\n' + results.length + ' Tests, ' + fail + ' Fehler'); process.exit(fail ? 1 : 0);
