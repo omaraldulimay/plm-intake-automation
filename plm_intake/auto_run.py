@@ -203,6 +203,13 @@ def main(argv=None):
                 rep += ["", "## Klärfälle (PLM-Tabelle)", "- %d Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)" % len(kf_rows)]
     except (Exception, SystemExit) as e:   # Klaerfaelle duerfen den Lauf nie abbrechen
         rep += ["", "## Klärfälle (PLM-Tabelle)", "- FEHLER: %s" % str(e)[:200]]
+    # Techpacks/Specs aus neuen Mail-Anhaengen als Datei ans Produkt (Fehler brechen den Lauf nie ab; Trockenlauf schreibt nichts)
+    try:
+        from plm_intake import techpack_daily
+        tp_lines, _ = techpack_daily.run(ctx["products"], intake / techpack_daily.STATE_NAME, apply=a.apply)
+        rep += ["", "## Techpacks"] + tp_lines
+    except (Exception, SystemExit) as e:
+        rep += ["", "## Techpacks", "- FEHLER: %s" % str(e)[:200]]
     # Menschen-Liste
     human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER")]
     blocked = [(n, r) for n, r in results if r.decision != "CREATE" and n not in {x["file"] for x in rows}]
