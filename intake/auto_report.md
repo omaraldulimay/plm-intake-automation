@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-20 16:18 (TROCKENLAUF)
+# Alltagslauf 2026-10-21 06:17 (AUSGEFUEHRT)
 
-Neu: 18 Dokument-Dateien, 307 Ereignis-Dateien
+Neu: 18 Dokument-Dateien, 308 Ereignis-Dateien
 
 ## Lieferanten
 - LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ.: ALIAS_VERDACHT Aehnlicher Lieferant existiert schon: Alias setzen oder Mensch entscheidet
@@ -243,14 +243,119 @@ PO-Nummern per Browser nachgeladen: 70
 - [2026-10-20 17:17] SHIPMENT: Shipment documents and commercial invoice for 19,275 pieces issued on 20.10.2026. (LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ.) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 217 Ereignisse
+- 218 Ereignisse
 
 ## Sendungen (Bereich Shipments)
 - Mensch: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
 
+## Ergebnis Notizen
+```
+[
+ {
+  "title": "PO-LIEFERANT_AG-2026-06-24",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_G-MC-26SM002",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260730",
+  "unchanged": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260811",
+  "unchanged": true
+ },
+ {
+  "title": "PO-LIEFERANT_AA-26WJD-108-REORDER",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 4,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_X-JM260704",
+  "unchanged": true
+ },
+ {
+  "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260513",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-LIEFERANT_V-KCCN0513",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ },
+ {
+  "title": "PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true
+ }
+]
+```
 
 ## Klärfälle (PLM-Tabelle)
-- 64 Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)
+- Kandidaten 64, neu eingetragen 1, abgehakt 1, offen gesamt 65
 
 ## Mensch entscheidet (152)
 - Sendung: 1a130f5cbf1f16cf_1.json: Order hat schon eine Sammel-Sendung ueber die ganze Menge (Sendung PO-LIEFERANT_AG-2026-06-24): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet
