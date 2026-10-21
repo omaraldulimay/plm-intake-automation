@@ -31,8 +31,8 @@ class Bericht(unittest.TestCase):
 
     def test_trockenlauf_enthaelt_alle_abschnitte_und_schreibt_nichts(self):
         po = {"doc_type": "PI", "source": {"doc": "x", "mail_id": "m1"}, "vendor": "Testlieferant", "po_number": "T-1", "currency": "USD", "items": [
-              {"sku": "ZZ-100", "name": "JACKET", "variants": [{"color": "Black", "price": 2, "sizes": {"M": 5}}]}], "payments": [{"name": "100%", "status": "Unpaid", "amount": 10, "due": "2026-12-01", "terms": "t"}],
-              "total_cost": 10, "total_pieces": 5, "notes": "", "open": [], "confidence": 0.9}
+              {"sku": "ZZ-100", "name": "JACKET", "variants": [{"color": "Black", "price": 2, "sizes": {"M": 50}}]}], "payments": [{"name": "100%", "status": "Unpaid", "amount": 100, "due": "2026-12-01", "terms": "t"}],
+              "total_cost": 100, "total_pieces": 50, "notes": "", "open": [], "confidence": 0.9}
         rc, out, rep = self.run_dry({"m1_1.json": po})
         self.assertEqual(rc, 0)
         for h in ("## Lieferanten", "## Neue Produkte", "## Neue Bestellungen (CREATE)", "## Belege zu bestehenden Bestellungen", "## Notizen/Ereignisse", "## Sendungen", "## Mensch entscheidet"):

@@ -279,6 +279,9 @@ def find_existing(vendor_id, po_number, title, total_cost, pieces, orders):
 
 
 # ---------- Hauptfunktion ----------
+MIN_PIECES = 10
+
+
 def build(po, ctx, today=None, force_create=False):
     """po: ausgelesene PO; ctx: {'vendors': [...], 'products': [...], 'orders': [...]}"""
     res = Result()
@@ -380,6 +383,11 @@ def build(po, ctx, today=None, force_create=False):
     total_cost = r2(total_cost)
 
     # Summen gegen Quelle
+    # Harte Sperren: leere Bestellung / Kleinstbeleg (Muster) nie anlegen
+    if total_pieces == 0 or (total_cost == 0 and (po.get("total_cost") or 0) > 0):
+        add("ERROR", "empty_order", "Positionen ergeben %d Stk / %.2f (laut Beleg %s Stk / %s): leere Bestellung wird nicht angelegt" % (total_pieces, total_cost, po.get("total_pieces"), po.get("total_cost")))
+    elif total_pieces < MIN_PIECES:
+        add("ERROR", "too_small", "Nur %d Stk insgesamt (unter %d): Muster/Kleinstbeleg, keine Bestellung" % (total_pieces, MIN_PIECES))
     if po.get("total_cost") is not None and round(abs(r2(po["total_cost"]) - total_cost), 2) > TOL:
         add("WARN", "sum_mismatch", "Positionen %.2f != angegebener Gesamtwert %.2f" % (total_cost, po["total_cost"]))
         open_items.append("UNSTIMMIG: Positionen %.2f != Gesamtwert laut Beleg %.2f (%+.2f), Quelle pruefen (moeglicherweise Lesefehler)" % (total_cost, po["total_cost"], total_cost - r2(po["total_cost"])))

@@ -177,6 +177,15 @@ class Sperren(unittest.TestCase):
         self.assertIn(code, [i.code for i in r.issues if i.level == "WARN"])
         self.assertIn("UNSTIMMIG", r.payload["notes"])
 
+    def test_leere_positionen_gesperrt(self):
+        r = core.build(po(items=[{"sku": "XW-041", "name": "n", "variants": [{"color": "Black", "price": 1.0, "sizes": {"S": 0}}]}], total_cost=2.0, total_pieces=1), CTX, TODAY)
+        self.assertEqual(r.decision, "BLOCK")
+        self.assertIn("empty_order", codes(r))
+
+    def test_ein_stueck_gesperrt(self):
+        self.blocked(po(items=[{"sku": "XW-041", "name": "n", "variants": [{"color": "Black", "price": 2.0, "sizes": {"S": 1}}]}],
+                        total_cost=None, total_pieces=None, payments=[]), "too_small")
+
     def test_summe_stimmt_nicht(self): self.unstimmig(po(total_cost=999.0), "sum_mismatch")
     def test_stueckzahl_stimmt_nicht(self): self.unstimmig(po(total_pieces=41), "pieces_mismatch")
     def test_zahlungssumme_stimmt_nicht(self):
@@ -197,11 +206,11 @@ class Sperren(unittest.TestCase):
 
     def test_sicherheitsnetz_summen_unabhaengig_vom_input(self):
         # Rundungsfall: 3 x 0.1 * 7 -> 2.1 (nicht 2.0999999..)
-        x = po(items=[{"sku": None, "name": "n", "variants": [{"color": "a", "price": 0.1, "sizes": {"S": 7}}]}],
-               payments=[{"name": "p", "status": "Unpaid", "amount": 0.7, "due": "2026-09-22"}], total_cost=0.7)
+        x = po(items=[{"sku": None, "name": "n", "variants": [{"color": "a", "price": 0.1, "sizes": {"S": 7, "M": 7}}]}],
+               payments=[{"name": "p", "status": "Unpaid", "amount": 1.4, "due": "2026-09-22"}], total_cost=1.4, total_pieces=None)
         r = core.build(x, CTX, TODAY)
         self.assertEqual(r.decision, "CREATE", [i.msg for i in r.issues])
-        self.assertEqual(r.payload["totalCost"], 0.7)
+        self.assertEqual(r.payload["totalCost"], 1.4)
 
 
 class Dubletten(unittest.TestCase):
