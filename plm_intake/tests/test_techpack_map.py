@@ -1,0 +1,45 @@
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from plm_intake import techpack_map as tm  # noqa: E402
+
+P = [{"id": "a", "sku": "SDKM260051"}, {"id": "b", "sku": "SDKM260061"}, {"id": "c", "sku": "561872"}, {"id": "d", "sku": "SNM26008"},
+     {"id": "e", "sku": "XW-042-CROC"}, {"id": "f", "sku": "XW-042-CHET"}, {"id": "g", "sku": "XW26-006"}]
+AL = {tm.nk("SLM26-001"): "561872"}
+
+
+class Zuordnung(unittest.TestCase):
+    def ids(self, r):
+        return sorted(p["id"] for p in r[0])
+
+    def test_exakt(self):
+        self.assertEqual(self.ids(tm.resolve("XW26-006_TP.pdf", P, AL)), ["g"])
+
+    def test_kunde_y_regel(self):
+        r = tm.resolve("SKM26-005_TP_Men's Hood Black.pdf", P, AL)
+        self.assertEqual((self.ids(r), r[1]), (["a"], "regel"))
+        self.assertEqual(self.ids(tm.resolve("SKM26-006-1_TP.pdf", P, AL)), ["b"])
+
+    def test_alias(self):
+        r = tm.resolve("TP_Spec SLM26-001_Men's T-Shirt.pdf", P, AL)
+        self.assertEqual((self.ids(r), r[1]), (["c"], "alias"))
+
+    def test_mehrere_styles(self):
+        self.assertEqual(self.ids(tm.resolve("SKM26-005+SKM26-006_TP.pdf", P, AL)), ["a", "b"])
+
+    def test_variantensuffix(self):
+        self.assertEqual(self.ids(tm.resolve("XW-042 TP.pdf", P, AL)), ["e", "f"])
+
+    def test_inhalt_nur_wenn_name_nichts_liefert(self):
+        r = tm.resolve("SHM26-008_TP.pdf", P, AL, content="Style SHM26-008 base SNM26-008")
+        self.assertEqual((self.ids(r), r[1]), (["d"], "inhalt"))
+
+    def test_kein_treffer_bleibt_offen(self):
+        self.assertEqual(tm.resolve("Techpack Dawson Hoodie.pdf", P, AL, content="Dawson")[1], "offen")
+        self.assertEqual(tm.resolve("SKM26-099_TP.pdf", P, AL)[1], "offen")   # Regel nur, wenn das Ziel existiert
+
+
+if __name__ == "__main__":
+    unittest.main()
