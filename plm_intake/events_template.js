@@ -56,6 +56,15 @@
       const rec = { title: p.title, statusSet, statusOk, notesAdded: added.length, dates: Object.keys(dateChanges), paymentsMarkedPaid: payDone.length, dataUnchanged: same, notesOk, datesOk };
       out.push(rec);
       if (!same || !notesOk || !datesOk || !statusOk) { rec.ABBRUCH = 'Abweichung nach Update: Backup output/backup/ pruefen'; break; }
+      // Sichtbarkeit: neu geschriebene Notizzeilen zusaetzlich als Kommentar in "Chats & Updates" der Bestellung (nur die NEUEN Zeilen, daher ohne Dubletten; Fehler hier aendern keine Daten)
+      if (added.length) {
+        try {
+          const txt = p.lines.filter(l => added.indexOf(l.marker) >= 0).map(l => l.text).join('\n');
+          const r2 = await window.__postOrderComment(p.id, txt);
+          rec.chat = r2.ok ? added.length : 0;
+          if (!r2.ok) rec.chatError = r2.err;
+        } catch (e) { rec.chat = 0; rec.chatError = String(e && e.message || e).slice(0, 200); }
+      }
     } catch (e) { out.push({ title: p.title, error: String(e && e.message || e).slice(0, 300), unsure: true }); break; }
   }
   return out;

@@ -100,6 +100,15 @@
     const r = await client().mutate({ mutation: createDoc, variables: { data }, errorPolicy: 'all' });
     return { errors: (r.errors || []).map(e => e.message.slice(0, 300)), data: r.data };
   };
+  // Kommentar in "Chats & Updates" der Bestellung (so sendet ihn auch die Oberflaeche: createNotificationComment, notificationType ORDER). Nur additiv.
+  window.__postOrderComment = async (orderId, text) => {
+    const V = Var;
+    const doc = { kind: 'Document', definitions: [{ kind: 'OperationDefinition', operation: 'mutation', variableDefinitions: [{ kind: 'VariableDefinition', variable: V('i'), type: NN('NotificationInput') }],
+      selectionSet: { kind: 'SelectionSet', selections: [F('createNotificationComment', [F('_id'), F('action')], [{ kind: 'Argument', name: N('notificationInput'), value: V('i') }])] } }] };
+    const r = await client().mutate({ mutation: doc, variables: { i: { notificationType: 'ORDER', referenceId: orderId, content: String(text).slice(0, 4000), taggedUsers: [] } }, errorPolicy: 'all' });
+    const ok = !!(r.data && r.data.createNotificationComment && r.data.createNotificationComment._id);
+    return { ok, err: (r.errors || []).map(e => e.message.slice(0, 200)).join('; ') };
+  };
   window.__fetchOrder = async id => {
     const r = await client().query({ query: getDoc, variables: { id }, fetchPolicy: 'no-cache', errorPolicy: 'all' });
     return { d: r.data && r.data.getOrderById, e: (r.errors || []).map(e => e.message.slice(0, 200)) };
