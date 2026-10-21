@@ -434,6 +434,14 @@ class LieferantenNamen(unittest.TestCase):
         self.assertIsNone(core.match_vendor("LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI", V, {})[0])   # Tippfehler: nur per Alias
         self.assertEqual(core.match_vendor("LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI", V, {"LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI": "Lieferant I"})[0]["id"], "S")
 
+    def test_alias_gilt_auch_fuer_kurzform(self):
+        from plm_intake import core
+        V = [{"id": "S", "name": "Lieferant I"}]
+        A = {"LIEFERANT_I TEKSTIL SANAYI VE TICARET LIMITED SIRKETI": "Lieferant I"}
+        v, why = core.match_vendor("LIEFERANT_I TEKSTİL SANAYİ VE TİC. LTD. ŞTİ.", V, A)
+        self.assertEqual((v["id"], why), ("S", "alias"))
+        self.assertIsNone(core.match_vendor("ABC Tekstil Sanayi", V, A)[0])
+
     def test_vendors_new_nutzt_alias_datei(self):
         import json, tempfile
         from plm_intake import vendors_new

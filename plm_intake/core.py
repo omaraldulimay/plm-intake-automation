@@ -76,13 +76,19 @@ def vendor_tokens(name):
     return [t for t in toks if t not in LEGAL]
 
 
+def alias_key(name):
+    """Firmenkern ohne Rechtsform/Allerweltswoerter, ASCII, zusammengeschrieben (nur fuer den Alias-Abgleich)."""
+    return "".join(t for t in vendor_tokens(name) if t not in GENERIC)
+
+
 def match_vendor(name, vendors, aliases=None):
     """Eindeutigen Vendor finden. Rueckgabe (vendor|None, grund).
     Reihenfolge: Alias-Tabelle (von Menschen gepflegt) > exakt (normalisiert) > gleicher Namenskern > eindeutiger Teilstring (>=4 Zeichen).
     Mehrdeutigkeit = kein Treffer (lieber Review als falscher Lieferant)."""
     n = norm(name)
+    ck = alias_key(name)
     for alias, target in (aliases or {}).items():
-        if norm(alias) == n:
+        if norm(alias) == n or (len(ck) >= 5 and alias_key(alias) == ck):   # auch Kurzformen/Schreibvarianten: 'SANAYI VE TIC. LTD. STI.' = 'SANAYI VE TICARET LIMITED SIRKETI'
             hit = [v for v in vendors if v["id"] == target or norm(v["name"]) == norm(target)]
             if len(hit) == 1:
                 return hit[0], "alias"
