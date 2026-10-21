@@ -31,6 +31,15 @@ def nk(s):
     return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
 
 
+VERSION_RX = re.compile(r"(?<![a-z0-9])(?:\d{4}[-_.]\d{1,2}[-_.]\d{1,2}|\d{1,2}[-_.]\d{1,2}[-_.]\d{2,4}|\d{8}|v\s?\d+(?:\.\d+)*|rev\.?\s?\d+|final|new|neu|updated|update|copy|kopie)(?![a-z0-9])|\(\d+\)")
+
+
+def family_key(name):
+    """Dateiname ohne Endung, Datums-/Versionszusaetze entfernt, nur a-z0-9: gleiche Datei in verschiedenen Fassungen -> gleicher Schluessel."""
+    base = os.path.splitext(str(name or ""))[0].lower()
+    return nk(VERSION_RX.sub(" ", base))
+
+
 def drive_id(path):
     r = subprocess.run(["xattr", "-p", "com.google.drivefs.item-id#S", str(path)], capture_output=True, text=True)
     return r.stdout.strip() if r.returncode == 0 else None

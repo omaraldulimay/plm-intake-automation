@@ -2,7 +2,7 @@
 
   python3 -m plm_intake.techpack_upload            TROCKENLAUF: output/phase2/B15/upload_plan.md
   python3 -m plm_intake.techpack_upload --apply    laedt hoch, liest je Produkt zurueck
-Zuordnung: plm_intake.techpack_map (exakt / Kunde Y-Regel / belegte Alias-Tabelle / Inhalt). Je Produkt jeder Dateiname nur einmal (neueste Fassung),
+Zuordnung: plm_intake.techpack_map (exakt / Kunde Y-Regel / belegte Alias-Tabelle / Inhalt). Nur Typ TP (keine Specs). Je Produkt jede Datei nur einmal (neueste Fassung, Datums-/Versionszusaetze zaehlen als Fassungen),
 schon vorhandene echte Datei gleichen Namens wird uebersprungen (Drive-Links zaehlen nicht als vorhanden). Nie loeschen. Max. 20 MB je Datei."""
 import argparse
 import base64
@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from plm_intake import techpack_map as tm  # noqa: E402
-from plm_intake.techpack_links import ANH, MIME, display_name, load_sources  # noqa: E402
+from plm_intake.techpack_links import ANH, MIME, display_name, family_key, load_sources  # noqa: E402
 
 OUT = ROOT / "output" / "phase2" / "B15"
 MAXB = 20 * 1024 * 1024
@@ -39,6 +39,8 @@ def plan(products):
     al = tm.load_aliases()
     best = {}
     for s in load_sources():
+        if s.get("typ") != "TP":   # nur echte Techpacks, keine Specs
+            continue
         name, path = display_name(s["datei"]), ANH / s["datei"]
         if not path.exists() or path.stat().st_size > MAXB:
             continue
@@ -46,7 +48,7 @@ def plan(products):
         if not r[0]:
             r = tm.resolve(name, products, al, content=tm.file_text(path))
         for p in r[0]:
-            k = (p["id"], name.lower())
+            k = (p["id"], family_key(name))   # je Produkt nur die neueste Fassung
             it = {"productId": p["id"], "sku": p["sku"], "name": name, "datei": s["datei"], "datum": s.get("datum") or "", "methode": r[1]}
             if k not in best or (it["datum"], it["datei"]) > (best[k]["datum"], best[k]["datei"]):
                 best[k] = it

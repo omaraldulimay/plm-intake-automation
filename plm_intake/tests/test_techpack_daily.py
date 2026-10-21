@@ -32,7 +32,7 @@ class Daily(unittest.TestCase):
 
     def test_erkennung_dateiname(self):
         self.assertTrue(td.is_techpack_name("2026-10-01_0123456789abcdef_XW26-006_TP.pdf"))
-        self.assertTrue(td.is_techpack_name("Size Spec XW26-006.xlsx"))
+        self.assertFalse(td.is_techpack_name("Size Spec XW26-006.xlsx"))   # Specs werden nicht angehaengt
         self.assertTrue(td.is_techpack_name("BOM XW26-006.xlsx"))
         self.assertFalse(td.is_techpack_name("Invoice_123.pdf"))
         self.assertFalse(td.is_techpack_name("XW26-006_TP.png"))
@@ -77,6 +77,17 @@ class Daily(unittest.TestCase):
         files = [f("2026-10-02_0123456789abcdef_XW26-006_TP.pdf", "2026-10-02T00:00:00+00:00"), f("2026-10-05_fedcba9876543210_XW26-006_TP.pdf", "2026-10-05T00:00:00+00:00")]
         lines, res, up = self.run_(files, apply=True)
         up.assert_called_once()
+
+    def test_spec_wird_nicht_angehaengt(self):
+        self.start()
+        lines, res, up = self.run_([f("Size Spec XW26-006.xlsx"), f("XW26-006_Grading.xlsx")], apply=True)
+        up.assert_not_called(); self.assertEqual(res["neu"], 0)
+
+    def test_nur_neueste_fassung_mit_datum_version(self):
+        self.start()
+        files = [f("XW26-006_TP_2026-10-02.pdf", "2026-10-02T00:00:00+00:00"), f("XW26-006_TP_v2.pdf", "2026-10-05T00:00:00+00:00"), f("XW26-006_TP_BOM.pdf", "2026-10-03T00:00:00+00:00")]
+        lines, res, up = self.run_(files, apply=True)
+        self.assertEqual(sorted(c.args[1] for c in up.call_args_list), ["XW26-006_TP_BOM.pdf", "XW26-006_TP_v2.pdf"])
 
     def test_trockenlauf_ruft_keinen_upload_auf(self):
         self.start()

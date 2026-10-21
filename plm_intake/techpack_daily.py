@@ -1,4 +1,4 @@
-"""Taeglicher Abschnitt "Techpacks": NEUE Techpack-/Spec-Anhaenge aus Lieferanten-Mails als echte Datei ans passende PLM-Produkt haengen.
+"""Taeglicher Abschnitt "Techpacks": NEUE Techpack-Anhaenge (nur Typ TP, keine Specs) aus Lieferanten-Mails als echte Datei ans passende PLM-Produkt haengen.
 
 Quelle der Anhaenge: lokal Drive-Desktop-Ordner PLM-Mails/Anhaenge, in der Cloud (PLM_INBOX_MODE=drive_api) die Drive-API (nur lesen, Dienstkonto).
 Neu = Aenderungszeit/modifiedTime nach dem Merker "since" in <intake>/techpack_daily.json (wird mit gesichert, siehe cloud.STATE_FILES).
@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from plm_intake import techpack_map as tm
+from plm_intake.techpack_links import family_key
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_NAME = "techpack_daily.json"
@@ -30,10 +31,10 @@ def display_name(datei):
 
 
 def is_techpack_name(datei):
-    """Dateiname = Techpack/Spec (Regeln aus phase2_sources.typ_of) und ein Dokumentformat, das Lifecycle als Datei nimmt."""
+    """Dateiname = Techpack (Typ TP, keine Specs; Regeln aus phase2_sources.typ_of) und ein Dokumentformat, das Lifecycle als Datei nimmt."""
     from plm_intake.phase2_sources import typ_of
     n = display_name(datei)
-    return n.lower().endswith(EXTS) and typ_of(n) in ("TP", "Spec")
+    return n.lower().endswith(EXTS) and typ_of(n) == "TP"
 
 
 def now_iso():
@@ -162,10 +163,10 @@ def run(products, state_path, apply=False, source=None, reader=None, uploader=No
         if not r[0]:
             res["ohne_produkt"].append("%s (%s)" % (name, r[2])); processed.append(f["name"]); continue
         jobs.append({"f": f, "name": name, "data": data, "prods": r[0], "methode": r[1]})
-    seen, uniq = set(), []   # gleicher Name mehrfach (mehrere Mails): nur die neueste Fassung, aeltere gelten als erledigt
+    seen, uniq = set(), []   # gleiche Datei in mehreren Fassungen (Name bis auf Datum/Version gleich): nur die neueste, aeltere gelten als erledigt
     for j in reversed(jobs):
-        left = [p for p in j["prods"] if (p["id"], j["name"].lower()) not in seen]
-        seen |= {(p["id"], j["name"].lower()) for p in j["prods"]}
+        left = [p for p in j["prods"] if (p["id"], family_key(j["name"])) not in seen]
+        seen |= {(p["id"], family_key(j["name"])) for p in j["prods"]}
         if left:
             j["prods"] = left; uniq.append(j)
         else:
