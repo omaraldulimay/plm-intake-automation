@@ -332,8 +332,22 @@ WEAK = {"vendor_only": " [Zuordnung: einzige laufende Order des Lieferanten, nic
         "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]"}
 
 
-def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None):
+INFO_OVERRIDE = "__info__"
+
+
+def load_event_overrides(intake):
+    """output/intake/event_overrides.json {"<ev-marker 8 hex>": "<order_id>" | "__info__"} (Entscheidungen aus der Klaerung)."""
+    f = Path(intake) / "event_overrides.json"
+    try:
+        d = json.load(open(f)) if f.exists() else {}
+    except (OSError, ValueError):
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None, event_overrides=None):
     per = {}
+    invalid_overrides = []
     unmatched = []
     seen = set()
     orders = [o for o in orders if not TEST_ORDER.search(str(o.get("title") or ""))]
@@ -346,7 +360,19 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             continue
         seen.add(mk)
         evs.append(e)
-    results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom, style_aliases)) for e in evs]
+    by_oid = {o["id"]: o for o in orders}
+    results = []
+    for e in evs:
+        ov = (event_overrides or {}).get(marker(e))
+        if ov == INFO_OVERRIDE:   # Klaerung: ohne Bestellbezug -> still aus der Klaerliste
+            results.append((e, (None, "info: Klaerung - kein Bestellbezug (Spedition/Zoll/Muster/Entwicklung/nicht im PLM)")))
+            continue
+        if ov:
+            if ov in by_oid:   # STARKE Zuordnung (nicht in WEAK): vor allen anderen Wegen
+                results.append((e, (by_oid[ov], "klaerung")))
+                continue
+            invalid_overrides.append({"marker": marker(e), "order_id": ov})
+        results.append((e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom, style_aliases)))
     assigned = [(e, o["id"], why) for e, (o, why) in results if o]   # vor der Verlaufs-Zuordnung: nur eigene Treffer (fuer plm_intake.alias_learn)
     if vendor_only:   # Verlaufs-Zuordnung: Ereignisse ohne eigenen Bezug erben die Order, auf die BELEGTE Ereignisse desselben Mail-Verlaufs eindeutig zeigen (nur Notiz, nie Termin/Status/Zahlung)
         by_thread = {}
@@ -403,7 +429,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
                 p["pay"].append({"amount": core.r2(d["amount"]), "marker": mk})
             except (TypeError, ValueError):
                 pass
-    return {"orders": list(per.values()), "unmatched": unmatched, "assigned": assigned}
+    return {"orders": list(per.values()), "unmatched": unmatched, "assigned": assigned, "invalid_overrides": invalid_overrides}
 
 
 def make_js(plan_):
@@ -422,6 +448,8 @@ def report(plan_):
             lines.append("- STATUS: %s -> %s (Meilenstein %s)" % (p["status"]["from"], p["status"]["to"]["status"], p["status"]["why"]))
         for z in p["pay"]:
             lines.append("- ZAHLUNG bezahlt: %.2f" % z["amount"])
+    for iv in plan_.get("invalid_overrides") or []:
+        lines.append("- WARNUNG: event_overrides ev:%s -> unbekannte Order-ID %s (ignoriert)" % (iv["marker"], iv["order_id"]))
     info = [u for u in plan_["unmatched"] if str(u["reason"]).startswith("info:")]
     human = [u for u in plan_["unmatched"] if not str(u["reason"]).startswith("info:")]
     if human:

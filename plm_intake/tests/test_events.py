@@ -286,6 +286,45 @@ class Plan(unittest.TestCase):
         l = events.plan([ev(summary="x" * 5000)], ORDERS, VENDORS)["orders"][0]["lines"][0]["text"]; self.assertLess(len(l), 520)
 
 
+class Klaerung(unittest.TestCase):
+    def _mk(self, e):
+        return events.marker(e)
+
+    def test_override_gilt_als_starke_zuordnung(self):
+        e = ev(ref={"po_number": "GIBTSNICHT1", "style": None}, vendor="Unbekannt", type="SHIPMENT")
+        pl = events.plan([e], ORDERS, VENDORS, event_overrides={self._mk(e): "O33"})
+        self.assertEqual([o["id"] for o in pl["orders"]], ["O33"]); self.assertEqual(pl["unmatched"], [])
+        self.assertFalse(pl["orders"][0]["lines"][0]["weak"]); self.assertEqual(pl["assigned"][0][2], "klaerung")
+
+    def test_override_hat_vorrang_vor_po_nummer(self):
+        e = ev()
+        pl = events.plan([e], ORDERS, VENDORS, event_overrides={self._mk(e): "O25"})
+        self.assertEqual(pl["orders"][0]["id"], "O25")
+
+    def test_ungueltige_order_id_wird_ignoriert_und_gemeldet(self):
+        e = ev()
+        pl = events.plan([e], ORDERS, VENDORS, event_overrides={self._mk(e): "NOPE"})
+        self.assertEqual(pl["orders"][0]["id"], "O28")   # normaler Weg
+        self.assertEqual(pl["invalid_overrides"], [{"marker": self._mk(e), "order_id": "NOPE"}])
+        self.assertIn("unbekannte Order-ID NOPE", events.report(pl))
+
+    def test_info_override_nimmt_fall_aus_der_klaerliste(self):
+        e = ev(ref={"po_number": "GIBTSNICHT1", "style": None}, vendor="Unbekannt")
+        self.assertEqual(len([u for u in events.plan([e], ORDERS, VENDORS)["unmatched"] if not u["reason"].startswith("info:")]), 1)
+        pl = events.plan([e], ORDERS, VENDORS, event_overrides={self._mk(e): events.INFO_OVERRIDE})
+        self.assertEqual(pl["orders"], []); self.assertTrue(pl["unmatched"][0]["reason"].startswith("info:"))
+        self.assertNotIn("Nicht zugeordnet", events.report(pl))
+
+    def test_datei_und_state_files(self):
+        import tempfile
+        from plm_intake import cloud
+        self.assertIn("intake/event_overrides.json", cloud.STATE_FILES)
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(events.load_event_overrides(d), {})
+            (Path(d) / "event_overrides.json").write_text('{"abcd1234": "O28"}')
+            self.assertEqual(events.load_event_overrides(d), {"abcd1234": "O28"})
+
+
 @unittest.skipUnless(shutil.which("node"), "node fehlt")
 class Skript(unittest.TestCase):
     BASE = {"id": "O28", "title": "PO-T", "totalCost": 100, "totalNumberOfPieces": 10, "manufacturer": {"id": "V"}, "notes": "Quelle: PI.", "etdEstimatedDate": 1790000000000,

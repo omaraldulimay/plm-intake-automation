@@ -24,7 +24,7 @@ FOLDER = "application/vnd.google-apps.folder"
 # relativ zu output/ ; Zustand, der zwischen Laeufen erhalten bleiben muss (Merkbuch, Status, Aliase, Klaerfaelle, Heartbeat ...)
 STATE_FILES = [
     "intake/ledger.json", "intake/status.json", "intake/STATUS.md", "intake/auto_report.md", "intake/alerts.log",
-    "intake/po_aliases.json", "intake/vendor_aliases.json", "intake/style_aliases.json", "intake/overrides.json",
+    "intake/po_aliases.json", "intake/vendor_aliases.json", "intake/style_aliases.json", "intake/overrides.json", "intake/event_overrides.json",
     "intake/klaerfaelle.json", "intake/last_run.json", "intake/lokaler_lauf_heartbeat.json",
     "phase2/lieferanten.json", "intake/techpack_daily.json",
 ]

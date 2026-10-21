@@ -122,7 +122,7 @@ def main(argv=None):
         if r.get("pid") and r.get("po") and r["pid"] in by_id:
             po_aliases.setdefault(str(r["po"]), by_id[r["pid"]])
     evt = events.load_events(evs) + events.load_events(doc_event_paths)
-    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases)
+    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases, event_overrides=events.load_event_overrides(intake))
     rep += ["## Notizen/Ereignisse", events.report(pl)]
 
     # (5b) Sendungen: Packlisten/Rechnungen -> Sendung je Beleg (pending), Versand-Meilensteine -> in_transit/delivered + Tracking

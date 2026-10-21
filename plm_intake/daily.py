@@ -115,7 +115,7 @@ def main(argv=None):
     ev_names = []
     if evs:
         evt = events.load_events(evs)
-        pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases)
+        pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, event_overrides=events.load_event_overrides(intake))
         out += ["", events.report(pl)]
         if pl["orders"]:
             f = intake / ("events_%s.js" % dt.datetime.now().strftime("%Y%m%d_%H%M%S"))

@@ -196,7 +196,7 @@ def main(argv=None):
     ctx = load_context(); add_po_numbers(ctx)
     al = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
     poal = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
-    pl = events.plan(events.load_events(evs), ctx["orders"], ctx["vendors"], poal, al, vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"))
+    pl = events.plan(events.load_events(evs), ctx["orders"], ctx["vendors"], poal, al, vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"), event_overrides=events.load_event_overrides(intake))
     if a.apply:
         rows, res = sync(pl, ctx, al)
         print(json.dumps(res, ensure_ascii=False, indent=1))
