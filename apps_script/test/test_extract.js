@@ -941,5 +941,12 @@ t('Mengenkontrolle: Positionsmenge laut Beleg gegen Groessensumme, Befund nennt 
   assert.strictEqual(P(doc(null)).filter(x => /Position 26779/.test(x)).length, 0);   // ohne qty keine Pruefung
   const src = fs.readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8'); assert.ok(/"qty": <Gesamtmenge dieser Position/.test(src) && /MENGENKONTROLLE/.test(src));
 });
+t('Mengenkontrolle je Farbe: Farbmenge laut Beleg gegen Groessensumme (Fall Alpha 26069: ALPH-109 BLACK 442 statt 392)', () => {
+  const s = fresh({ gemini: true }); const P = vm.runInContext('exProblems_', s.ctx);
+  const doc = q => JSON.stringify({ documents: [{ po_number: 'X', total_pieces: null, total_cost: null, confidence: 0.95, items: [{ sku: 'ALPH-109', name: 'H', qty: null, variants: [{ color: 'BLACK', price: 1, qty: q, sizes: { S: 29, M: 163, L: 139, XL: 32, '2XL': 75, '3XL': 4 } }] }] }] });
+  const bad = P(doc(392)); assert.ok(bad.some(x => /ALPH-109 Farbe BLACK/.test(x) && /442/.test(x) && /392/.test(x)), bad.join('|'));
+  assert.strictEqual(P(doc(442)).filter(x => /Farbe BLACK/.test(x)).length, 0); assert.strictEqual(P(doc(null)).filter(x => /Farbe BLACK/.test(x)).length, 0);
+  const src = fs.readFileSync(path.join(__dirname, '..', 'extract_po.gs'), 'utf8'); assert.ok(/"qty": <Menge dieser Farbe/.test(src) && /Misch-Kartons/.test(src));
+});
 let fail = 0; results.forEach(r => { console.log((r[1] ? 'OK    ' : 'FEHLER') + ' ' + r[0] + (r[1] ? '' : '\n      -> ' + r[2])); if (!r[1]) fail++; });
 console.log('\n' + results.length + ' Tests, ' + fail + ' Fehler'); process.exit(fail ? 1 : 0);
