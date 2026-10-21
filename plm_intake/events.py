@@ -219,6 +219,9 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
     d_ = e.get("details") or {}
     keys = [(po, True)] if po else []
     keys += [(core.norm(x), False) for x in [ref.get("container")] + [d_.get(k) for k in ("invoice_number", "bl", "awb", "hbl", "mbl", "container")] if x not in (None, "", False) and len(core.norm(x)) >= 5]
+    src = e.get("source")
+    if isinstance(src, dict) and src.get("doc") and len(core.norm(src["doc"])) >= 5:   # Dokumentnummer (source.doc) zaehlt wie eine Beleg-Nr (nur exakt)
+        keys.append((core.norm(src["doc"]), False))
     for alias, title in (aliases or {}).items():
         na = core.norm(alias)
         if title == "__mehrdeutig__" or not na:

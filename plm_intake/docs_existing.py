@@ -82,7 +82,7 @@ def parent_for(vendor, po, orders, ctx):
     p = core.find_parent(vid, po.get("po_number"), orders)
     if p: return p, []
     from plm_intake import alias_learn   # gelernte/gepflegte Lieferanten-Kennung (PO-/Rechnungsnr) vor allen schwaecheren Wegen
-    for key in (po.get("po_number"), po.get("invoice_number")):
+    for key in (po.get("po_number"), po.get("invoice_number"), (po.get("source") or {}).get("doc") if isinstance(po.get("source"), dict) else None):   # Dokumentnummer (source.doc) zaehlt wie eine Beleg-Nr
         if key:
             ao, _ambig = alias_learn.lookup(ctx.get("po_aliases"), key, orders)
             mf = ao.get("manufacturer") if ao else None

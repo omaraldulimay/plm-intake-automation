@@ -61,6 +61,13 @@ class Lernen(unittest.TestCase):
         p, amb = docs_existing.parent_for(V[0], {"po_number": "LIEFERANT_AA2674"}, O, ctx)
         self.assertEqual(p["id"], "A2")
 
+    def test_dokumentnummer_source_doc_zaehlt_als_kennung(self):
+        ctx = {"po_aliases": {"LIEFERANT_AA2674": "A2"}, "products": []}
+        p, _ = docs_existing.parent_for(V[0], {"po_number": None, "source": {"doc": "LIEFERANT_AA-2674"}}, O, ctx)
+        self.assertEqual(p["id"], "A2")
+        p, _ = docs_existing.parent_for(V[0], {"po_number": None, "source": {"doc": "LIEFERANT_AA2675"}}, O, ctx)
+        self.assertIsNone(p)
+
     def test_beleg_delivery_doc_lernt(self):
         rows = [{"kind": "DELIVERY_DOC", "pid": "A1", "doc": {"po_number": "AK/625/26"}}]
         self.assertEqual([(k, o) for k, o, _ in alias_learn.learn({}, [], rows, O)[1]], [("AK/625/26", "A1")])
