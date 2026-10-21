@@ -60,6 +60,8 @@ def main(argv=None):
     rep += ["PO-Nummern per Browser nachgeladen: %d" % add_po_numbers(ctx), ""]
     ctx["aliases"] = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
     po_aliases = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
+    stored_aliases = dict(po_aliases)   # nur Dateistand + Gelerntes wird gespeichert (nicht die Lauf-internen setdefault-Eintraege unten)
+    ctx["po_aliases"] = po_aliases
     overrides = json.load(open(a.overrides)) if Path(a.overrides).exists() else {}
 
     # (3) neue Bestellungen
@@ -188,6 +190,15 @@ def main(argv=None):
             ids = [events.marker(e) for e in events.load_events([f])]
             if ids and all(m in matched for m in ids) and applied["event_orders"]: ledger.mark(led, f, "applied")
         ledger.save(led_path, led)
+    # Lernen: Kennungen aus sicher zugeordneten Ereignissen/Belegen -> Alias (nur --apply speichert; Trockenlauf zeigt die Vorschau)
+    try:
+        from plm_intake import alias_learn
+        _, l_new, l_conf = alias_learn.learn(stored_aliases, pl.get("assigned") or [], rows, ctx["orders"], apply=a.apply)
+        if a.apply and (l_new or l_conf):
+            (intake / "po_aliases.json").write_text(json.dumps(stored_aliases, ensure_ascii=False, indent=2, sort_keys=True))
+        rep += [""] + alias_learn.report_lines(l_new, l_conf, a.apply)
+    except Exception as e:   # Lernen darf den Lauf nie abbrechen
+        rep += ["", "## Gelernte Aliase", "- FEHLER: %s" % str(e)[:200]]
     # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
     try:
         from plm_intake import klaerfaelle

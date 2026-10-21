@@ -214,12 +214,18 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
     ref = e.get("ref") or {}
     po = core.norm(ref.get("po_number"))
     hits = []
-    # Alias-Tabelle (von Menschen gepflegt): Lieferanten-Nummer -> Order-Titel, z. B. "ISPOB3.429": "PO-LIEFERANT_W-2026-04-29"
+    # Alias-Tabelle (von Menschen gepflegt oder gelernt, plm_intake/alias_learn): Lieferanten-Nummer -> Order (Titel oder ID), z. B. "ISPOB3.429": "PO-LIEFERANT_W-2026-04-29"
+    # Vorrang vor allen schwaecheren Wegen. Ausser PO-Nr zaehlen auch Rechnungs-/BL-/Container-Nr des Ereignisses (exakt). Alias 'mehrdeutig' wird nie benutzt.
+    d_ = e.get("details") or {}
+    keys = [(po, True)] if po else []
+    keys += [(core.norm(x), False) for x in [ref.get("container")] + [d_.get(k) for k in ("invoice_number", "bl", "awb", "hbl", "mbl", "container")] if x not in (None, "", False) and len(core.norm(x)) >= 5]
     for alias, title in (aliases or {}).items():
         na = core.norm(alias)
+        if title == "__mehrdeutig__" or not na:
+            continue
         # exakt, oder die Beleg-/Positionsnummer beginnt mit dem Alias und geht nur mit Suffix weiter ('ISPOB3.429-5' zu 'ISPOB3.429'; Mindestlaenge 6 gegen Zufallstreffer)
-        if po and (na == po or (len(na) >= 6 and po.startswith(na))):
-            hits = [o for o in orders if core.norm(o.get("title")) == core.norm(title)]
+        if any(na == k or (is_po and len(na) >= 6 and k.startswith(na)) for k, is_po in keys):
+            hits = [o for o in orders if o.get("id") == title or core.norm(o.get("title")) == core.norm(title)]
             if len(hits) == 1:
                 return hits[0], "alias"
             hits = []
@@ -338,6 +344,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
         seen.add(mk)
         evs.append(e)
     results = [(e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom, style_aliases)) for e in evs]
+    assigned = [(e, o["id"], why) for e, (o, why) in results if o]   # vor der Verlaufs-Zuordnung: nur eigene Treffer (fuer plm_intake.alias_learn)
     if vendor_only:   # Verlaufs-Zuordnung: Ereignisse ohne eigenen Bezug erben die Order, auf die BELEGTE Ereignisse desselben Mail-Verlaufs eindeutig zeigen (nur Notiz, nie Termin/Status/Zahlung)
         by_thread = {}
         for e, (o, why) in results:
@@ -393,7 +400,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
                 p["pay"].append({"amount": core.r2(d["amount"]), "marker": mk})
             except (TypeError, ValueError):
                 pass
-    return {"orders": list(per.values()), "unmatched": unmatched}
+    return {"orders": list(per.values()), "unmatched": unmatched, "assigned": assigned}
 
 
 def make_js(plan_):
