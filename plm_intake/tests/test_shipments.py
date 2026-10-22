@@ -210,3 +210,55 @@ class McpArgs(unittest.TestCase):
         a = sh.mcp_create_args(c)
         self.assertEqual(a["lines"], [{"orderId": "O1", "product": "P1", "variant": "V1", "sizes": [{"size": "M", "quantity": 5}]}])
         self.assertEqual(a["trackingNumber"], "T1")
+
+
+def _pos(name, pid, variants):
+    return {"name": name, "product": {"id": pid} if pid else None,
+            "variants": [{"name": n, "variantId": "V%s%d" % (pid, i), "amounts": [{"key": k, "quantity": q} for k, q in a.items()]} for i, (n, a) in enumerate(variants)]}
+
+
+def _item(sku, name, qty, color=None):
+    return {"sku": sku, "name": name, "variants": [{"color": color, "quantity": qty, "sizes": {}}]}
+
+
+class Zuordnung(unittest.TestCase):
+    def test_lieferant_aa_stylecode_und_gesamtmenge_anteilig(self):
+        o = {"id": "W", "title": "PO-LIEFERANT_AA", "items": [_pos("SMI2603 Jacket", "P3", [("Alle", {"ONE SIZE": 100})]),
+                                                      _pos("SMI2604 Shorts", "P4", [("Black", {"S": 30, "M": 30}), ("Blue", {"S": 20, "M": 20})])]}
+        d = {"doc_type": "INVOICE", "po_number": "LIEFERANT_AA2674", "source": {"mail_id": "m"}, "items": [_item("SMI2604", "MEN'S SHORTS", 100)]}
+        c, h = sh.plan_from_docs([("f", d, "W")], {"W": o}, [{"id": "G", "title": "Sammel", "notes": "Mengen = PO-Menge", "products": [{"orderId": "W"}]}], {"P3": "SMI2603", "P4": "SMI2604"})
+        self.assertEqual(h, []); self.assertEqual(len(c), 1)
+        self.assertEqual(sum(q["quantityToShip"] for l in c[0]["products"] for v in l["variants"] for q in v["sizes"]), 100)
+        self.assertEqual([l["id"] for l in c[0]["products"]], ["P4"])
+
+    def test_lieferant_ag_zolltarif_ueber_packliste_und_produktwort_wird_eine_lieferung(self):
+        o = {"id": "Y", "title": "PO-LIEFERANT_AG", "items": [_pos("YK-003 Crewneck", "S3", [("Black", {"S": 50, "M": 50})]), _pos("YK-004 Shorts", "S4", [("Black", {"S": 40, "M": 40})]),
+                                                       _pos("YK-002 Pants", "S2", [("Black", {"S": 60, "M": 60})])]}
+        pl = {"doc_type": "PACKING_LIST", "po_number": None, "source": {"mail_id": "a"}, "items": [_item("YK-002 PANTOLON", "%65 COTTON PANTOLON", 70, "default"), _item("YK-002 OVERSIZE PANTOLON", "%35 COTTON PANTOLON", 50, "default"),
+                      _item("YK-003 SWEATSHIRT", "%65 SWEATSHIRT", 100, "default"), _item("YK-004 SHORT", "%65 SHORT", 80, "default")]}
+        inv = {"doc_type": "INVOICE", "po_number": "YIK1", "source": {"mail_id": "b"}, "items": [_item("610462000000", "%65 COTTON PANTOLON", 70), _item("610342000000", "%35 COTTON PANTOLON", 50),
+                       _item("611020990000", "%65 SWEAT", 100), _item("610462000000", "%65 SHORT", 80)]}
+        inv2 = {"doc_type": "INVOICE", "po_number": None, "source": {"mail_id": "c"}, "items": [_item("6109100000", "%65 COTTON SHORT", 80), _item("61046200000", "%65 COTTON PANTOLON", 120), _item("611020910000", "%65 SWEATSHIRT", 100)]}
+        by = {"S2": "YK-002", "S3": "YK-003", "S4": "YK-004"}
+        c, h = sh.plan_from_docs([("a", pl, "Y"), ("b", inv, "Y"), ("c", inv2, "Y")], {"Y": o}, [{"id": "G", "title": "Sammel", "notes": "Mengen = Order-Menge", "products": [{"orderId": "Y"}]}], by)
+        self.assertEqual(h, []); self.assertEqual(c, [])   # eine Lieferung, Menge 300 = Bestellmenge -> bestaetigt, keine neue Sendung
+        u = []
+        sh.plan_from_docs([("a", pl, "Y"), ("b", inv, "Y"), ("c", inv2, "Y")], {"Y": o}, [{"id": "G", "title": "Sammel", "notes": "Mengen = Order-Menge", "products": [{"orderId": "Y"}]}], by, updates=u)
+        self.assertEqual(u[0]["kind"], "bestaetigt"); self.assertEqual(u[0]["patch"]["notes"].count("[doc:"), 3)
+
+    def test_alpha_alias_alph_nn_26(self):
+        o = {"id": "A", "title": "PO-ALPHA", "items": [_pos("26069 Hoodie (ALP-98, 350 GSM)", "H", [("Black", {"S": 10, "M": 10})]), _pos("AL29006 Pants (ALP-106, 350 GSM)", "PA", [("Black", {"S": 10})])]}
+        d = {"doc_type": "INVOICE", "po_number": "26069", "source": {"mail_id": "m"}, "items": [
+            {"sku": "ALPH-98-26", "name": "MENS HOODIE", "variants": [{"color": "BLACK", "sizes": {"S": 5, "M": 5}}]},
+            {"sku": "ALPH-106-26", "name": "MENS SWEAT PANT", "variants": [{"color": "BLACK", "sizes": {"S": 4}}]}]}
+        c, h = sh.plan_from_docs([("f", d, "A")], {"A": o}, [], {"H": "26069", "PA": "AL29006"})
+        self.assertEqual(h, []); self.assertEqual(sorted(l["id"] for l in c[0]["products"]), ["H", "PA"])
+
+    def test_mehrdeutig_bleibt_offen(self):
+        o = {"id": "M", "title": "PO-M", "items": [_pos("YK-002 Pants", "S2", [("Black", {"S": 10})]), _pos("YK-005 Pants", "S5", [("Black", {"S": 10})])]}
+        d = {"doc_type": "INVOICE", "po_number": "X1", "source": {"mail_id": "m"}, "items": [_item("610462000000", "COTTON PANTOLON", 10)]}
+        c, h = sh.plan_from_docs([("f", d, "M")], {"M": o}, [], {"S2": "YK-002", "S5": "YK-005"})
+        self.assertEqual(c, []); self.assertIn("nicht vollstaendig", h[0][1])
+        d2 = {"doc_type": "INVOICE", "po_number": "X2", "source": {"mail_id": "n"}, "items": [_item("YK-009", "UNBEKANNT PANTOLON", 10)]}   # Stylecode vorhanden, passt nicht -> kein Produktwort-Raten
+        o2 = {"id": "M", "title": "PO-M", "items": [_pos("YK-002 Pants", "S2", [("Black", {"S": 10})])]}
+        c, h = sh.plan_from_docs([("g", d2, "M")], {"M": o2}, [], {"S2": "YK-002"}); self.assertEqual(c, []); self.assertTrue(h)
