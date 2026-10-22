@@ -155,26 +155,9 @@ def _item_for(doc_item, order, products_by_id, siblings=()):
     return None
 
 
-def _distribute(vs, qty):
-    """Gesamtmenge anteilig auf alle Farben/Groessen einer Order-Position verteilen (groesster Rest). -> {variantName: {size: qty}} oder None."""
-    cells = [(v["name"], k, q or 0) for v in vs for k, q in v["sizes"].items()]
-    tot = sum(c[2] for c in cells)
-    if not tot or not qty:
-        return None
-    raw = [qty * c[2] / tot for c in cells]
-    base = [int(r) for r in raw]
-    for i in sorted(range(len(cells)), key=lambda i: raw[i] - base[i], reverse=True)[:qty - sum(base)]:
-        base[i] += 1
-    out = {}
-    for c, b in zip(cells, base):
-        if b:
-            out.setdefault(c[0], {})[c[1]] = b
-    return out
-
-
-def lines_from_doc(doc, order, products_by_id, siblings=(), info=None):
+def lines_from_doc(doc, order, products_by_id, siblings=()):
     """Beleg-Positionen -> Sendungszeilen [{id: produktId, orderId, variants: [{id, name, sizes: [{size, quantityToShip}]}]}] + Liste nicht zuordenbarer Positionen.
-    Positionen nur mit Gesamtmenge (ohne Farbe/Groesse) werden anteilig auf die Order-Position verteilt (Hinweis in `info`)."""
+    Positionen nur mit Gesamtmenge (ohne Farbe/Groesse) bleiben offen (unmapped)."""
     lines, unmapped, pool = {}, [], {}
     ol = order_lines(order)
     for it in doc.get("items") or []:
@@ -207,17 +190,8 @@ def lines_from_doc(doc, order, products_by_id, siblings=(), info=None):
             ev = ent["variants"].setdefault(ov["name"], {"id": ov.get("id"), "name": ov["name"], "sizes": {}})
             for k, q in sizes.items():
                 ev["sizes"][k] = ev["sizes"].get(k, 0) + q
-    for pid, qty in pool.items():
-        vs = list(ol[pid]["variants"].values())
-        tot = sum(q or 0 for v in vs for q in v["sizes"].values())
-        dist = _distribute(vs, qty) if tot and qty <= tot * 1.1 and not lines[pid]["variants"] else None
-        if not dist:
-            unmapped.append("%s Gesamtmenge %s passt nicht zur Order-Position (%s Stk)" % (ol[pid].get("name"), qty, tot)); continue
-        for v in vs:
-            if v["name"] in dist:
-                lines[pid]["variants"][v["name"]] = {"id": v.get("id"), "name": v["name"], "sizes": dist[v["name"]]}
-        if info is not None:
-            info.append("%s: nur Gesamtmenge %s im Beleg, anteilig auf Farben/Groessen der Order verteilt" % (ol[pid].get("name"), qty))
+    for pid, qty in pool.items():   # nur Gesamtmenge je Style: Groessen-/Farbmengen stehen in keinem Beleg und werden nicht erfunden (Sendungsmodell kennt nur Variante -> Groesse -> Menge)
+        unmapped.append("%s: nur Gesamtmenge %s im Beleg, keine Farben/Groessen" % (ol[pid].get("name"), qty))
     out = []
     for ent in lines.values():
         vs = [{**({"id": v["id"]} if v.get("id") else {}), "name": v["name"], "sizes": [{"size": k, "quantityToShip": q} for k, q in v["sizes"].items()]} for v in ent["variants"].values() if v["sizes"]]
@@ -328,8 +302,7 @@ def plan_from_docs(deliveries, orders_detail, shipments, products_by_id, updates
             human.append((name, "Beleg ist eine Verpackungs-/Etikett-Freigabe oder Planung, kein Versandbeleg: keine Sendung")); continue
         generic = [x for x in shipments_of_order(shipments, oid) if any(g in str(x.get("notes") or "") for g in GENERIC_MARK) and "Ersetzt durch Teilsendungen" not in str(x.get("notes") or "")]
         sibs = [d2 for n2, d2, o2 in deliveries if o2 == oid and d2 is not doc and d2.get("items") and not is_packaging_doc(d2)]
-        info = []
-        lines, unmapped = lines_from_doc(doc, order, products_by_id, siblings=sibs, info=info)
+        lines, unmapped = lines_from_doc(doc, order, products_by_id, siblings=sibs)
         if not lines or unmapped:   # alles oder nichts: eine Sendung mit fehlenden Mengen waere falscher als keine
             human.append((name, "Beleg laesst sich der Order nicht vollstaendig zuordnen (%s%s): keine Sendung angelegt" % (", ".join(str(u) for u in unmapped[:4]), " ..." if len(unmapped) > 4 else ""))); continue
         text = " ".join(str(x) for x in (doc.get("notes"), doc.get("po_number"), " ".join(doc.get("open") or [])))
@@ -344,7 +317,6 @@ def plan_from_docs(deliveries, orders_detail, shipments, products_by_id, updates
             notes.append("Nicht zugeordnet: " + ", ".join(str(u) for u in unmapped[:6]))
         if not known:
             notes.append("Methode angenommen (sea), im Beleg nicht belegt")
-        notes += info
         sig = sorted((l["id"], sum(q["quantityToShip"] for v in l["variants"] for q in v["sizes"])) for l in lines)
         twin = next((c for c in create if c["order"] == order["title"] and c.get("_sig") == sig and not (c.get("_po") and doc.get("po_number") and c["_po"] != doc.get("po_number"))), None)
         if twin:   # Rechnung + Packliste (bzw. zweite Rechnung) derselben Lieferung: gleiche Mengen je Position -> EINE Sendung, Marker beider Belege in der Notiz
