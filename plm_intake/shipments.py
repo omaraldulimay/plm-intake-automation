@@ -162,9 +162,65 @@ def ev_marker(marker):
 GENERIC_MARK = ("Mengen = PO-Menge", "Mengen = Order-Menge")   # Sammel-Sendung ueber die ganze Order (Migration bzw. Ereignis ohne Beleg)
 
 
-def plan_from_docs(deliveries, orders_detail, shipments, products_by_id):
-    """deliveries: [(dateiname, beleg, order_id)] (nur Rechnung/Packliste mit eindeutiger Order). -> (create[], human[])."""
+TOL = 0.015   # Toleranz Teilmengen gegen Bestellmenge (+-1,5 %)
+
+
+def _ship_qty(s):
+    return sum((q.get("quantityToShip") if q.get("quantityToShip") is not None else q.get("quantity")) or 0
+               for p in s.get("products") or [] for v in p.get("variants") or [] for q in v.get("sizes") or [])
+
+
+def order_qty(order):
+    return sum(q or 0 for e in order_lines(order).values() for v in e["variants"].values() for q in v["sizes"].values())
+
+
+def _close(a, b):
+    return b > 0 and abs(a - b) <= TOL * b
+
+
+def _resolve_generic(create, updates, shipments, orders_detail):
+    """Belege zu Bestellungen mit Sammel-Sendung (Omar-Regel): Teilmengen = Bestellmenge -> ersetzen (Vermerk, nie loeschen); EIN Beleg = Bestellmenge -> bestaetigt (keine neue Sendung);
+    sonst ergaenzt (Teilsendung zusaetzlich). Vermerke in Sammel- und Teilsendung. Die Sammel-Sendung bleibt unveraendert (Menge/Positionen lassen sich per REST nicht sicher abziehen)."""
+    by_order = {}
+    for c in create:
+        if c.get("_gen"):
+            by_order.setdefault(c["_oid"], []).append(c)
+    for oid, entries in by_order.items():
+        gen = entries[0]["_gen"]
+        order = orders_detail[oid]
+        oq = order_qty(order)
+        existing = [x for x in shipments_of_order(shipments, oid) if x is not gen and not any(g in str(x.get("notes") or "") for g in GENERIC_MARK)]
+        new_q = sum(_ship_qty(e) for e in entries)
+        total = new_q + sum(_ship_qty(x) for x in existing)
+        marks = " ".join(e["marker"] for e in entries)
+        titles = ", ".join(e["title"] for e in entries)
+        if _close(total, oq) and len(entries) == 1 and not existing:
+            e = entries[0]
+            note = "Bestaetigt durch Beleg %s (%s Stk = Bestellmenge %s, keine neue Sendung). %s" % (e["title"], new_q, oq, e["marker"])
+            kind = "bestaetigt"
+            create.remove(e)
+        elif _close(total, oq):
+            note = "Ersetzt durch Teilsendungen %s (zusammen %s Stk = Bestellmenge %s; Menge der Sammel-Sendung zaehlt nicht mehr). %s" % (titles, total, oq, marks)
+            kind = "ersetzt"
+        else:
+            note = "Ergaenzt durch Teilsendung %s (Teilmengen %s von %s Stk, Bestellmenge noch nicht erreicht). %s" % (titles, total, oq, marks)
+            kind = "ergaenzt"
+        if kind != "bestaetigt":
+            for e in entries:
+                e["notes"] += " | %s Sammel-Sendung %s" % ({"ersetzt": "Ersetzt", "ergaenzt": "Ergaenzt"}[kind], gen.get("title"))
+        u = next((x for x in updates if x["id"] == gen["id"]), None)
+        if u is None:
+            u = {"id": gen["id"], "title": gen.get("title"), "patch": {"notes": str(gen.get("notes") or "")}, "kind": kind}
+            updates.append(u)
+        u["patch"]["notes"] = (u["patch"]["notes"] + " | " + note).strip(" |")
+    for c in create:
+        c.pop("_gen", None); c.pop("_oid", None)
+
+
+def plan_from_docs(deliveries, orders_detail, shipments, products_by_id, updates=None):
+    """deliveries: [(dateiname, beleg, order_id)] (nur Rechnung/Packliste mit eindeutiger Order). -> (create[], human[]); Notiz-Updates der Sammel-Sendungen kommen in `updates` (falls uebergeben)."""
     create, human = [], []
+    updates = updates if updates is not None else []
     for name, doc, oid in deliveries:
         order = orders_detail.get(oid)
         mk = doc_marker(name, doc)
@@ -176,9 +232,7 @@ def plan_from_docs(deliveries, orders_detail, shipments, products_by_id):
             continue
         if is_packaging_doc(doc):
             human.append((name, "Beleg ist eine Verpackungs-/Etikett-Freigabe oder Planung, kein Versandbeleg: keine Sendung")); continue
-        generic = [x for x in shipments_of_order(shipments, oid) if any(g in str(x.get("notes") or "") for g in GENERIC_MARK)]
-        if generic:   # sonst wuerden Teilmengen zusaetzlich zur Gesamtmenge gezaehlt
-            human.append((name, "Order hat schon eine Sammel-Sendung ueber die ganze Menge (%s): Teilsendung ersetzt sie oder ergaenzt sie? Mensch entscheidet" % generic[0].get("title"))); continue
+        generic = [x for x in shipments_of_order(shipments, oid) if any(g in str(x.get("notes") or "") for g in GENERIC_MARK) and "Ersetzt durch Teilsendungen" not in str(x.get("notes") or "")]
         lines, unmapped = lines_from_doc(doc, order, products_by_id)
         if not lines or unmapped:   # alles oder nichts: eine Sendung mit fehlenden Mengen waere falscher als keine
             human.append((name, "Beleg laesst sich der Order nicht vollstaendig zuordnen (%s%s): keine Sendung angelegt" % (", ".join(str(u) for u in unmapped[:4]), " ..." if len(unmapped) > 4 else ""))); continue
@@ -195,7 +249,9 @@ def plan_from_docs(deliveries, orders_detail, shipments, products_by_id):
         if not known:
             notes.append("Methode angenommen (sea), im Beleg nicht belegt")
         notes.append("Mengen laut Beleg (Teilsendung). " + mk)
-        create.append({"title": title[:200], "method": method, "status": "pending", "trackingNumber": "", "notes": " | ".join(notes), "products": lines, "marker": mk, "order": order["title"]})
+        create.append({"title": title[:200], "method": method, "status": "pending", "trackingNumber": "", "notes": " | ".join(notes), "products": lines, "marker": mk, "order": order["title"],
+                       **({"_gen": generic[0], "_oid": oid} if generic else {})})
+    _resolve_generic(create, updates, shipments, orders_detail)
     return create, human
 
 

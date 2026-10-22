@@ -134,7 +134,7 @@ def main(argv=None):
     detail = fetch_order_details(need) if need else {}
     pby = {x["id"]: x.get("sku") for x in ctx["products"]}
     sh_create, sh_update, sh_human = [], [], []
-    c1, h1 = shp.plan_from_docs(deliveries, detail, ship_now, pby)
+    c1, h1 = shp.plan_from_docs(deliveries, detail, ship_now, pby, updates=sh_update)
     sh_create += c1; sh_human += h1
     for oid, (title, evl) in ev_ship.items():
         c2, u2, h2 = shp.plan_from_events(oid, title, evl, detail, ship_now + [{"notes": c["notes"], "products": [{"orderId": oid}]} for c in sh_create if False])

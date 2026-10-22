@@ -73,10 +73,49 @@ class AusBelegen(unittest.TestCase):
         s = sh.plan_from_docs([("k.json", d, "O1")], {"O1": ORDER}, [], BYID)[0][0]
         self.assertEqual(s["products"][0]["variants"][0]["sizes"], [{"size": "ONE SIZE", "quantityToShip": 12}])
 
-    def test_vorhandene_sammelsendung_verhindert_doppelte_mengen(self):
-        gen = {"id": "G", "title": "Sendung PO-LIEFERANT_D-AB1", "notes": "Mengen = PO-Menge. Quelle Logistik", "products": [{"orderId": "O1"}]}
-        c, h = sh.plan_from_docs([("f.json", doc(), "O1")], {"O1": ORDER}, [gen], BYID)
-        self.assertEqual(c, []); self.assertIn("Sammel-Sendung", h[0][1])
+    GEN = {"id": "G", "title": "Sendung PO-LIEFERANT_D-AB1", "notes": "Mengen = PO-Menge. Quelle Logistik", "products": [{"orderId": "O1"}]}
+
+    def _d(self, mid, po, sizes_p43, f2=None):
+        items = [{"sku": "AN-43", "name": "AN-43 Leggings", "variants": [{"color": "Black", "sizes": sizes_p43}]}]
+        if f2:
+            items.append({"sku": "F-2", "name": "F-2 Fleece", "variants": [{"color": None, "sizes": {}, "quantity": f2}]})
+        return doc(po_number=po, source={"mail_id": mid}, items=items)
+
+    def test_sammel_teile_ergeben_bestellmenge_ersetzen(self):
+        u = []
+        d1 = self._d("m1", "AB1-SEA", {"S": 100, "M": 200}, f2=100)   # 400
+        d2 = self._d("m2", "AB1-AIR", {}, f2=0); d2["items"] = [{"sku": "AN-43", "name": "AN", "variants": [{"color": "Brown", "sizes": {"S": 50}}]}, {"sku": "F-2", "name": "F", "variants": [{"color": None, "sizes": {}, "quantity": 200}]}]   # 250
+        c, h = sh.plan_from_docs([("a", d1, "O1"), ("b", d2, "O1")], {"O1": ORDER}, [dict(self.GEN)], BYID, updates=u)
+        self.assertEqual((len(c), h), (2, [])); self.assertEqual(len(u), 1)
+        n = u[0]["patch"]["notes"]; self.assertIn("Ersetzt durch Teilsendungen", n); self.assertIn("[doc:m1:", n); self.assertIn("Mengen = PO-Menge", n)
+        self.assertIn("Ersetzt Sammel-Sendung", c[0]["notes"]); self.assertNotIn("_gen", c[0])
+
+    def test_ein_beleg_gleich_bestellmenge_bestaetigt_ohne_neue_sendung(self):
+        u = []
+        d = self._d("m1", "AB1-SEA", {"S": 100, "M": 200}, f2=350)   # 650 (+ Brown fehlt, Toleranz 9,75 -> nicht; Brown dazu)
+        d["items"][0]["variants"].append({"color": "Brown", "sizes": {"S": 50}}); d["items"][0]["variants"][0]["sizes"] = {"S": 100, "M": 200}; d["items"][1]["variants"][0]["quantity"] = 300
+        c, h = sh.plan_from_docs([("a", d, "O1")], {"O1": ORDER}, [dict(self.GEN)], BYID, updates=u)
+        self.assertEqual((c, h), ([], [])); self.assertIn("Bestaetigt durch Beleg", u[0]["patch"]["notes"])
+        # idempotent: Vermerk mit Marker steht in der Sammel-Sendung
+        g2 = dict(self.GEN, notes=u[0]["patch"]["notes"]); u2 = []
+        self.assertEqual(sh.plan_from_docs([("a", d, "O1")], {"O1": ORDER}, [g2], BYID, updates=u2), ([], [])); self.assertEqual(u2, [])
+
+    def test_toleranz_eineinhalb_prozent(self):
+        self.assertTrue(sh._close(641, 650)); self.assertTrue(sh._close(659, 650)); self.assertFalse(sh._close(639, 650)); self.assertFalse(sh._close(661, 650))
+        d = self._d("m1", "AB1-SEA", {"S": 100, "M": 200}, f2=300); d["items"][0]["variants"].append({"color": "Brown", "sizes": {"S": 45}})   # 645 = -0,8 %
+        u = []; c, _ = sh.plan_from_docs([("a", d, "O1")], {"O1": ORDER}, [dict(self.GEN)], BYID, updates=u)
+        self.assertEqual(c, []); self.assertIn("Bestaetigt", u[0]["patch"]["notes"])
+
+    def test_teilmenge_unter_bestellmenge_ergaenzt_und_sammel_bleibt(self):
+        u = []
+        c, h = sh.plan_from_docs([("f.json", doc(), "O1")], {"O1": ORDER}, [dict(self.GEN)], BYID, updates=u)   # 180 von 650
+        self.assertEqual((len(c), h), (1, [])); self.assertIn("Ergaenzt durch Teilsendung", u[0]["patch"]["notes"]); self.assertIn("Ergaenzt Sammel-Sendung", c[0]["notes"])
+        self.assertEqual(list(u[0]["patch"]), ["notes"])   # nichts geloescht, nur Notiz
+
+    def test_bereits_ersetzte_sammel_sendung_blockiert_nicht_mehr(self):
+        g = dict(self.GEN, notes="Mengen = PO-Menge | Ersetzt durch Teilsendungen X")
+        c, h = sh.plan_from_docs([("f.json", doc(), "O1")], {"O1": ORDER}, [g], BYID)
+        self.assertEqual((len(c), h), (1, []))
 
     def test_beleg_ohne_positionen_macht_keine_sendung(self):
         self.assertEqual(sh.plan_from_docs([("e.json", doc(items=[]), "O1")], {"O1": ORDER}, [], BYID), ([], []))
