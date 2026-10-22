@@ -264,3 +264,17 @@ class Zuordnung(unittest.TestCase):
         d2 = {"doc_type": "INVOICE", "po_number": "X2", "source": {"mail_id": "n"}, "items": [_item("YK-009", "UNBEKANNT PANTOLON", 10)]}   # Stylecode vorhanden, passt nicht -> kein Produktwort-Raten
         o2 = {"id": "M", "title": "PO-M", "items": [_pos("YK-002 Pants", "S2", [("Black", {"S": 10})])]}
         c, h = sh.plan_from_docs([("g", d2, "M")], {"M": o2}, [], {"S2": "YK-002"}); self.assertEqual(c, []); self.assertTrue(h)
+
+
+    def test_nur_gesamtmenge_ist_fuer_bestaetigt_ok_aber_nicht_fuer_teilsendung(self):
+        o = {"id": "T", "title": "PO-T", "items": [_pos("YK-002 Pants", "S2", [("Black", {"S": 50, "M": 50}), ("Grey", {"S": 50, "M": 50})]), _pos("YK-004 Shorts", "S4", [("Black", {"S": 25, "M": 25})])]}
+        by = {"S2": "YK-002", "S4": "YK-004"}
+        gen = [{"id": "G", "title": "Sammel", "notes": "Mengen = Order-Menge", "products": [{"orderId": "T"}]}]
+        full = {"doc_type": "INVOICE", "po_number": None, "source": {"mail_id": "a"}, "items": [_item("610462000000", "COTTON PANTOLON", 202), _item("6109100000", "COTTON SHORT", 51)]}
+        u = []
+        c, h = sh.plan_from_docs([("a", full, "T")], {"T": o}, gen, by, updates=u)   # 253 von 250 Stk = Bestellmenge +-1,5 %
+        self.assertEqual((c, h), ([], [])); self.assertEqual(u[0]["kind"], "bestaetigt")
+        part = {"doc_type": "INVOICE", "po_number": None, "source": {"mail_id": "b"}, "items": [_item("610462000000", "COTTON PANTOLON", 100)]}
+        u = []
+        c, h = sh.plan_from_docs([("b", part, "T")], {"T": o}, gen, by, updates=u)   # Teilmenge -> braucht Positionen -> Mensch
+        self.assertEqual(c, []); self.assertIn("nur Gesamtmenge", h[0][1]); self.assertEqual(u, [])
