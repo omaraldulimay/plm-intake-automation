@@ -208,6 +208,8 @@ def run(products, state_path, apply=False, source=None, reader=None, uploader=No
         save_state(state_path, st)
     head = ["- neue Techpack/Spec-Dateien seit %s: %d | hochgeladen %d | schon als Datei vorhanden %d | ohne Produkt %d | Limit-Rest %d" % (
         st["since"][:16] if not apply else (load_state(state_path)["since"] or "")[:16], res["neu"], res["hochgeladen"], res["vorhanden"], len(res["ohne_produkt"]), res["rest"])]
+    if tm.LESER_FEHLT:
+        res["fehler"].append("Warnung: Datei-Leser fehlt: %s - Zuordnung ueber Inhalt nicht moeglich" % ", ".join(sorted(tm.LESER_FEHLT)))
     out = head + lines + (["- Fehler: " + x for x in res["fehler"]])
     if res["ohne_produkt"]:
         out += ["", "### Techpacks ohne Produkt"] + ["- " + x for x in res["ohne_produkt"]]

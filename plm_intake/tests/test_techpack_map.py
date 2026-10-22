@@ -40,6 +40,27 @@ class Zuordnung(unittest.TestCase):
         self.assertEqual(tm.resolve("Techpack Dawson Hoodie.pdf", P, AL, content="Dawson")[1], "offen")
         self.assertEqual(tm.resolve("SKM26-099_TP.pdf", P, AL)[1], "offen")   # Regel nur, wenn das Ziel existiert
 
+class LeserFehlt(unittest.TestCase):
+    def test_fehlender_pdf_leser_wird_gemeldet(self):
+        import builtins
+        import tempfile
+        real = builtins.__import__
+
+        def fake(name, *a, **k):
+            if name == "fitz":
+                raise ImportError("kein fitz")
+            return real(name, *a, **k)
+        tm.LESER_FEHLT.clear()
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "x.pdf"; f.write_bytes(b"%PDF")
+            builtins.__import__ = fake
+            try:
+                self.assertEqual(tm.file_text(f), "")
+            finally:
+                builtins.__import__ = real
+        self.assertIn("PyMuPDF (PDF-Leser)", tm.LESER_FEHLT)
+        tm.LESER_FEHLT.clear()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -93,15 +93,24 @@ def resolve(file_name, products, aliases=None, content=""):
     return list(hits.values()), meth, "; ".join(how)
 
 
+LESER_FEHLT = set()   # fehlende Lese-Bibliotheken (z. B. 'PyMuPDF'), werden im Lauf-Bericht gemeldet
+
+
 def file_text(path, limit=60000):
     """Text aus PDF (PyMuPDF) oder Excel (openpyxl, .xls via xlrd wenn vorhanden). Fehler -> ''."""
     p = str(path)
     try:
         if p.lower().endswith(".pdf"):
-            import fitz
+            try:
+                import fitz
+            except ImportError:
+                LESER_FEHLT.add("PyMuPDF (PDF-Leser)"); return ""
             return " ".join(pg.get_text() for pg in fitz.open(p))[:limit]
         if p.lower().endswith((".xlsx", ".xlsm")):
-            import openpyxl
+            try:
+                import openpyxl
+            except ImportError:
+                LESER_FEHLT.add("openpyxl (Excel-Leser)"); return ""
             wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
             out = []
             for ws in wb.worksheets:
