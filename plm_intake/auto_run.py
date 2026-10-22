@@ -178,6 +178,12 @@ def main(argv=None):
                 rep += ["", "ABBRUCH: Rueckpruefung der Notizen meldet Abweichung: %s" % bad]
                 (intake / "auto_report.md").write_text("\n".join(rep)); print("\n".join(rep)); return 1
             applied["event_orders"] = [r["title"] for r in res]
+        # PO-ID (Feld 'Smilodox PO-ID'): neue POs sofort, dazu taeglicher Nachtrag fuer Orders ohne PO-ID; Fehler brechen den Lauf nie ab
+        try:
+            from plm_intake import po_ids
+            rep += ["", "## PO-IDs"] + po_ids.auto(intake, applied["orders"], True)
+        except Exception as e:
+            rep += ["", "## PO-IDs", "- FEHLER: %s" % str(e)[:200]]
         # Merkbuch: neue POs, Belege mit Ereignis, vollstaendig zugeordnete Ereignis-Dateien
         for n, p in payloads.items():
             if p["title"] in applied["orders"]: ledger.mark(led, inbox / n, "applied", p["title"])

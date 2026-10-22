@@ -217,6 +217,11 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
     # Alias-Tabelle (von Menschen gepflegt oder gelernt, plm_intake/alias_learn): Lieferanten-Nummer -> Order (Titel oder ID), z. B. "ISPOB3.429": "PO-LIEFERANT_W-2026-04-29"
     # Vorrang vor allen schwaecheren Wegen. Ausser PO-Nr zaehlen auch Rechnungs-/BL-/Container-Nr des Ereignisses (exakt). Alias 'mehrdeutig' wird nie benutzt.
     d_ = e.get("details") or {}
+    from plm_intake import po_ids   # Smilodox PO-ID (PO26-036) in Mail/Ereignis/Beleg = staerkstes Signal, vor Aliasen
+    src0 = e.get("source")
+    hit = po_ids.order_for_text(orders, ref.get("po_number"), e.get("po_number"), src0.get("doc") if isinstance(src0, dict) else src0, e.get("subject"), e.get("summary"), d_.get("subject"), (e.get("_mail") or {}).get("subject"))
+    if hit:
+        return hit, "po_id"
     keys = [(po, True)] if po else []
     keys += [(core.norm(x), False) for x in [ref.get("container")] + [d_.get(k) for k in ("invoice_number", "bl", "awb", "hbl", "mbl", "container")] if x not in (None, "", False) and len(core.norm(x)) >= 5]
     src = e.get("source")

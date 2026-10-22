@@ -79,6 +79,11 @@ def parent_for(vendor, po, orders, ctx):
     """Eltern-Order eines Belegs: (1) PO-Nr (core.find_parent), (2) Vertragsnummer als Anfang der Beleg-Nr im Titel (min. 8 Zeichen), (3) EINZIGE Order des Lieferanten
     mit gleichem Style. Mehrere Kandidaten -> (None, [Titel]) = Mensch entscheidet. Keine Kandidaten -> (None, [])."""
     vid = vendor["id"]
+    from plm_intake import po_ids   # Smilodox PO-ID (PO26-036) im Beleg/Betreff = staerkstes Signal (nur wenn die Bestellung zum Lieferanten passt)
+    src = po.get("source")
+    hit = po_ids.order_for_text(orders, po.get("po_number"), po.get("invoice_number"), src.get("doc") if isinstance(src, dict) else src, po.get("subject"), po.get("summary"))
+    if hit and ((hit.get("manufacturer") or {}).get("id") if isinstance(hit.get("manufacturer"), dict) else hit.get("manufacturer")) in (vid, None):
+        return hit, []
     p = core.find_parent(vid, po.get("po_number"), orders)
     if p: return p, []
     from plm_intake import alias_learn   # gelernte/gepflegte Lieferanten-Kennung (PO-/Rechnungsnr) vor allen schwaecheren Wegen
