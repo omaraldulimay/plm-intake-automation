@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-23 06:20 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-23 11:12 (AUSGEFUEHRT)
 
-Neu: 10 Dokument-Dateien, 306 Ereignis-Dateien
+Neu: 11 Dokument-Dateien, 308 Ereignis-Dateien
 
 ## Lieferanten
 - keine neuen
@@ -28,11 +28,13 @@ PO-Nummern per Browser nachgeladen: 72
 | 1a1538b5bb3f6600_2.json | AMBIGUOUS_DOC | - | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a15e58e8bf56e63_1.json | ORPHAN_DOC | 6300 | - |
 | 1a1631c440498b5e_1.json | ORPHAN_DOC | 6300 | - |
+| 1a1682ab9dcc2d5a_1.json | ORPHAN_DOC | - | - |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a13103fd472a81b_1.json (62092211)
 - 1a15e58e8bf56e63_1.json (6300)
 - 1a1631c440498b5e_1.json (6300)
+- 1a1682ab9dcc2d5a_1.json (None)
 
 ## Dienstleister-Belege ohne Warenpositionen (Spedition, Zoll): kein PO-Bezug, nur zur Info
 - 1a0a957bca78ab0b_1.json (SI_2026_06_0047)
@@ -58,19 +60,19 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-14 09:29 ev:91118219] ORDER_CHANGE: Request to add regular leggings with leo pattern (same as leggings 26803) to the production list. (Mail 1a13951c52d8cf78)
 ## #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
+- [2026-10-21 11:58 ev:0eb9d076] SCHEDULE: Plan for 2nd batch (116 CBM) of KUNDE_X Polyester: Ex-mill 30.10.2026, sailing 03.11.2026, ETA 02.12.2026. (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-21 11:58 ev:74ee19f0] SHIPMENT: 4th air shipment of Sweat Styles (~4,000 pcs) scheduled to be dispatched by 22.10. (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-21 11:58 ev:4780466a] SCHEDULE: Smilodox Sweat Styles production balance committed for 05.11 (~30,000 pcs). (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-22 11:48 ev:53bb666d] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Mail 1a163038333c6ecb) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-22 11:48 ev:ba660989] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Mail 1a163038333c6ecb) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
-- [2026-10-22 13:06 ev:e94c01ae] SHIPMENT: Sweat Air #1 shipped via flight AK/621/26, MAWB 065-49589945, quantity 4091 pcs, value USD 27,758.50, currently stuck with Saudia (not received). (Mail 1a1634a6d4270d28)
-- [2026-10-22 13:06 ev:fa8b514d] SHIPMENT: Sweat Air #2 shipped via flight AK/623/26, MAWB 065-49589923, quantity 1888 pcs, value USD 13,145.50, not received. (Mail 1a1634a6d4270d28)
-- [2026-10-22 13:06 ev:66b998ca] SHIPMENT: Sweat Air #3 shipped via flight AK/625/26, MAWB 065-58307653, quantity 3284 pcs, value USD 23,080.80, in transit with ETA approx. 26.10.2026. (Mail 1a1634a6d4270d28)
-- [2026-10-22 13:06 ev:c10e205a] SHIPMENT: KUNDE_X #12 dispatched on 21.10.2026 with 51 CBM, docs pending, ETA approx. 30.11.2026. (Mail 1a1634a6d4270d28) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-22 13:06 ev:520254de] SCHEDULE: KUNDE_X Polyester next batch ex-mill date set to 30.10.2026, sailing from Karachi on 03.11.2026, ETA Hamburg 02.12.2026. (Mail 1a1634a6d4270d28) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-22 13:15 ev:499d206c] SAMPLE: The supplier has already dispatched photo samples in size M for men and size S for women for several styles and will dispatch more styles tomorrow. (Mail 1a16352d6004ec7b)
-## #85 PO-LIEFERANT_A-ALP-53-25
-- [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb) [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]
-- [2026-10-22 13:06 ev:4affdd32] SHIPMENT: Sweat Air #4 shipping today with docs pending, approx. 5000-6000 pcs, ETA approx. 29.10.2026. (Mail 1a1634a6d4270d28) [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]
-## #19 PO-LIEFERANT_AA-WINTER-2026-04-29
-- [2026-10-22 18:21 ev:a6272759] SHIPMENT: Smilodox is requesting the ATB for customs clearance urgently and announces that someone from SPEDITION_B will contact the forwarder for collection. (Mail 1a1646b0a8a9bea7)
-- [2026-10-23 04:23 ev:68c7312e] SHIPMENT: Shipment status update: currently in Mala, distance to Hamburg 1031km, ETA 2026-10-26 to 2026-10-27. (Mail 1a166923925870f0)
+## #26 PO-LIEFERANT_AH-SMI-SOHO-0526
+- [2026-10-23 11:05 ev:e752cf18] SHIPMENT: All goods were fully shipped via sea on MADRID MAERSK V.642W under B/L NGBE26101254. (Mail 1a168025869a4cbc)
+- [2026-10-23 11:05 ev:f8939710] PAYMENT: Supplier requested balance payment for the shipment. (Mail 1a168025869a4cbc)
+- STATUS: QC -> In Transit (Meilenstein SHIPPED (1a168025869a4cbc))
+## #9 PO-LIEFERANT_V-KCCN0513
+- [2026-10-23 11:53 ev:e16635c9] PAYMENT: Vendor is requesting the balance payment for styles KC-JK-00027 and KC-PT-00058 before arranging shipment. (Mail 1a1682df93e02e92)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] DELAY: The schedule for the Kunde Y Black Friday Program development and delivery is getting delayed, requiring urgent discussion and a solution. (None) -> keine Order gefunden
@@ -126,26 +128,42 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-19 17:15] SCHEDULE: Cut-off date for the first shipment batch of approx. 35,000 pcs (55 CBM) extended from 22nd to 23rd October on CMA vessel. (None) -> keine Order gefunden
 - [2026-10-19 17:15] SCHEDULE: Remaining quantities are expected to be completed by 30th October. (None) -> keine Order gefunden
 - [2026-10-20 11:22] SAMPLE: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physical samples have arrived; the rest are pending. (None) -> mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN
-- [2026-10-21 11:58] SCHEDULE: Plan for 2nd batch (116 CBM) of KUNDE_X Polyester: Ex-mill 30.10.2026, sailing 03.11.2026, ETA 02.12.2026. (Alpha) -> keine Order gefunden
-- [2026-10-21 11:58] SHIPMENT: 4th air shipment of Sweat Styles (~4,000 pcs) scheduled to be dispatched by 22.10. (Alpha) -> keine Order gefunden
-- [2026-10-21 11:58] SCHEDULE: Smilodox Sweat Styles production balance committed for 05.11 (~30,000 pcs). (Alpha) -> keine Order gefunden
 - [2026-10-21 14:03] SHIPMENT: Second container shipped via sea under B/L AGLLHE10240. (6300) -> keine Order gefunden
 - [2026-10-21 14:03] PAYMENT: Supplier requested 35% payment of USD 16,227.04 against the scanned B/L for the 2nd container. (6300) -> keine Order gefunden
 - [2026-10-22 09:28] OTHER: Fadel Abdullah informed the supplier about the correct sock composition and requested a check and update of the HS code and shipping documents accordingly. (6300) -> keine Order gefunden
-- [2026-10-22 11:48] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Alpha) -> mehrdeutig: 26 laufende Orders von Lieferant A
-- [2026-10-22 11:48] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Alpha) -> mehrdeutig: 26 laufende Orders von Lieferant A
 - [2026-10-22 12:15] SHIPMENT: Updated invoice and packing list with correct composition details provided. (6300) -> keine Order gefunden
 - [2026-10-22 23:12] PAYMENT: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for the first container with updated material composition and payment breakdown. (6300) -> keine Order gefunden
 - [2026-10-23 07:08] PAYMENT: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice terms are 50% on scan BL and 50% on 75 days from BL date. (Lieferant B) -> mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd
+- [2026-10-23 10:12] SHIPMENT: Bill of Lading issued for shipment with 1x40'HQ container containing 432 cartons of knitted sweaters, shipped from Ningbo to Hamburg. (NGBE26101252) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 304 Ereignisse
+- 307 Ereignisse
 
 ## Sendungen (Bereich Shipments)
-- aktualisiert: Sendung PO-LIEFERANT_AA-WINTER-2026-04-29 {'trackingNumber': 'ZIHWB260930LH137'}
+- neu: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 (sea, in_transit, 2 Pos.)
 
+- KLAERFALL Preis fehlt: 1a13103fd472a81b_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_2.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_2.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
+- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
 ## Ergebnis Sendungen
-- Sendung aktualisiert: Sendung PO-LIEFERANT_AA-WINTER-2026-04-29 ['notes', 'trackingNumber'] -> HTTP 200
+- Sendung neu: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 -> HTTP 201
 - per REST zurueckgelesen: alle vorhanden
 
 ## Ergebnis Notizen
@@ -180,7 +198,19 @@ PO-Nummern per Browser nachgeladen: 72
   "chat": 6
  },
  {
-  "title": "PO-LIEFERANT_A-ALP-53-25",
+  "title": "PO-LIEFERANT_AH-SMI-SOHO-0526",
+  "statusSet": "In Transit",
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 2
+ },
+ {
+  "title": "PO-LIEFERANT_V-KCCN0513",
   "statusSet": null,
   "statusOk": true,
   "notesAdded": 1,
@@ -190,44 +220,31 @@ PO-Nummern per Browser nachgeladen: 72
   "notesOk": true,
   "datesOk": true,
   "chat": 1
- },
- {
-  "title": "PO-LIEFERANT_AA-WINTER-2026-04-29",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 2,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 2
  }
 ]
 ```
 
 ## PO-IDs
-- geschrieben 0 (neu angelegt: 0), Fehler/Abweichungen nach Zuruecklesen: 0
+- nichts zu tun (Nachtrag heute schon gelaufen)
 
 ## Gelernte Aliase (gespeichert)
-- 065-49589945 -> 6ace076f5f317983615c62b8 (Ereignis)
-- 065-49589923 -> 6ace076f5f317983615c62b8 (Ereignis)
-- 065-58307653 -> 6ace076f5f317983615c62b8 (Ereignis)
-- 26WJD-107-SMILODOX -> 6acd059e658a87e64182ca6a (Ereignis)
-- ZIHWB260930LH137 -> 6acd059e658a87e64182ca6a (Ereignis)
+- 92615116043H -> 6acdf5ce5f317983615892e3 (Ereignis)
+- HLBU2404454 -> 6acdf5ce5f317983615892e3 (Ereignis)
+- NGBE26101254 -> 6acdf5ce5f317983615892e3 (Ereignis)
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 37, neu eingetragen 2, abgehakt 0, offen gesamt 50
+- Kandidaten 33, neu eingetragen 0, abgehakt 5, offen gesamt 45 | Fehler: ['Kategorie Lieferant AD: Failed to create category']
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-23T06:22: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-23T11:13: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-## Mensch entscheidet (69)
+## Mensch entscheidet (66)
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a15e58e8bf56e63_1.json: ORPHAN_DOC 6300
 - 1a1631c440498b5e_1.json: ORPHAN_DOC 6300
+- 1a1682ab9dcc2d5a_1.json: ORPHAN_DOC 
 - Ereignis nicht zuordenbar: The schedule for the Kunde Y Black Friday Program development and delivery is getting del (keine Order gefunden)
 - Ereignis nicht zuordenbar: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Lieferant A confirmed ex-goods date by 30th September. (mehrdeutig: 26 laufende Orders von Lieferant A)
@@ -281,14 +298,10 @@ PO-Nummern per Browser nachgeladen: 72
 - Ereignis nicht zuordenbar: Cut-off date for the first shipment batch of approx. 35,000 pcs (55 CBM) extended from 22n (keine Order gefunden)
 - Ereignis nicht zuordenbar: Remaining quantities are expected to be completed by 30th October. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Tech packs for SEW26-006, SEM26-004, SEM26-005, and SEM26-006 are confirmed because physic (mehrdeutig: PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAWOMEN, PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN)
-- Ereignis nicht zuordenbar: Plan for 2nd batch (116 CBM) of KUNDE_X Polyester: Ex-mill 30.10.2026, sailing 03.11.2026, ET (keine Order gefunden)
-- Ereignis nicht zuordenbar: 4th air shipment of Sweat Styles (~4,000 pcs) scheduled to be dispatched by 22.10. (keine Order gefunden)
-- Ereignis nicht zuordenbar: Smilodox Sweat Styles production balance committed for 05.11 (~30,000 pcs). (keine Order gefunden)
 - Ereignis nicht zuordenbar: Second container shipped via sea under B/L AGLLHE10240. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Supplier requested 35% payment of USD 16,227.04 against the scanned B/L for the 2nd contai (keine Order gefunden)
 - Ereignis nicht zuordenbar: Fadel Abdullah informed the supplier about the correct sock composition and requested a ch (keine Order gefunden)
-- Ereignis nicht zuordenbar: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.202 (mehrdeutig: 26 laufende Orders von Lieferant A)
-- Ereignis nicht zuordenbar: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Updated invoice and packing list with correct composition details provided. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for  (keine Order gefunden)
 - Ereignis nicht zuordenbar: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice  (mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd)
+- Ereignis nicht zuordenbar: Bill of Lading issued for shipment with 1x40'HQ container containing 432 cartons of knitte (keine Order gefunden)
