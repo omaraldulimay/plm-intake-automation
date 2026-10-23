@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-22 11:12 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-23 06:20 (AUSGEFUEHRT)
 
-Neu: 10 Dokument-Dateien, 303 Ereignis-Dateien
+Neu: 10 Dokument-Dateien, 306 Ereignis-Dateien
 
 ## Lieferanten
 - keine neuen
@@ -52,24 +52,25 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-12 18:55 ev:65364282] SHIPMENT: Versandbenachrichtigung mit HBL vom Spediteur EC Lontor erhalten (CMA CGM RIO GRANDE, ETD 14.08., ETA 13.09.). (Mail 1a1310a6ed02f60a)
 - [2026-10-12 22:02 ev:b26b8665] SHIPMENT: Sendung per Seefracht (4*40HQ) mit MBL XIA1965473 und HBL XIME26070257, ETD Xiamen 7. August, Spediteur fragt nach Palettierungs- und Sortieranweisungen. (Mail 1a131b5dbbcc7e59)
 ## #34 PO-WONDERS-XW-SM260811
-- [2026-10-12 22:00 ev:08697469] DELAY: Forwarder holiday from Oct 01-07 due to National Day, waiting for SPEDITION_B contact. (Mail 1a131b426129d4d5) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 22:01 ev:908355af] SCHEDULE: Lieferant bittet um Zusendung der Barcode-Informationen bis spätestens 15. Oktober. (Mail 1a131b450e314121) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-14 05:51 ev:55678539] OTHER: Der Lieferant meldet, dass XW26-008 (Long Sleeve) und XW26-009 (Tank Top) die Farbe light grey nicht haben, daher entfaellt die E-Serie fuer diese Styles. Er fragt, ob die anderen Farbgruppen die E-Serie ueberspringen oder ersetzen sollen. (Mail 1a138891a17b99d9)
-- [2026-10-22 09:37 ev:557f6ea6] SAMPLE: Lieferant bittet um Freigabe bzw. Bestätigung der Größentabelle für das Tank Top (Style XW26-009). (Mail 1a1628b5c4a07fd7)
 ## #96 PO-LIEFERANT_I-SPR2026000000409
 - [2026-10-14 09:29 ev:c300c053] QUALITY: White printing defects noticed on the snake print; suggested switching to a black base fabric. (Mail 1a13951c52d8cf78) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-14 09:29 ev:91118219] ORDER_CHANGE: Request to add regular leggings with leo pattern (same as leggings 26803) to the production list. (Mail 1a13951c52d8cf78)
 ## #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
-- [2026-10-22 10:30 ev:988bfe29] SAMPLE: Request for missing photo samples and expected delivery date for 34 articles with 118 open color variants. (Mail 1a162bbc61057147)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
-## #90 PO-LIEFERANT_A-ALP-58-25
-- [2026-10-22 08:30 ev:f1853633] SAMPLE: Updated TP with correct NOOS base of SNW26-003 sent due to a previous mistake, and inquiry regarding EMB design sizes and variation. (Mail 1a1624e0c8897ddb)
-- [2026-10-22 09:28 ev:87fab46e] ORDER_CHANGE: Embroidery size adjustment in physical production due to fabric behavior and stitches. (Mail 1a162837265cbef3) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-## #28 PO-WONDERS-XW-SM260513
-- [2026-10-22 08:46 ev:aad9c45a] SHIPMENT: Smilodox confirmed receipt of the complete set of shipping documents and the telex-released B/L. (Mail 1a1625c88f4fc219)
+- [2026-10-22 13:06 ev:e94c01ae] SHIPMENT: Sweat Air #1 shipped via flight AK/621/26, MAWB 065-49589945, quantity 4091 pcs, value USD 27,758.50, currently stuck with Saudia (not received). (Mail 1a1634a6d4270d28)
+- [2026-10-22 13:06 ev:fa8b514d] SHIPMENT: Sweat Air #2 shipped via flight AK/623/26, MAWB 065-49589923, quantity 1888 pcs, value USD 13,145.50, not received. (Mail 1a1634a6d4270d28)
+- [2026-10-22 13:06 ev:66b998ca] SHIPMENT: Sweat Air #3 shipped via flight AK/625/26, MAWB 065-58307653, quantity 3284 pcs, value USD 23,080.80, in transit with ETA approx. 26.10.2026. (Mail 1a1634a6d4270d28)
+- [2026-10-22 13:06 ev:c10e205a] SHIPMENT: KUNDE_X #12 dispatched on 21.10.2026 with 51 CBM, docs pending, ETA approx. 30.11.2026. (Mail 1a1634a6d4270d28) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-22 13:06 ev:520254de] SCHEDULE: KUNDE_X Polyester next batch ex-mill date set to 30.10.2026, sailing from Karachi on 03.11.2026, ETA Hamburg 02.12.2026. (Mail 1a1634a6d4270d28) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-22 13:15 ev:499d206c] SAMPLE: The supplier has already dispatched photo samples in size M for men and size S for women for several styles and will dispatch more styles tomorrow. (Mail 1a16352d6004ec7b)
 ## #85 PO-LIEFERANT_A-ALP-53-25
 - [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb) [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]
+- [2026-10-22 13:06 ev:4affdd32] SHIPMENT: Sweat Air #4 shipping today with docs pending, approx. 5000-6000 pcs, ETA approx. 29.10.2026. (Mail 1a1634a6d4270d28) [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]
+## #19 PO-LIEFERANT_AA-WINTER-2026-04-29
+- [2026-10-22 18:21 ev:a6272759] SHIPMENT: Smilodox is requesting the ATB for customs clearance urgently and announces that someone from SPEDITION_B will contact the forwarder for collection. (Mail 1a1646b0a8a9bea7)
+- [2026-10-23 04:23 ev:68c7312e] SHIPMENT: Shipment status update: currently in Mala, distance to Hamburg 1031km, ETA 2026-10-26 to 2026-10-27. (Mail 1a166923925870f0)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] DELAY: The schedule for the Kunde Y Black Friday Program development and delivery is getting delayed, requiring urgent discussion and a solution. (None) -> keine Order gefunden
@@ -134,12 +135,18 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-22 11:48] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Alpha) -> mehrdeutig: 26 laufende Orders von Lieferant A
 - [2026-10-22 11:48] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Alpha) -> mehrdeutig: 26 laufende Orders von Lieferant A
 - [2026-10-22 12:15] SHIPMENT: Updated invoice and packing list with correct composition details provided. (6300) -> keine Order gefunden
+- [2026-10-22 23:12] PAYMENT: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for the first container with updated material composition and payment breakdown. (6300) -> keine Order gefunden
+- [2026-10-23 07:08] PAYMENT: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice terms are 50% on scan BL and 50% on 75 days from BL date. (Lieferant B) -> mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 296 Ereignisse
+- 304 Ereignisse
 
 ## Sendungen (Bereich Shipments)
-- keine
+- aktualisiert: Sendung PO-LIEFERANT_AA-WINTER-2026-04-29 {'trackingNumber': 'ZIHWB260930LH137'}
+
+## Ergebnis Sendungen
+- Sendung aktualisiert: Sendung PO-LIEFERANT_AA-WINTER-2026-04-29 ['notes', 'trackingNumber'] -> HTTP 200
+- per REST zurueckgelesen: alle vorhanden
 
 ## Ergebnis Notizen
 ```
@@ -154,15 +161,7 @@ PO-Nummern per Browser nachgeladen: 72
  },
  {
   "title": "PO-WONDERS-XW-SM260811",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 3,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 3
+  "unchanged": true
  },
  {
   "title": "PO-LIEFERANT_I-SPR2026000000409",
@@ -172,37 +171,13 @@ PO-Nummern per Browser nachgeladen: 72
   "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
   "statusSet": null,
   "statusOk": true,
-  "notesAdded": 2,
+  "notesAdded": 6,
   "dates": [],
   "paymentsMarkedPaid": 0,
   "dataUnchanged": true,
   "notesOk": true,
   "datesOk": true,
-  "chat": 2
- },
- {
-  "title": "PO-LIEFERANT_A-ALP-58-25",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 2,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 2
- },
- {
-  "title": "PO-WONDERS-XW-SM260513",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 1
+  "chat": 6
  },
  {
   "title": "PO-LIEFERANT_A-ALP-53-25",
@@ -215,23 +190,39 @@ PO-Nummern per Browser nachgeladen: 72
   "notesOk": true,
   "datesOk": true,
   "chat": 1
+ },
+ {
+  "title": "PO-LIEFERANT_AA-WINTER-2026-04-29",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 2
  }
 ]
 ```
 
+## PO-IDs
+- geschrieben 0 (neu angelegt: 0), Fehler/Abweichungen nach Zuruecklesen: 0
+
 ## Gelernte Aliase (gespeichert)
-- keine neuen
+- 065-49589945 -> 6ace076f5f317983615c62b8 (Ereignis)
+- 065-49589923 -> 6ace076f5f317983615c62b8 (Ereignis)
+- 065-58307653 -> 6ace076f5f317983615c62b8 (Ereignis)
+- 26WJD-107-SMILODOX -> 6acd059e658a87e64182ca6a (Ereignis)
+- ZIHWB260930LH137 -> 6acd059e658a87e64182ca6a (Ereignis)
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 35, neu eingetragen 3, abgehakt 2, offen gesamt 48
+- Kandidaten 37, neu eingetragen 2, abgehakt 0, offen gesamt 50
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-22T11:13: 1 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 1 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-23T06:22: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-### Techpacks ohne Produkt
-- Sportsclub_TP_OV_24.02.2026.pdf (kein Stylecode im Namen oder Inhalt, der als SKU existiert)
-
-## Mensch entscheidet (67)
+## Mensch entscheidet (69)
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
@@ -299,3 +290,5 @@ PO-Nummern per Browser nachgeladen: 72
 - Ereignis nicht zuordenbar: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.202 (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Updated invoice and packing list with correct composition details provided. (keine Order gefunden)
+- Ereignis nicht zuordenbar: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for  (keine Order gefunden)
+- Ereignis nicht zuordenbar: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice  (mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd)
