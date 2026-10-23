@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from plm_intake import core, daily, docs_existing, events, ledger, new_products, run, shipments as shp, vendors_new  # noqa: E402
+from plm_intake import core, daily, docs_existing, events, ledger, new_products, price_fill, run, shipments as shp, vendors_new  # noqa: E402
 
 INTAKE = ROOT / "output" / "intake"
 MAX_NEW_POS_PER_RUN = 3
@@ -31,16 +31,31 @@ def browser(js_path):
     return json.loads(r.stdout)
 
 
-def no_price_orders(orders):
-    """Titel der Orders mit Stueckzahl > 0 aber Gesamtsumme 0/leer (Tests ZZ-/T1-/TEST ausgenommen)."""
-    out = []
+def _zero_orders(orders):
     for o in orders or []:
         t = str(o.get("title") or "")
         if re.search(r"(^ZZ|-T1\b|TEST)", t.upper()):
             continue
         if (o.get("totalNumberOfPieces") or 0) > 0 and not (o.get("totalCost") or 0):
-            out.append(t)
-    return out
+            yield o
+
+
+def no_price_orders(orders):
+    """Titel der Orders mit Stueckzahl > 0 aber Gesamtsumme 0/leer (Tests ZZ-/T1-/TEST ausgenommen)."""
+    return [str(o.get("title") or "") for o in _zero_orders(orders)]
+
+
+def no_price_ages(orders, now=None):
+    """[(Titel, Alter in Tagen seit Anlage im PLM)] der Orders ohne Preis, aelteste zuerst, unbekanntes Alter (None) zuletzt."""
+    now = now or dt.datetime.utcnow()
+    out = []
+    for o in _zero_orders(orders):
+        try:
+            age = max(0, (now - dt.datetime.strptime(str(o.get("createdAt"))[:10], "%Y-%m-%d")).days)
+        except ValueError:
+            age = None
+        out.append((str(o.get("title") or ""), age))
+    return sorted(out, key=lambda x: -1 if x[1] is None else -x[1])
 
 
 def main(argv=None):
@@ -129,7 +144,10 @@ def main(argv=None):
     rep += ["## Neue Bestellungen (CREATE)"] + (["- %s -> %s (%s Stk, %s)" % (n, p["title"], p["totalNumberOfPieces"], p["totalCost"]) for n, p in payloads.items()] or ["- keine"]) + [""]
 
     # (4) Belege zu bestehenden Orders -> Ereignis-Dateien
-    rows, ev_files = docs_existing.run(inbox, ctx, overrides, intake, only={f.name for f in docs})
+    price_pl = []
+    rows, ev_files = docs_existing.run(inbox, ctx, overrides, intake, only={f.name for f in docs}, price_plan=price_pl)
+    pfp = price_pl[0] if price_pl else {"patches": [], "klaer": [], "konflikte": []}
+    rep += ["## Preis-Nachtrag (Beleg mit Stueckpreisen zu Order mit Preis 0)"] + price_fill.report_lines(pfp, a.apply) + [""]
     rep += ["## Belege zu bestehenden Bestellungen", docs_existing.report(rows)]
     doc_event_paths = sorted((intake / "doc_events").glob("*_events.json"))
 
@@ -168,26 +186,29 @@ def main(argv=None):
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     if payloads:
         js_run = intake / ("run_%s.js" % stamp); js_run.write_text(run.make_js(list(payloads.values()), not a.apply))
+    js_pf = None
+    if pfp["patches"]:
+        js_pf = intake / ("price_fill_%s.js" % stamp); js_pf.write_text(price_fill.make_js(pfp, not a.apply))
     if pl["orders"]:
         js_ev = intake / ("events_%s.js" % stamp); js_ev.write_text(events.make_js(pl))
 
-    applied = {"orders": [], "event_orders": [], "shipments": []}
+    applied = {"orders": [], "event_orders": [], "shipments": [], "price_fill": []}
     facts = {"aliase": [], "klaer_rows": [], "klaer_offen": None, "warnungen": [], "zahlen": {}, "stichprobe_pool": []}
     for n, r in results:   # Warnungen: Blocker (leere/zu kleine Bestellung) und UNSTIMMIG-Hinweise in geplanten Bestellungen
         for i in r.issues:
-            if i.code in ("empty_order", "too_small", "price_missing"):
+            if i.code in ("empty_order", "too_small"):
                 facts["warnungen"].append("BLOCK %s (%s): %s" % (i.code, n, i.msg))
-                if i.code == "price_missing":
-                    rep.append("- KLAERFALL Preis fehlt: %s (nicht angelegt; Einkauf muss Stueckpreis liefern)" % n)
         if r.decision == "CREATE" and r.payload:
             for m in {x for x in re.findall(r"UNSTIMMIG[^\n\"]*", json.dumps(r.payload, ensure_ascii=False))}:
                 facts["warnungen"].append("%s: %s" % (r.payload.get("title") or n, m))
     try:   # Bestellungen mit Summe 0 (aber Stueckzahl) im PLM: nur aus den ohnehin geladenen Orders, keine Zusatzabfrage
-        zero = no_price_orders(ctx["orders"])
+        zero = no_price_ages(ctx["orders"])
+        facts["preis_ausstehend"] = [{"order": t, "tage": d} for t, d in zero]   # Tagesbericht-Abschnitt 'Preis ausstehend'
         if zero:
-            facts["warnungen"].append("Bestellungen mit Summe 0 im PLM (%d): %s" % (len(zero), ", ".join(zero[:6]) + (" ..." if len(zero) > 6 else "")))
+            facts["warnungen"].append("Bestellungen mit Summe 0 im PLM (%d): %s" % (len(zero), ", ".join(t for t, _ in zero[:6]) + (" ..." if len(zero) > 6 else "")))
     except Exception as e:
         facts["warnungen"].append("Summe-0-Pruefung fehlgeschlagen: %s" % str(e)[:100])
+    facts["warnungen"] += ["UNSTIMMIG/Mensch: %s" % k["why"] for k in pfp["konflikte"]]
     if a.apply:
         if sh_create or sh_update:
             try:
@@ -212,6 +233,13 @@ def main(argv=None):
                 rep += ["", "ABBRUCH: Rueckpruefung der Notizen meldet Abweichung: %s" % bad]
                 (intake / "auto_report.md").write_text("\n".join(rep)); print("\n".join(rep)); return 1
             applied["event_orders"] = [r["title"] for r in res]
+        if js_pf:   # Preis nachtragen (nur Positionen mit Preis 0, nie vorhandene Preise); Abweichung bei der Rueckpruefung = Abbruch wie bei Notizen
+            res = browser(js_pf); rep += ["## Ergebnis Preis-Nachtrag", "```", json.dumps(res, ensure_ascii=False, indent=1), "```"]
+            bad = [r for r in res if r.get("error") or r.get("fatal") or r.get("ABBRUCH") or r.get("dataUnchanged") is False or r.get("pricesOk") is False or r.get("sumOk") is False or r.get("notesOk") is False]
+            if bad:
+                rep += ["", "ABBRUCH: Rueckpruefung des Preis-Nachtrags meldet Abweichung: %s" % bad]
+                (intake / "auto_report.md").write_text("\n".join(rep)); print("\n".join(rep)); return 1
+            applied["price_fill"] = [r["title"] for r in res if r.get("cells")]
         # PO-ID (Feld 'Smilodox PO-ID'): neue POs sofort, dazu taeglicher Nachtrag fuer Orders ohne PO-ID; Fehler brechen den Lauf nie ab
         try:
             from plm_intake import po_ids
@@ -273,7 +301,7 @@ def main(argv=None):
         rep += ["", "## Techpacks", "- FEHLER: %s" % str(e)[:200]]
         facts["warnungen"].append("Techpack-Schritt fehlgeschlagen: %s" % str(e)[:120])
     # Menschen-Liste
-    human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER")]
+    human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER", "PREIS_KLAERFALL")]
     blocked = [(n, r) for n, r in results if r.decision != "CREATE" and n not in {x["file"] for x in rows}]
     um_h = [u for u in pl["unmatched"] if not str(u["reason"]).startswith("info:")]
     n_mensch = len(human) + len(um_h) + len(sh_human) + len(over) + len(forced_open)

@@ -86,3 +86,13 @@ class SummeNull(unittest.TestCase):
                   {"title": "ZZ-FULLCASE6 PO", "totalNumberOfPieces": 10, "totalCost": 0},
                   {"title": "PO-X-T1", "totalNumberOfPieces": 10, "totalCost": 0}]
         self.assertEqual(auto_run.no_price_orders(orders), ["PO-A", "PO-B"])
+
+
+class PreisAlter(unittest.TestCase):
+    def test_alter_in_tagen_aelteste_zuerst(self):
+        import datetime as dt
+        orders = [{"title": "PO-A", "totalNumberOfPieces": 100, "totalCost": 0, "createdAt": "2026-10-03T08:00:00.000Z"},
+                  {"title": "PO-B", "totalNumberOfPieces": 100, "totalCost": 0, "createdAt": "2026-10-22T08:00:00.000Z"},
+                  {"title": "PO-C", "totalNumberOfPieces": 100, "totalCost": 0},
+                  {"title": "PO-D", "totalNumberOfPieces": 100, "totalCost": 5, "createdAt": "2026-01-01T00:00:00.000Z"}]
+        self.assertEqual(auto_run.no_price_ages(orders, dt.datetime(2026, 10, 23, 9, 0)), [("PO-A", 20), ("PO-B", 1), ("PO-C", None)])

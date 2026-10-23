@@ -29,8 +29,8 @@ class Warnungen(unittest.TestCase):
         self.assertEqual(tb.warn_key("UNSTIMMIG/Mensch: Sendung S1: Menge 3 != 4"), "UNSTIMMIG/Mensch: Sendung S1")
 
     def test_neu_bekannt_und_entfernen(self):
-        w = ["BLOCK empty_order (a.json): x", "BLOCK price_missing (b.json): y", "NEU (c): z"]
-        verlauf = {"tage": {"2026-10-19": 5}, "gesehen": ["m"], "warnungen": {"BLOCK empty_order (a.json)": "2026-10-10", "BLOCK price_missing (b.json)": "2026-10-20", "ALT (weg): q": "2026-10-01"}}
+        w = ["BLOCK empty_order (a.json): x", "BLOCK too_small (b.json): y", "NEU (c): z"]
+        verlauf = {"tage": {"2026-10-19": 5}, "gesehen": ["m"], "warnungen": {"BLOCK empty_order (a.json)": "2026-10-10", "BLOCK too_small (b.json)": "2026-10-20", "ALT (weg): q": "2026-10-01"}}
         t = tb.build({"zahlen": {}, "warnungen": w}, 0, "apply", now=FR, verlauf=verlauf)
         self.assertIn("4. Warnungen: 1 neu | 2 bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit 13 Tagen)", t)
         self.assertIn("- NEU (c): z", t); self.assertNotIn("a.json", t)
@@ -55,6 +55,23 @@ class Warnungen(unittest.TestCase):
             f["warnungen"] = ["PO-1: UNSTIMMIG"]; (d / tb.DATEN).write_text(json.dumps(f))
             tb.write(d, 0, "apply", now=FR)
             self.assertEqual(json.loads((d / tb.VERLAUF).read_text())["warnungen"], {"PO-1": "2026-10-21"})
+
+
+class PreisAusstehend(unittest.TestCase):
+    def test_abschnitt_mit_alter_und_auffaellig_ab_14_tagen(self):
+        f = {"zahlen": {}, "preis_ausstehend": [{"order": "PO-LIEFERANT_E-A", "tage": 20}, {"order": "PO-LIEFERANT_E-B", "tage": 14}, {"order": "PO-NEU", "tage": 1}, {"order": "PO-X", "tage": None}]}
+        t = tb.build(f, 0, "apply", now=FR, verlauf={})
+        self.assertIn("6. Preis ausstehend: 4 Bestellungen ohne Preis | davon 2 seit 14+ Tagen (auffaellig)", t)
+        self.assertIn("- PO-LIEFERANT_E-A: 20 Tage AUFFAELLIG", t); self.assertIn("- PO-LIEFERANT_E-B: 14 Tage AUFFAELLIG", t)
+        self.assertIn("- PO-NEU: 1 Tag\n", t); self.assertNotIn("PO-NEU: 1 Tag AUFF", t); self.assertIn("PO-X: Alter unbekannt", t)
+
+    def test_keine_und_fehlender_schluessel(self):
+        self.assertIn("6. Preis ausstehend: keine Bestellung", tb.build({"zahlen": {}, "preis_ausstehend": []}, 0, "apply", now=FR, verlauf={}))
+        self.assertNotIn("Preis ausstehend", tb.build({"zahlen": {}}, 0, "apply", now=FR, verlauf={}))
+
+    def test_max_acht_zeilen(self):
+        f = {"zahlen": {}, "preis_ausstehend": [{"order": "PO-%d" % i, "tage": i} for i in range(10)]}
+        self.assertIn("und 2 weitere", tb.build(f, 0, "apply", now=FR, verlauf={}))
 
 
 class Zaehlung(unittest.TestCase):

@@ -24,6 +24,8 @@ TAGE = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "S
 STICHPROBE_TAGE = (1, 4)   # Dienstag, Freitag
 STICHPROBE_N = 10
 MAX_FAELLE = 5
+PREIS_AUFFAELLIG_TAGE = 14   # Order ohne Preis seit mindestens so vielen Tagen = auffaellig
+MAX_PREIS_ZEILEN = 8
 
 
 def _load(p, default):
@@ -140,6 +142,15 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     al = facts.get("aliase") or []
     L.append("5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): " + ("keine" if not al else str(len(al))))
     L += ["   - %s -> %s" % (_kurz(a.get("key"), 50), _kurz(a.get("order"), 70)) for a in al[:15]] + (["   - und %d weitere" % (len(al) - 15)] if len(al) > 15 else [])
+    if "preis_ausstehend" in facts:   # 6. Preis ausstehend: Orders mit Menge aber Summe 0 (Preis kommt spaeter per Proforma/Rechnung, Skript traegt ihn nach)
+        pa = facts.get("preis_ausstehend") or []
+        alt = [x for x in pa if (x.get("tage") if x.get("tage") is not None else -1) >= PREIS_AUFFAELLIG_TAGE]
+        L.append("6. Preis ausstehend: %s" % ("keine Bestellung" if not pa else "%d Bestellung%s ohne Preis | davon %d seit %d+ Tagen (auffaellig)" % (len(pa), "" if len(pa) == 1 else "en", len(alt), PREIS_AUFFAELLIG_TAGE)))
+        for x in pa[:MAX_PREIS_ZEILEN]:
+            t = x.get("tage")
+            L.append("   - %s: %s%s" % (_kurz(x.get("order"), 60), "Alter unbekannt" if t is None else "%d Tag%s" % (t, "" if t == 1 else "e"), " AUFFAELLIG" if t is not None and t >= PREIS_AUFFAELLIG_TAGE else ""))
+        if len(pa) > MAX_PREIS_ZEILEN:
+            L.append("   - und %d weitere" % (len(pa) - MAX_PREIS_ZEILEN))
     sp = stichprobe(facts.get("stichprobe_pool"), now, rng=rng)
     if sp is not None:
         L += ["", "Stichprobe (%s, %d zufaellige %s Eintraege, nur zum Pruefen):" % (TAGE[now.weekday()], len(sp), "heute geschriebene" if apply else "geplante")]

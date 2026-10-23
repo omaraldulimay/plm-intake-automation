@@ -184,10 +184,11 @@ def delivery_doc(name, po, ctx, orders, overrides):
     return {"file": name, "kind": "ORPHAN_DOC", "po": po.get("po_number")}, _R()
 
 
-def run(inbox, ctx, overrides, out, today=None, only=None):
+def run(inbox, ctx, overrides, out, today=None, only=None, price_plan=None):
+    """price_plan: optionale Liste; wird mit dem Preis-Nachtrag-Plan (price_fill.plan) gefuellt. Klaerfaelle 'Preis-Nachtrag passt nicht' kommen als Zeilen (kind PREIS_KLAERFALL) in rows."""
     today = today or dt.datetime.now().strftime("%Y-%m-%d %H:%M")
     orders = {o["id"]: o for o in ctx.get("orders") or []}
-    rows, ev_files = [], {}
+    rows, ev_files, price_docs = [], {}, []
     for f in sorted(Path(inbox).glob("*.json")):
         if f.name.endswith("_events.json") or (only is not None and f.name not in only): continue
         if (overrides or {}).get(f.name) == "CREATE":   # Mensch hat neue PO entschieden: laeuft ueber die Bestell-Anlage (auto_run/run), nicht als Notiz
@@ -201,6 +202,7 @@ def run(inbox, ctx, overrides, out, today=None, only=None):
                     rows.append(row); continue
                 parent = orders[row["pid"]]; kind = "DELIVERY_DOC"
                 ev_files[f.stem] = make_event(f.name, po, kind, parent, r, today)
+                price_docs.append((f.name, parent["id"], po))
                 rows.append({"file": f.name, "kind": kind, "po": po.get("po_number"), "parent": "#%s %s" % (parent.get("orderNumber"), parent.get("title")), "pid": parent["id"],
                              "doc_type": str(po.get("doc_type") or "").upper(), "doc": po}); continue
             r = core.build(po, ctx)
@@ -213,7 +215,14 @@ def run(inbox, ctx, overrides, out, today=None, only=None):
         row = {"file": f.name, "kind": kind, "po": po.get("po_number"), "parent": ("#%s %s" % (parent.get("orderNumber"), parent.get("title"))) if parent else None}
         if kind in ("DELIVERY_DOC", "PI_CHANGED") and parent:
             ev_files[f.stem] = make_event(f.name, po, kind, parent, r, today)
+            price_docs.append((f.name, parent["id"], po))
         rows.append(row)
+    if price_docs:   # Preis-Nachtrag: Beleg mit Stueckpreisen zu bestehender Order, deren Positionen Preis 0 haben (price_fill)
+        from plm_intake import price_fill
+        pp = price_fill.plan(orders, price_docs)
+        if price_plan is not None:
+            price_plan.append(pp)
+        rows += [{"file": k["file"], "kind": "PREIS_KLAERFALL", "why": "%s (%s)" % (k["why"], k["title"])} for k in pp["klaer"]]
     d = Path(out) / "doc_events"; d.mkdir(parents=True, exist_ok=True)
     for old in d.glob("*_events.json"): old.unlink()
     for stem, ev in ev_files.items():

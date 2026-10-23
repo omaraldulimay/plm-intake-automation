@@ -131,14 +131,28 @@ class Anlegen(unittest.TestCase):
         self.assertNotIn("exFactoryExpectedDate", r.payload)
         self.assertIn("Offen:", r.payload["notes"])
 
-    def test_preis_fehlt_oder_null_wird_nicht_angelegt(self):
+    def test_preis_fehlt_oder_null_wird_angelegt_mit_notiz(self):
         for price in (None, 0, 0.0):
             x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "price": price, "sizes": {"S": 800}}]}], total_cost=None)
             r = core.build(x, CTX, TODAY)
-            self.assertEqual(r.decision, "BLOCK", price)
-            self.assertIn("price_missing", [i.code for i in r.issues if i.level == "ERROR"])
+            self.assertEqual(r.decision, "CREATE", [i.msg for i in r.issues])
+            self.assertIn(("WARN", "price_missing"), [(i.level, i.code) for i in r.issues])
+            self.assertFalse([i for i in r.issues if i.level == "ERROR"])
+            self.assertEqual(r.payload["totalCost"], 0)
+            self.assertEqual(r.payload["items"][0]["variants"][0]["amounts"][0]["price"], 0.0)
+            self.assertIn("PREIS AUSSTEHEND (Beleg ohne Preis, Stand %s)" % TODAY, r.payload["notes"])
         x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "sizes": {"S": 800}}]}], total_cost=None)
-        self.assertEqual(core.build(x, CTX, TODAY, force_create=True).decision, "BLOCK")   # auch per Override nicht
+        self.assertEqual(core.build(x, CTX, TODAY, force_create=True).decision, "CREATE")
+
+    def test_preis_fehlt_leere_oder_kleine_bestellung_bleibt_block(self):
+        x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "price": 0, "sizes": {"S": 3}}]}], total_cost=None)
+        self.assertIn("too_small", [i.code for i in core.build(x, CTX, TODAY).issues if i.level == "ERROR"])
+        x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "price": 0, "sizes": {}}]}], total_cost=None)
+        self.assertEqual(core.build(x, CTX, TODAY).decision, "BLOCK")
+
+    def test_mit_preis_keine_preis_ausstehend_notiz(self):
+        r = core.build(po(), CTX, TODAY)
+        self.assertNotIn("PREIS AUSSTEHEND", r.payload["notes"])
 
     def test_zahlung_ohne_termin_bekommt_platzhalter(self):
         x = po(payments=[{"name": "a", "status": "Paid", "amount": 400.0}])

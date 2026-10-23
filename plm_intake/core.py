@@ -306,6 +306,7 @@ def build(po, ctx, today=None, force_create=False):
 
     # Positionen
     open_items = list(po.get("open") or [])
+    price_missing = False
     items, total_cost, total_pieces = [], 0.0, 0
     specs = []
     products = ctx.get("products") or []
@@ -324,10 +325,10 @@ def build(po, ctx, today=None, force_create=False):
         for v in it.get("variants") or []:
             color = v.get("color") or "Default Style"
             price = v.get("price")
-            if price is None or float(price) == 0:   # kein belegter Stueckpreis: Bestellung wird nicht angelegt (Klaerfall 'Preis fehlt', Einkauf)
+            if price is None or float(price) == 0:   # kein belegter Stueckpreis: Order wird trotzdem angelegt (Preis 0), Preis kommt spaeter per Proforma/Rechnung (price_fill)
                 price = 0.0
-                open_items.append("Preis fehlt: %s %s" % (name, color))
-                add("ERROR", "price_missing", "Preis fehlt (%s %s): Bestellung ohne Stueckpreis wird nicht angelegt, Klaerfall Einkauf" % (name, color))
+                price_missing = True
+                add("WARN", "price_missing", "Preis fehlt (%s %s): Preis 0 gesetzt, PREIS AUSSTEHEND" % (name, color))
             if price < 0:
                 add("ERROR", "price_negative", "Negativer Preis bei %s %s" % (name, color))
             amounts = []
@@ -384,11 +385,13 @@ def build(po, ctx, today=None, force_create=False):
 
     # Summen gegen Quelle
     # Harte Sperren: leere Bestellung / Kleinstbeleg (Muster) nie anlegen
-    if total_pieces == 0 or (total_cost == 0 and (po.get("total_cost") or 0) > 0):
+    if price_missing:
+        open_items.append("PREIS AUSSTEHEND (Beleg ohne Preis, Stand %s)" % today)
+    if total_pieces == 0 or (total_cost == 0 and not price_missing and (po.get("total_cost") or 0) > 0):
         add("ERROR", "empty_order", "Positionen ergeben %d Stk / %.2f (laut Beleg %s Stk / %s): leere Bestellung wird nicht angelegt" % (total_pieces, total_cost, po.get("total_pieces"), po.get("total_cost")))
     elif total_pieces < MIN_PIECES:
         add("ERROR", "too_small", "Nur %d Stk insgesamt (unter %d): Muster/Kleinstbeleg, keine Bestellung" % (total_pieces, MIN_PIECES))
-    if po.get("total_cost") is not None and round(abs(r2(po["total_cost"]) - total_cost), 2) > TOL:
+    if po.get("total_cost") is not None and not (price_missing and total_cost == 0) and round(abs(r2(po["total_cost"]) - total_cost), 2) > TOL:
         add("WARN", "sum_mismatch", "Positionen %.2f != angegebener Gesamtwert %.2f" % (total_cost, po["total_cost"]))
         open_items.append("UNSTIMMIG: Positionen %.2f != Gesamtwert laut Beleg %.2f (%+.2f), Quelle pruefen (moeglicherweise Lesefehler)" % (total_cost, po["total_cost"], total_cost - r2(po["total_cost"])))
     if po.get("total_pieces") is not None and int(po["total_pieces"]) != total_pieces:

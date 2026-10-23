@@ -10,7 +10,7 @@ from plm_intake import invoice_pos  # noqa: E402
 
 
 class OhnePreis(unittest.TestCase):
-    def test_bestellung_ohne_preis_wird_klaerfall_statt_inbox_datei(self):
+    def test_bestellung_ohne_preis_wird_trotzdem_als_inbox_datei_erzeugt(self):
         with tempfile.TemporaryDirectory() as d:
             p2 = Path(d); (p2 / "x" / "extract").mkdir(parents=True)
             for fid, price in (("att_ok", 4.5), ("att_null", None), ("att_zero", 0)):
@@ -19,9 +19,11 @@ class OhnePreis(unittest.TestCase):
             jobs = [("x", "att_ok", "V", "PO-OK", "n"), ("x", "att_null", "V", "PO-NULL", "n"), ("x", "att_zero", "V", "PO-ZERO", "n")]
             with mock.patch.object(invoice_pos, "P2", p2), mock.patch.object(invoice_pos, "OUT", p2 / "B11" / "inbox"), mock.patch.object(invoice_pos, "JOBS", jobs):
                 invoice_pos.main()
-            self.assertEqual(sorted(f.name for f in (p2 / "B11" / "inbox").glob("*.json")), ["PO-OK.json"])
-            txt = (p2 / "B11" / "klaerfaelle_preis.md").read_text()
-            self.assertIn("PO-NULL", txt); self.assertIn("PO-ZERO", txt); self.assertNotIn("PO-OK", txt)
+            self.assertEqual(sorted(f.name for f in (p2 / "B11" / "inbox").glob("*.json")), ["PO-NULL.json", "PO-OK.json", "PO-ZERO.json"])
+            z = json.loads((p2 / "B11" / "inbox" / "PO-ZERO.json").read_text())
+            self.assertEqual(z["total_cost"], 0); self.assertEqual(z["items"][0]["variants"][0]["price"], 0.0)
+            self.assertNotIn("Preis fehlt im Beleg", z["notes"])   # kein fest eingetragener Text: die Notiz 'PREIS AUSSTEHEND' setzt core.build
+            self.assertFalse((p2 / "B11" / "klaerfaelle_preis.md").exists())
 
 
 if __name__ == "__main__":
