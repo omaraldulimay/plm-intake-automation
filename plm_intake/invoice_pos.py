@@ -22,24 +22,35 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for f in OUT.glob("*.json"):
         f.unlink()
+    klaer = []
     for folder, fid, vendor, po, note in JOBS:
         d = json.load(open(P2 / folder / "extract" / (fid + ".json")))
         o, inv = d.get("order") or {}, d.get("invoice") or {}
-        items, tot, pcs = [], 0.0, 0
+        items, tot, pcs, fehlt = [], 0.0, 0, []
         for it in o["items"]:
             sizes = {str(k).upper(): int(v) for k, v in (it.get("sizes") or {}).items() if v}
             q = int(it.get("qty") or 0)
             if sum(sizes.values()) < q:
                 sizes["ONE SIZE"] = q - sum(sizes.values())
             price = float(it.get("price") or 0)
+            if price <= 0:
+                fehlt.append("%s %s" % (it.get("style"), it.get("color") or ""))
             items.append({"sku": {"561873_C": "561873"}.get(it.get("style"), it.get("style")), "name": it.get("name") or it.get("style"), "variants": [{"color": str(it.get("color") or "").title(), "price": price, "sizes": sizes}]})
             tot += q * price; pcs += q
+        if fehlt:   # kein belegter Stueckpreis -> keine Bestellung, Klaerfall fuer den Einkauf
+            klaer.append((po, vendor, fid, fehlt))
+            print("KLAERFALL Preis fehlt:", po, "(" + ", ".join(fehlt) + ") -> nicht erzeugt")
+            continue
         date = inv.get("datum_iso") or inv.get("datum") or o.get("po_date")
         doc = {"doc_type": "PO", "source": {"doc": fid, "mail_id": None, "mail_date": date}, "vendor": vendor, "po_number": po, "doc_date": date, "currency": o.get("currency") or "USD",
                "incoterm": inv.get("incoterm"), "ex_factory": None, "etd": None, "items": items, "payments": [], "total_cost": round(tot, 2), "total_pieces": pcs, "contract_total": None,
                "notes": "Phase 2 Batch 11: " + note + ". Keine Zahlungsraten ohne Beleg."}
         (OUT / (po + ".json")).write_text(json.dumps(doc, ensure_ascii=False, indent=1))
         print(po, len(items), "Pos", pcs, "Stk", round(tot, 2), "| Beleg:", o.get("pieces"), o.get("total"))
+    kf = OUT.parent / "klaerfaelle_preis.md"
+    kf.write_text("# Klaerfaelle 'Preis fehlt' (Batch 11)\n\nBestellung wird erst angelegt, wenn der Einkauf den Stueckpreis liefert.\n\n" +
+                  "".join("- %s | %s | Beleg %s | ohne Preis: %s\n" % (po, v, fid, ", ".join(f)) for po, v, fid, f in klaer))
+    return 0
 
 
 if __name__ == "__main__":

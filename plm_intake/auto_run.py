@@ -31,6 +31,18 @@ def browser(js_path):
     return json.loads(r.stdout)
 
 
+def no_price_orders(orders):
+    """Titel der Orders mit Stueckzahl > 0 aber Gesamtsumme 0/leer (Tests ZZ-/T1-/TEST ausgenommen)."""
+    out = []
+    for o in orders or []:
+        t = str(o.get("title") or "")
+        if re.search(r"(^ZZ|-T1\b|TEST)", t.upper()):
+            continue
+        if (o.get("totalNumberOfPieces") or 0) > 0 and not (o.get("totalCost") or 0):
+            out.append(t)
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
@@ -163,11 +175,19 @@ def main(argv=None):
     facts = {"aliase": [], "klaer_rows": [], "klaer_offen": None, "warnungen": [], "zahlen": {}, "stichprobe_pool": []}
     for n, r in results:   # Warnungen: Blocker (leere/zu kleine Bestellung) und UNSTIMMIG-Hinweise in geplanten Bestellungen
         for i in r.issues:
-            if i.code in ("empty_order", "too_small"):
+            if i.code in ("empty_order", "too_small", "price_missing"):
                 facts["warnungen"].append("BLOCK %s (%s): %s" % (i.code, n, i.msg))
+                if i.code == "price_missing":
+                    rep.append("- KLAERFALL Preis fehlt: %s (nicht angelegt; Einkauf muss Stueckpreis liefern)" % n)
         if r.decision == "CREATE" and r.payload:
             for m in {x for x in re.findall(r"UNSTIMMIG[^\n\"]*", json.dumps(r.payload, ensure_ascii=False))}:
                 facts["warnungen"].append("%s: %s" % (r.payload.get("title") or n, m))
+    try:   # Bestellungen mit Summe 0 (aber Stueckzahl) im PLM: nur aus den ohnehin geladenen Orders, keine Zusatzabfrage
+        zero = no_price_orders(ctx["orders"])
+        if zero:
+            facts["warnungen"].append("Bestellungen mit Summe 0 im PLM (%d): %s" % (len(zero), ", ".join(zero[:6]) + (" ..." if len(zero) > 6 else "")))
+    except Exception as e:
+        facts["warnungen"].append("Summe-0-Pruefung fehlgeschlagen: %s" % str(e)[:100])
     if a.apply:
         if sh_create or sh_update:
             try:

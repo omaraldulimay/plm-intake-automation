@@ -75,3 +75,14 @@ class TagesdatenTest(unittest.TestCase):
             self.assertEqual(facts["zahlen"]["orders"], 1); self.assertIn("dauer_s", facts)
             txt = tb.write(intake, 0, "dry", now=__import__("datetime").datetime(2026, 10, 21, 8, 0), step_summary=None)
             self.assertIn("Trockenlauf", txt); self.assertIn("neue Bestellungen 1", txt)
+
+
+class SummeNull(unittest.TestCase):
+    def test_no_price_orders(self):
+        orders = [{"title": "PO-A", "totalNumberOfPieces": 100, "totalCost": 0},
+                  {"title": "PO-B", "totalNumberOfPieces": 100, "totalCost": None},
+                  {"title": "PO-C", "totalNumberOfPieces": 100, "totalCost": 50.0},
+                  {"title": "PO-D", "totalNumberOfPieces": 0, "totalCost": 0},
+                  {"title": "ZZ-FULLCASE6 PO", "totalNumberOfPieces": 10, "totalCost": 0},
+                  {"title": "PO-X-T1", "totalNumberOfPieces": 10, "totalCost": 0}]
+        self.assertEqual(auto_run.no_price_orders(orders), ["PO-A", "PO-B"])

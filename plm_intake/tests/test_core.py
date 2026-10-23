@@ -121,17 +121,24 @@ class Anlegen(unittest.TestCase):
         self.assertNotIn("variantId", r.payload["items"][0]["variants"][0])
         self.assertEqual(r.decision, "CREATE")
 
-    def test_fehlende_preise_groessen_termine_platzhalter_und_offen(self):
-        x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "quantity": 800}]}],
+    def test_fehlende_groessen_termine_platzhalter_und_offen(self):
+        x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "price": 1.5, "quantity": 800}]}],
                payments=[], ex_factory=None, etd=None)
         r = core.build(x, CTX, TODAY)
         self.assertEqual(r.decision, "CREATE", [i.msg for i in r.issues])
         a = r.payload["items"][0]["variants"][0]["amounts"][0]
-        self.assertEqual((a["key"], a["price"], a["cost"]), ("ONE SIZE", 0.0, 0.0))
-        self.assertEqual(r.payload["totalCost"], 0.0)
+        self.assertEqual((a["key"], a["price"], a["cost"]), ("ONE SIZE", 1.5, 1200.0))
         self.assertNotIn("exFactoryExpectedDate", r.payload)
         self.assertIn("Offen:", r.payload["notes"])
-        self.assertIn("Preis fehlt", r.payload["notes"])
+
+    def test_preis_fehlt_oder_null_wird_nicht_angelegt(self):
+        for price in (None, 0, 0.0):
+            x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "price": price, "sizes": {"S": 800}}]}], total_cost=None)
+            r = core.build(x, CTX, TODAY)
+            self.assertEqual(r.decision, "BLOCK", price)
+            self.assertIn("price_missing", [i.code for i in r.issues if i.level == "ERROR"])
+        x = po(items=[{"sku": None, "name": "Socken", "variants": [{"color": "Leo", "sizes": {"S": 800}}]}], total_cost=None)
+        self.assertEqual(core.build(x, CTX, TODAY, force_create=True).decision, "BLOCK")   # auch per Override nicht
 
     def test_zahlung_ohne_termin_bekommt_platzhalter(self):
         x = po(payments=[{"name": "a", "status": "Paid", "amount": 400.0}])

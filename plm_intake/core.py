@@ -324,10 +324,10 @@ def build(po, ctx, today=None, force_create=False):
         for v in it.get("variants") or []:
             color = v.get("color") or "Default Style"
             price = v.get("price")
-            if price is None:
+            if price is None or float(price) == 0:   # kein belegter Stueckpreis: Bestellung wird nicht angelegt (Klaerfall 'Preis fehlt', Einkauf)
                 price = 0.0
                 open_items.append("Preis fehlt: %s %s" % (name, color))
-                add("WARN", "price_missing", "Preis fehlt (%s %s): 0 gesetzt" % (name, color))
+                add("ERROR", "price_missing", "Preis fehlt (%s %s): Bestellung ohne Stueckpreis wird nicht angelegt, Klaerfall Einkauf" % (name, color))
             if price < 0:
                 add("ERROR", "price_negative", "Negativer Preis bei %s %s" % (name, color))
             amounts = []
