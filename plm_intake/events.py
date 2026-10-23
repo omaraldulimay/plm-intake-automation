@@ -208,6 +208,46 @@ def mentioned_pieces(e):
     return {n for n in nums if n >= 500}
 
 
+_APPROX = re.compile(r"(approx\w*\.?|ca\.?|circa|about|around|roughly|etwa|rund|up to|bis zu|~)\s*$", re.I)
+_RANGE_BEFORE = re.compile(r"\d\s*(?:-|\u2013|\u2014|to|bis)\s*$", re.I)
+_RANGE_AFTER = re.compile(r"^\s*(?:k\b)?\s*(?:-|\u2013|\u2014|to\b|bis\b)\s*\d", re.I)
+
+
+def exact_pieces(e):
+    """Genau EINE exakte Stueckzahl oder None. Keine Spannen (5000-6000), keine Naeherungen (approx./ca./~/about), keine zwei verschiedenen Zahlen.
+    Nur diese Zahl darf eine Order per Menge zuordnen (schwache Regel: im Zweifel offen lassen)."""
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
+    nums = set()
+    d = e.get("details") or {}
+    for k in ("qty", "quantity", "pieces", "total_pieces"):
+        try:
+            if d.get(k) not in (None, "", False) and float(d[k]) >= 500:
+                nums.add(int(float(d[k])))
+        except (TypeError, ValueError):
+            pass
+    for m in re.finditer(r"\b\d{1,3}(?:[.,]\d{3})+\b|\b\d{4,6}\b|\b\d{1,3}\s?k\b", txt, flags=re.I):
+        t = m.group(0)
+        if t[-1] in "kK":
+            val = int(re.sub(r"\D", "", t)) * 1000
+        else:
+            val = int(re.sub(r"[.,]", "", t))
+        if val < 500:
+            continue
+        before, after = txt[max(0, m.start() - 14):m.start()], txt[m.end():m.end() + 14]
+        if _APPROX.search(before) or _RANGE_BEFORE.search(before) or _RANGE_AFTER.search(after):
+            return None
+        nums.add(val)
+    return next(iter(nums)) if len(nums) == 1 else None
+
+
+def _by_exact_qty(e, cands):
+    """Kandidaten, deren Gesamtmenge (+-1,5 %) zur einen exakten Zahl passt; nur laufende Orders (nicht Complete)."""
+    n = exact_pieces(e)
+    if not n:
+        return []
+    return [o for o in cands if _status(o) not in ACTIVE_NOT and abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n]
+
+
 def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None, style_aliases=None):
     """Genau eine Order oder None (+ Grund). Zaehlt: PO-Nummer/Titel, Style (Positionsname oder Produkt-SKU), bekannte Kennung (Container/HBL/Rechnungsnr. aus den Notizen).
     Lieferant allein reicht nur schwach und nur bei vendor_only (mehrdeutig sonst)."""
@@ -276,11 +316,9 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             hits = running
     by_qty = False
     if len(hits) > 1:   # genannte Stueckzahl passt (+-1,5 %) zu genau EINER der Kandidaten-Orders
-        want = mentioned_pieces(e)
-        if want:
-            q = [o for o in hits if any(abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n for n in want)]
-            if len(q) == 1:
-                hits, by_qty = q, True
+        q = _by_exact_qty(e, hits)
+        if len(q) == 1:
+            hits, by_qty = q, True
     if len(hits) == 1:
         subj_ref = str((e.get("details") or {}).get("ref_quelle") or "") == "betreff"   # Style nur aus Betreff/Anhangsnamen abgeleitet (Apps Script-Rueckfall): nur Notiz
         return hits[0], ("menge" if by_qty else "text" if (via_text or subj_ref) else "ok")
@@ -296,11 +334,9 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             if len(mine) == 1:
                 return mine[0], "vendor_only"
             if len(mine) > 1:
-                want = mentioned_pieces(e)   # genannte Stueckzahl passt (+-1,5 %) zu genau EINER laufenden Order des Lieferanten
-                if want:
-                    q = [o for o in mine if any(abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n for n in want)]
-                    if len(q) == 1:
-                        return q[0], "menge"
+                q = _by_exact_qty(e, mine)   # EINE exakte Zahl (keine Spanne/Naeherung) passt (+-1,5 %) zu genau EINER laufenden Order des Lieferanten
+                if len(q) == 1:
+                    return q[0], "menge"
                 words = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")]).lower()
                 named = [o for o in mine if any(re.search(r"\b%s\b" % re.escape(w), words) for w in title_words(o, v["name"]))]
                 if len(named) == 1:   # Text nennt ein unterscheidendes Wort aus genau EINEM Order-Titel (z. B. Projektname)

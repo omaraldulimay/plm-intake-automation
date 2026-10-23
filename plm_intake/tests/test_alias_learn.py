@@ -50,6 +50,18 @@ class Lernen(unittest.TestCase):
         self.assertEqual(keys, ["12345"])   # 5 Stellen, kein Datum/Style/Menge; zu kurz (<5) faellt ebenfalls raus
         self.assertFalse(alias_learn.valid("AB12", O[0]))
 
+    def test_vertragsnummer_einer_anderen_order_wird_nicht_gelernt(self):
+        orders = O + [{"id": "W1", "title": "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER", "poNumber": "", "manufacturer": {"id": "VW"}, "status": {"status": "In Production"}, "items": []},
+                      {"id": "W2", "title": "PO-LIEFERANT_AA-WINTER", "poNumber": "", "manufacturer": {"id": "VW"}, "status": {"status": "In Production"}, "items": []}]
+        by = {o["id"]: o for o in orders}
+        self.assertFalse(alias_learn.valid("26WJD-107-SMILODOX", by["W2"], (), orders))
+        self.assertFalse(alias_learn.valid("26WJD-107", by["W2"], (), orders))
+        self.assertTrue(alias_learn.valid("26WJD-107-SMILODOX", by["W1"], (), orders))   # eigene Order: ok
+        self.assertTrue(alias_learn.valid("LIEFERANT_AA2674", by["W2"], (), orders))
+        e = {"type": "SHIPMENT", "vendor": "W", "ref": {"po_number": "PO-LIEFERANT_AA-WINTER", "style": None, "container": None}, "summary": "x",
+             "details": {"invoice_number": "26WJD-107-SMILODOX"}, "_mail": {"id": "m", "date": "2026-10-15 10:00"}}
+        self.assertEqual(alias_learn.candidates([(e, "W2", "ok")], [], by), [])
+
     def test_trockenlauf_lernt_nichts(self):
         al = {}
         pl = self.plan(ev(invoice_number="LIEFERANT_AA2674"))

@@ -32,7 +32,7 @@ def lookup(aliases, key, orders):
     return None, False
 
 
-def valid(raw, order, extra_bad=()):
+def valid(raw, order, extra_bad=(), others=()):
     """Darf diese Kennung als Alias gelernt werden?"""
     raw = str(raw or "").strip()
     n = core.norm(raw)
@@ -44,6 +44,15 @@ def valid(raw, order, extra_bad=()):
         return False
     if re.fullmatch(r"\d{1,3}([.,]\d{3})+", raw):   # Menge 85.290
         return False
+    toks = [t for t in re.split(r"[^A-Za-z0-9]+", raw) if t]
+    pre = {core.norm("".join(toks[:i])) for i in range(2, len(toks) + 1)} | {n}   # Vertragsmuster: Kennung oder ihr Anfang aus >= 2 Teilen ('26WJD-107' aus '26WJD-107-SMILODOX')
+    own = [core.norm(order.get("title")), core.norm(order.get("poNumber"))]
+    for o2 in others:   # steht im Titel/PO-Nr einer ANDEREN Bestellung (z. B. PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER), nicht aber in der eigenen
+        if o2.get("id") == order.get("id"):
+            continue
+        for f in (core.norm(o2.get("title")), core.norm(o2.get("poNumber"))):
+            if f and any(len(p) >= MIN_LEN and p in f and not any(p in x for x in own if x) for p in pre):
+                return False
     for it in order.get("items") or []:   # Stylecode / Positionsname
         sku = core.norm(it["product"].get("sku")) if isinstance(it.get("product"), dict) else ""
         if n in core.norm(it.get("name")) or (sku and (n == sku or sku.startswith(n))):
@@ -63,20 +72,21 @@ def event_idents(e):
 def candidates(assigned, rows, orders_by_id):
     """-> [(Kennung, order_id, Quelle)] nur aus starken Zuordnungen."""
     out = []
+    others = list(orders_by_id.values())
     for e, oid, why in assigned:
         if why not in STRONG or oid not in orders_by_id:
             continue
         ref = e.get("ref") or {}
         bad = [ref.get("style")] + list((e.get("details") or {}).get(k) for k in ("qty", "quantity", "pieces", "total_pieces"))
         for i in event_idents(e):
-            if valid(i, orders_by_id[oid], bad):
+            if valid(i, orders_by_id[oid], bad, others):
                 out.append((i, oid, "Ereignis"))
     for r in rows or []:
         if r.get("kind") != "DELIVERY_DOC" or not r.get("pid") or r["pid"] not in orders_by_id:
             continue
         doc = r.get("doc") or {}
         for i in (doc.get("po_number"), doc.get("invoice_number")):
-            if i and valid(i, orders_by_id[r["pid"]]):
+            if i and valid(i, orders_by_id[r["pid"]], (), others):
                 out.append((str(i).strip(), r["pid"], "Beleg"))
     return out
 

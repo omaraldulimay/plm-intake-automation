@@ -460,6 +460,24 @@ class ZuordnungA2(unittest.TestCase):
     def test_style_ohne_ziffern_und_kurze_codes_treffen_nicht(self):
         self.assertIsNone(self.find(self.e("FW26 order status and Q3 planning"))[0])
 
+    def test_exact_pieces_keine_spannen_keine_naeherung(self):
+        ex = lambda t, **k: events.exact_pieces(self.e(t, **k))
+        self.assertEqual(ex("4812 pcs ready"), 4812)
+        self.assertEqual(ex("Total 4,812 pcs, 12 cartons"), 4812)
+        self.assertIsNone(ex("Sweat Air #4 approx. 5000-6000 pcs"))
+        self.assertIsNone(ex("5000-6000 pcs"))
+        self.assertIsNone(ex("5-6k pcs"))
+        self.assertIsNone(ex("approx. 4812 pcs"))
+        self.assertIsNone(ex("ca. 4812 Stk"))
+        self.assertIsNone(ex("about 4812 pcs"))
+        self.assertIsNone(ex("~4812 pcs"))
+        self.assertIsNone(ex("4812 pcs of A and 5987 pcs of B"))
+
+    def test_menge_ohne_exakte_zahl_oder_abgeschlossen_ordnet_nicht_zu(self):
+        self.assertIsNone(self.find(self.e("Ex-factory planned tomorrow, approx. 4812 pcs, 1 container"))[0])
+        self.assertIsNone(self.find(self.e("Ex-factory planned tomorrow, 4500-5000 pcs"))[0])
+        self.assertIsNone(self.find(self.e("SNM26-001: approx. 10,000 pcs ready"))[0])
+
     def test_mentioned_pieces(self):
         self.assertEqual(events.mentioned_pieces(self.e("10,000 T-Shirts, 32-33k pcs, 85.290 Stk, 12 cartons")), {10000, 32000, 33000, 85290})
 
