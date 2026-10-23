@@ -52,7 +52,7 @@ def warn_key(w):
     """Schluessel einer Warnung = Art + Datei/Order (Text bis zum ersten ': ', ohne Zaehler in Klammern); Meldungstext und Zahlen zaehlen nicht."""
     w = " ".join(str(w or "").split())
     parts = w.split(": ")
-    k = ": ".join(parts[:2]) if w.startswith("UNSTIMMIG/Mensch: ") and len(parts) > 2 else parts[0]
+    k = ": ".join(parts[:2]) if w.startswith(("UNSTIMMIG/Mensch: ", "Lieferant ohne Lieferanten-ID: ")) and len(parts) > 2 else parts[0]
     return re.sub(r" \(\d+\)$", "", k)[:160]
 
 

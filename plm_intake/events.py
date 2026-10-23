@@ -157,6 +157,16 @@ def vendor_of(e, vendors, vendor_aliases=None, dom=None):
     if d and "smilodox" not in d and len(ids) == 1:
         vid = next(iter(ids))
         return next((v for v in vendors if v["id"] == vid), None)
+    # schwaches Zusatzsignal (nur Lieferantenwahl, nie Order-Zuordnung): genau EIN Lieferanten-Kuerzel (z. B. ALP) als eigenes Token in Betreff/Zusammenfassung/PO-Nr
+    try:
+        from plm_intake import vendor_ids
+        idm = vendor_ids.load_id_map()
+        txt = " ".join(str(x or "") for x in (e.get("po_number"), (e.get("ref") or {}).get("po_number"), e.get("subject"), (e.get("_mail") or {}).get("subject")))
+        hit = vendor_ids.vendor_hint(txt, vendors, idm)
+        if len(hit) == 1:
+            return next((v for v in vendors if v["id"] == next(iter(hit))), None)
+    except Exception:
+        pass
     return None
 
 

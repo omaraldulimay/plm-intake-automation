@@ -209,6 +209,11 @@ def main(argv=None):
     except Exception as e:
         facts["warnungen"].append("Summe-0-Pruefung fehlgeschlagen: %s" % str(e)[:100])
     facts["warnungen"] += ["UNSTIMMIG/Mensch: %s" % k["why"] for k in pfp["konflikte"]]
+    try:   # Lieferanten ohne Smilodox Lieferanten-ID: nur Hinweis, Kuerzel werden nie automatisch vergeben
+        from plm_intake import vendor_ids
+        facts["warnungen"] += vendor_ids.warnings_no_id(vl, vendor_ids.load_id_map())
+    except Exception as e:
+        facts["warnungen"].append("Lieferanten-ID-Pruefung fehlgeschlagen: %s" % str(e)[:100])
     if a.apply:
         if sh_create or sh_update:
             try:
