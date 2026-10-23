@@ -18,6 +18,7 @@ FIELD_NAME = "Smilodox Lieferanten-ID"
 FIELD_TYPE = "VENDOR"
 BRAND_ID = "6a1d319af153cb35c5b31dfe"
 STATE_NAME = "vendor_ids.json"
+STATE_PATH = ROOT / "output" / "intake" / "lieferanten_ids.json"   # Zustandsdatei (cloud.STATE_FILES, Zweig einpflege-zustand)
 FIELD_KEY_FILE = OUTDIR / "feld.json"     # {"dbKey":..., "id":...} nach dem Anlegen
 
 STOP = {"CO", "LTD", "LIMITED", "GMBH", "SAN", "VE", "DIS", "TIC", "STI", "PVT", "THE", "OF", "AND", "INDUSTRY", "TRADING", "TEXTILE", "TEXTILES", "TEKSTIL",
@@ -119,11 +120,14 @@ def vendor_hint(text, vendors, id_map):
 
 def load_id_map(path=None):
     """{vendor_id: Kuerzel} aus output/phase2/B19/lieferanten_ids.json (vom Skript geschrieben); leer, wenn die Datei fehlt."""
-    p = Path(path) if path else OUTDIR / "lieferanten_ids.json"
-    try:
-        return {vid: x["code"] for vid, x in json.load(open(p)).get("zugeordnet", {}).items()}
-    except Exception:
-        return {}
+    for p in ([Path(path)] if path else [STATE_PATH, OUTDIR / "lieferanten_ids.json"]):   # Zustandsdatei zuerst, alter Pfad als Fallback
+        try:
+            m = {vid: x["code"] for vid, x in json.load(open(p)).get("zugeordnet", {}).items()}
+            if m:
+                return m
+        except Exception:
+            continue
+    return {}
 
 
 WARN_PREFIX = "Lieferant ohne Lieferanten-ID: "
@@ -278,11 +282,13 @@ def main(argv=None):
         cur = read_values(list(res["zugeordnet"]))
         readback = {v: (cur["v"].get(v) or {}).get("v") for v in res["zugeordnet"]}
     (OUTDIR / "lieferanten_ids.md").write_text(report(res, readback=readback))
-    (OUTDIR / "lieferanten_ids.json").write_text(json.dumps({
+    js = json.dumps({
         "zugeordnet": {vid: {"code": c, "name": n} for vid, (c, n) in res["zugeordnet"].items()},
         "mehrdeutig": [{"code": c, "kandidaten": ns} for c, ns in res["mehrdeutig"]],
         "ohne_vendor": res["ohne_vendor"], "ohne_kuerzel": [v["name"] for v in res["ohne_kuerzel"]], "doppelt": res["doppelt"],
-        "im_plm": readback}, ensure_ascii=False, indent=1))
+        "im_plm": readback}, ensure_ascii=False, indent=1)
+    (OUTDIR / "lieferanten_ids.json").write_text(js)
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True); STATE_PATH.write_text(js)
     print("zugeordnet %d, mehrdeutig %d, Kuerzel ohne Lieferant %d, Lieferanten ohne Kuerzel %d" % (len(res["zugeordnet"]), len(res["mehrdeutig"]), len(res["ohne_vendor"]), len(res["ohne_kuerzel"])))
     return 0
 

@@ -53,6 +53,18 @@ class VendorIds(unittest.TestCase):
             with mock.patch.object(vi, "load_id_map", return_value={"a": "ALP", "w": "LIEFERANT_AA"}):
                 self.assertIsNone(events.vendor_of(e2, VENDORS))        # zwei Kuerzel -> kein Signal
 
+    def test_zustandsdatei_vorrang_und_fallback(self):
+        from plm_intake import cloud
+        self.assertIn("intake/lieferanten_ids.json", cloud.STATE_FILES)
+        with tempfile.TemporaryDirectory() as d:
+            st, old = Path(d) / "st.json", Path(d) / "old" / "lieferanten_ids.json"
+            old.parent.mkdir()
+            mk = lambda c: json.dumps({"zugeordnet": {"a": {"code": c, "name": "x"}}})
+            with mock.patch.object(vi, "STATE_PATH", st), mock.patch.object(vi, "OUTDIR", old.parent):
+                self.assertEqual(vi.load_id_map(), {})
+                old.write_text(mk("OLD")); self.assertEqual(vi.load_id_map(), {"a": "OLD"})
+                st.write_text(mk("NEW")); self.assertEqual(vi.load_id_map(), {"a": "NEW"})
+
     def test_load_id_map(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "x.json"; p.write_text(json.dumps({"zugeordnet": {"a": {"code": "ALP", "name": "A"}}}))
