@@ -10,6 +10,7 @@ Menschen-Liste im Bericht: Blocker, mehrdeutige Belege, Belege ohne PO, Reorder-
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -41,6 +42,11 @@ def main(argv=None):
     inbox = daily.resolve_inbox(a.inbox, intake)
     if not inbox.exists():
         print("Inbox nicht gefunden:", inbox); return 2
+    t0 = dt.datetime.now()
+    try:
+        (intake / "tagesdaten.json").unlink()   # Tagesbericht: nie Daten eines frueheren Laufs verwenden
+    except OSError:
+        pass
     led_path = intake / "ledger.json"; led = ledger.load(led_path)
     docs, evs = daily.pending(inbox, led)
     rep = ["# Alltagslauf %s (%s)" % (dt.datetime.now().strftime("%Y-%m-%d %H:%M"), "AUSGEFUEHRT" if a.apply else "TROCKENLAUF"), "",
@@ -154,6 +160,14 @@ def main(argv=None):
         js_ev = intake / ("events_%s.js" % stamp); js_ev.write_text(events.make_js(pl))
 
     applied = {"orders": [], "event_orders": [], "shipments": []}
+    facts = {"aliase": [], "klaer_rows": [], "klaer_offen": None, "warnungen": [], "zahlen": {}, "stichprobe_pool": []}
+    for n, r in results:   # Warnungen: Blocker (leere/zu kleine Bestellung) und UNSTIMMIG-Hinweise in geplanten Bestellungen
+        for i in r.issues:
+            if i.code in ("empty_order", "too_small"):
+                facts["warnungen"].append("BLOCK %s (%s): %s" % (i.code, n, i.msg))
+        if r.decision == "CREATE" and r.payload:
+            for m in {x for x in re.findall(r"UNSTIMMIG[^\n\"]*", json.dumps(r.payload, ensure_ascii=False))}:
+                facts["warnungen"].append("%s: %s" % (r.payload.get("title") or n, m))
     if a.apply:
         if sh_create or sh_update:
             try:
@@ -184,6 +198,7 @@ def main(argv=None):
             rep += ["", "## PO-IDs"] + po_ids.auto(intake, applied["orders"], True)
         except Exception as e:
             rep += ["", "## PO-IDs", "- FEHLER: %s" % str(e)[:200]]
+            facts["warnungen"].append("PO-ID-Schritt fehlgeschlagen: %s" % str(e)[:120])
         # Merkbuch: neue POs, Belege mit Ereignis, vollstaendig zugeordnete Ereignis-Dateien
         for n, p in payloads.items():
             if p["title"] in applied["orders"]: ledger.mark(led, inbox / n, "applied", p["title"])
@@ -203,8 +218,11 @@ def main(argv=None):
         if a.apply and (l_new or l_conf):
             (intake / "po_aliases.json").write_text(json.dumps(stored_aliases, ensure_ascii=False, indent=2, sort_keys=True))
         rep += [""] + alias_learn.report_lines(l_new, l_conf, a.apply)
+        by_t = {o["id"]: o["title"] for o in ctx["orders"]}
+        facts["aliase"] = [{"key": k, "order": by_t.get(oid, oid), "quelle": s_} for k, oid, s_ in l_new]
     except Exception as e:   # Lernen darf den Lauf nie abbrechen
         rep += ["", "## Gelernte Aliase", "- FEHLER: %s" % str(e)[:200]]
+        facts["warnungen"].append("Alias-Lernen fehlgeschlagen: %s" % str(e)[:120])
     # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
     try:
         from plm_intake import klaerfaelle
@@ -213,20 +231,27 @@ def main(argv=None):
                 def _run(js):
                     p_ = intake / ("klaerfaelle_%s.js" % dt.datetime.now().strftime("%Y%m%d_%H%M%S")); p_.write_text(js); return browser(p_)
                 kf_rows, kf_res = klaerfaelle.sync(pl, ctx, ctx.get("aliases"), runner=_run)
+                facts["klaer_rows"] = kf_rows; facts["klaer_offen"] = kf_res.get("open_total")
+                if kf_res.get("errors"): facts["warnungen"].append("Klaerfaelle-Tabelle: %s" % kf_res["errors"][:2])
                 rep += ["", "## Klärfälle (PLM-Tabelle)", "- Kandidaten %d, neu eingetragen %s, abgehakt %s, offen gesamt %s%s" % (
                     len(kf_rows), kf_res.get("created"), kf_res.get("closed"), kf_res.get("open_total"), (" | Fehler: %s" % kf_res["errors"][:3]) if kf_res.get("errors") else "")]
             else:
                 kf_rows = klaerfaelle.select(pl["unmatched"], ctx["vendors"], ctx.get("aliases"), events.domain_vendors(ctx["vendors"]))
+                facts["klaer_rows"] = kf_rows
                 rep += ["", "## Klärfälle (PLM-Tabelle)", "- %d Faelle wuerden eingetragen bzw. stehen schon drin (Trockenlauf)" % len(kf_rows)]
     except (Exception, SystemExit) as e:   # Klaerfaelle duerfen den Lauf nie abbrechen
         rep += ["", "## Klärfälle (PLM-Tabelle)", "- FEHLER: %s" % str(e)[:200]]
+        facts["warnungen"].append("Klaerfaelle-Schritt fehlgeschlagen: %s" % str(e)[:120])
     # Techpacks/Specs aus neuen Mail-Anhaengen als Datei ans Produkt (Fehler brechen den Lauf nie ab; Trockenlauf schreibt nichts)
     try:
         from plm_intake import techpack_daily
-        tp_lines, _ = techpack_daily.run(ctx["products"], intake / techpack_daily.STATE_NAME, apply=a.apply)
+        tp_lines, tp_res = techpack_daily.run(ctx["products"], intake / techpack_daily.STATE_NAME, apply=a.apply)
         rep += ["", "## Techpacks"] + tp_lines
+        facts["zahlen"]["techpacks"] = tp_res["hochgeladen"] if a.apply else len([l for l in tp_lines if l.startswith("- wuerde hochladen")])
+        facts["warnungen"] += [x for x in tp_res.get("fehler", [])]
     except (Exception, SystemExit) as e:
         rep += ["", "## Techpacks", "- FEHLER: %s" % str(e)[:200]]
+        facts["warnungen"].append("Techpack-Schritt fehlgeschlagen: %s" % str(e)[:120])
     # Menschen-Liste
     human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER")]
     blocked = [(n, r) for n, r in results if r.decision != "CREATE" and n not in {x["file"] for x in rows}]
@@ -239,6 +264,21 @@ def main(argv=None):
     rep += ["- Ereignis nicht zuordenbar: %s (%s)" % ((u["event"].get("summary") or "")[:90], u["reason"]) for u in um_h]
     out = "\n".join(rep) + "\n"
     (intake / "auto_report.md").write_text(out)
+    try:   # Daten fuer den Tagesbericht (plm_intake.tagesbericht, Aufruf in health.finish); Fehler hier stoeren den Lauf nie
+        done = set(applied["event_orders"]) if a.apply else None
+        mail_subj = {events.marker(e): str((e.get("_mail") or {}).get("subject") or "") for e in evt}
+        for o in pl["orders"]:
+            if done is not None and o.get("title") not in done:
+                continue
+            facts["stichprobe_pool"] += [{"order": o["title"], "betreff": mail_subj.get(l["marker"], ""), "text": l["text"]} for l in o["lines"]]
+        facts["zahlen"].update({"orders": len(applied["orders"]) if a.apply else len(payloads), "notes": len(facts["stichprobe_pool"]),
+                                "ship_new": len(sh_create), "ship_upd": len(sh_update)})
+        facts["zahlen"].setdefault("techpacks", 0)
+        facts["warnungen"] += ["UNSTIMMIG/Mensch: Sendung %s: %s" % (n, w) for n, w in sh_human if "UNSTIMMIG" in str(w)]
+        facts["dauer_s"] = int((dt.datetime.now() - t0).total_seconds())
+        (intake / "tagesdaten.json").write_text(json.dumps(facts, ensure_ascii=False))
+    except Exception as e:
+        print("Tagesdaten nicht geschrieben:", e)
     print(out)
     print("Erledigt: %s" % json.dumps(applied, ensure_ascii=False) if a.apply else "TROCKENLAUF: nichts geschrieben. Mit --apply ausfuehren.")
     return 0

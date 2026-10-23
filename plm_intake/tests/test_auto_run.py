@@ -56,3 +56,22 @@ class Bericht(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TagesdatenTest(unittest.TestCase):
+    def test_trockenlauf_schreibt_tagesdaten_fuer_den_bericht(self):
+        import plm_intake.tagesbericht as tb
+        po = {"doc_type": "PI", "source": {"doc": "x", "mail_id": "m1"}, "vendor": "Testlieferant", "po_number": "T-1", "currency": "USD", "items": [
+              {"sku": "ZZ-100", "name": "JACKET", "variants": [{"color": "Black", "price": 2, "sizes": {"M": 50}}]}], "payments": [], "total_cost": 100, "total_pieces": 50, "notes": "", "open": [], "confidence": 0.9}
+        with tempfile.TemporaryDirectory() as d:
+            inbox, intake = Path(d) / "inbox", Path(d) / "intake"; inbox.mkdir(); intake.mkdir()
+            (inbox / "m1_1.json").write_text(json.dumps(po))
+            ctx = {"vendors": [{"id": "V1", "name": "Testlieferant"}], "products": [], "orders": []}
+            with mock.patch("plm_client.call", mock.Mock(return_value=(200, []))), mock.patch("plm_intake.context.load_context", return_value=ctx), \
+                    mock.patch("plm_intake.context.add_po_numbers", return_value=0), mock.patch("plm_intake.context.fetch_order_details", return_value={}), \
+                    mock.patch("plm_intake.context.fetch_all", return_value=[]), mock.patch("sys.stdout", io.StringIO()):
+                auto_run.main(["--inbox", str(inbox), "--intake", str(intake), "--overrides", str(Path(d) / "none.json")])
+            facts = json.loads((intake / "tagesdaten.json").read_text())
+            self.assertEqual(facts["zahlen"]["orders"], 1); self.assertIn("dauer_s", facts)
+            txt = tb.write(intake, 0, "dry", now=__import__("datetime").datetime(2026, 10, 21, 8, 0), step_summary=None)
+            self.assertIn("Trockenlauf", txt); self.assertIn("neue Bestellungen 1", txt)

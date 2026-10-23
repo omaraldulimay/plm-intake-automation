@@ -189,6 +189,11 @@ def finish(intake, exit_code, mode="dry", now=None):
     state, text = summarize(rep, int(exit_code))
     write_status(intake, state, text, mode, now)
     write_heartbeat(intake, state, mode, text, now)
+    try:   # Tagesbericht (Datei + Job-Summary); darf den Lauf nie stoeren
+        from plm_intake import tagesbericht
+        tagesbericht.write(intake, exit_code, mode, text, now)
+    except Exception:
+        pass
     wrote = mode == "apply" and re.search(r"Erledigt|Ergebnis ", rep)
     if state == "ALARM":
         alert(intake, "Lauf mit Problem (%s)" % mode, text, now)

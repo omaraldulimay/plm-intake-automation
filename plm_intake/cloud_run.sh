@@ -10,6 +10,7 @@ export CI="${CI:-true}"
 export PLM_STORAGE_STATE="${PLM_STORAGE_STATE:-${RUNNER_TEMP:-/tmp}/plm_storage_state.json}"
 mkdir -p output/intake/logs
 export PLM_DEBUG_DIR="$PWD/output/intake/logs"
+export PLM_RUN_START="$(date +%s)"
 LOG="output/intake/logs/auto_$(date -u +%Y%m%d_%H%M).log"
 python3 -m plm_intake.cloud pull "$STATE_DIR" >> "$LOG" 2>&1
 if [ "${SKIP_IF_RECENT_MIN:-0}" -gt 0 ] && python3 - "$SKIP_IF_RECENT_MIN" "$MODE" >> "$LOG" 2>&1 <<'PY'
@@ -33,6 +34,7 @@ echo "=== $(date -u) Modus $MODE (Cloud) ===" >> "$LOG"
 RC=0
 if ! python3 -m plm_intake.health preflight >> "$LOG" 2>&1; then
   echo "=== Abbruch: Vorabpruefung (Exit 3) ===" >> "$LOG"; RC=3
+  python3 -m plm_intake.tagesbericht 3 "$MODE" >> "$LOG" 2>&1   # Tagesbericht auch beim Abbruch (Job-Summary)
 else
   if [ "$MODE" = "apply" ]; then python3 -m plm_intake.auto_run --apply >> "$LOG" 2>&1; else python3 -m plm_intake.auto_run >> "$LOG" 2>&1; fi
   RC=$?
