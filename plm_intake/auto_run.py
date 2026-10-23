@@ -276,7 +276,9 @@ def main(argv=None):
     human = [r for r in rows if r["kind"] in ("BLOCKER", "AMBIGUOUS_DOC", "ORPHAN_DOC", "REORDER_QUESTION", "OTHER_BLOCK", "FEHLER")]
     blocked = [(n, r) for n, r in results if r.decision != "CREATE" and n not in {x["file"] for x in rows}]
     um_h = [u for u in pl["unmatched"] if not str(u["reason"]).startswith("info:")]
-    rep += ["", "## Mensch entscheidet (%d)" % (len(human) + len(um_h) + len(sh_human) + len(over) + len(forced_open))]
+    n_mensch = len(human) + len(um_h) + len(sh_human) + len(over) + len(forced_open)
+    facts["mensch"] = {"gesamt": n_mensch, "belege": len(human), "ereignisse": len(um_h), "sendungen": len(sh_human), "sonstige": len(over) + len(forced_open)}
+    rep += ["", "## Mensch entscheidet (%d)" % n_mensch]
     rep += ["- CREATE gewollt, aber nicht moeglich (%s): %s" % (n, "; ".join(i.msg for i in r.issues if i.level == "ERROR" or i.code in ("duplicate", "exists_changed"))[:300] or r.decision) for n, r in forced_open]
     rep += ["- Neue PO nicht angelegt (Limit %d pro Lauf): %s" % (MAX_NEW_POS_PER_RUN, n) for n in over]
     rep += ["- Sendung: %s: %s" % (n, w) for n, w in sh_human]

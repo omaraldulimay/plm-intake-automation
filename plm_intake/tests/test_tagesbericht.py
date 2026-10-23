@@ -22,6 +22,49 @@ def facts(n_pool=15, n_rows=7):
             "stichprobe_pool": [{"order": "PO-%d" % i, "betreff": "Betreff %d" % i, "text": "Notiz %d" % i} for i in range(n_pool)], "dauer_s": 420}
 
 
+class Warnungen(unittest.TestCase):
+    def test_schluessel(self):
+        self.assertEqual(tb.warn_key("BLOCK empty_order (x.json): leer"), "BLOCK empty_order (x.json)")
+        self.assertEqual(tb.warn_key("Bestellungen mit Summe 0 im PLM (3): a, b"), "Bestellungen mit Summe 0 im PLM")
+        self.assertEqual(tb.warn_key("UNSTIMMIG/Mensch: Sendung S1: Menge 3 != 4"), "UNSTIMMIG/Mensch: Sendung S1")
+
+    def test_neu_bekannt_und_entfernen(self):
+        w = ["BLOCK empty_order (a.json): x", "BLOCK price_missing (b.json): y", "NEU (c): z"]
+        verlauf = {"tage": {"2026-10-19": 5}, "gesehen": ["m"], "warnungen": {"BLOCK empty_order (a.json)": "2026-10-10", "BLOCK price_missing (b.json)": "2026-10-20", "ALT (weg): q": "2026-10-01"}}
+        t = tb.build({"zahlen": {}, "warnungen": w}, 0, "apply", now=FR, verlauf=verlauf)
+        self.assertIn("4. Warnungen: 1 neu | 2 bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit 13 Tagen)", t)
+        self.assertIn("- NEU (c): z", t); self.assertNotIn("a.json", t)
+        _, _, _, stand = tb.warnungen_split(w, verlauf, FR)
+        self.assertNotIn("ALT (weg): q", stand); self.assertEqual(stand["NEU (c)"], "2026-10-23"); self.assertEqual(stand["BLOCK empty_order (a.json)"], "2026-10-10")
+
+    def test_max_acht_neue_und_nur_bekannte(self):
+        w = ["W%d (f): x" % i for i in range(11)]
+        t = tb.build({"zahlen": {}, "warnungen": w}, 0, "apply", now=FR, verlauf={})
+        self.assertIn("11 neu", t); self.assertIn("und 3 weitere neue", t)
+        stand = tb.warnungen_split(w, {}, FR)[3]
+        t2 = tb.build({"zahlen": {}, "warnungen": w}, 0, "apply", now=FR + dt.timedelta(days=1), verlauf={"warnungen": stand})
+        self.assertIn("4. Warnungen: 0 neu | 11 bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit 1 Tag)", t2)
+        self.assertNotIn("   - W0", t2)
+
+    def test_write_speichert_verlauf(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); f = facts(); (d / tb.DATEN).write_text(json.dumps(f))
+            tb.write(d, 0, "apply", now=MI)
+            v = json.loads((d / tb.VERLAUF).read_text())
+            self.assertEqual(set(v["warnungen"]), {"BLOCK empty_order (x.json)", "PO-1"})
+            f["warnungen"] = ["PO-1: UNSTIMMIG"]; (d / tb.DATEN).write_text(json.dumps(f))
+            tb.write(d, 0, "apply", now=FR)
+            self.assertEqual(json.loads((d / tb.VERLAUF).read_text())["warnungen"], {"PO-1": "2026-10-21"})
+
+
+class Zaehlung(unittest.TestCase):
+    def test_mensch_zahl_wie_konsole(self):
+        f = facts(); f["mensch"] = {"gesamt": 66, "belege": 45, "ereignisse": 18, "sendungen": 2, "sonstige": 1}
+        t = tb.build(f, 0, "apply", now=MI, verlauf={})
+        self.assertIn("Mensch entscheidet 66 (wie Konsole): Belege 45 | Ereignisse 18 | Sendungen 2 | Limit/sonstige 1", t)
+        self.assertIn("in Klaerfaelle-Tabelle offen 61", t); self.assertNotIn("offen gesamt", t)
+
+
 class Format(unittest.TestCase):
     def test_kurz_und_vollstaendig(self):
         verlauf = {"tage": {"2026-10-19": 58}, "gesehen": ["m0", "m1"]}

@@ -11,6 +11,7 @@ import datetime as dt
 import json
 import os
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -43,6 +44,36 @@ def neue_faelle(rows, verlauf):
     if not verlauf.get("gesehen") and not verlauf.get("tage"):
         return [], True
     return [r for r in rows if r.get("marker") not in seen], False
+
+
+def warn_key(w):
+    """Schluessel einer Warnung = Art + Datei/Order (Text bis zum ersten ': ', ohne Zaehler in Klammern); Meldungstext und Zahlen zaehlen nicht."""
+    w = " ".join(str(w or "").split())
+    parts = w.split(": ")
+    k = ": ".join(parts[:2]) if w.startswith("UNSTIMMIG/Mensch: ") and len(parts) > 2 else parts[0]
+    return re.sub(r" \(\d+\)$", "", k)[:160]
+
+
+def warnungen_split(warnungen, verlauf, now):
+    """(neu, bekannt_anzahl, aelteste_tage, neuer_stand). neuer_stand = {schluessel: Datum erstmals gesehen}; verschwundene Warnungen fallen heraus."""
+    alt = verlauf.get("warnungen") or {}
+    heute = now.strftime("%Y-%m-%d")
+    neu, stand, bekannt = [], {}, 0
+    for w in warnungen:
+        k = warn_key(w)
+        if k in alt:
+            stand[k] = alt[k]
+            if k not in {warn_key(x) for x in neu}:
+                bekannt += 1
+        elif k not in stand:
+            stand[k] = heute; neu.append(w)
+    tage = None
+    if bekannt:
+        try:
+            tage = max((now.date() - dt.date.fromisoformat(stand[k])).days for k in stand if k in alt)
+        except ValueError:
+            tage = None
+    return neu, bekannt, tage, stand
 
 
 def stichprobe(pool, now, n=STICHPROBE_N, rng=None):
@@ -78,6 +109,7 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     rows = facts.get("klaer_rows") or []
     offen = facts.get("klaer_offen")
     neu, erst = neue_faelle(rows, verlauf)
+    m = facts.get("mensch")
     prev = None
     for tag in sorted((verlauf.get("tage") or {}), reverse=True):
         if tag < now.strftime("%Y-%m-%d") and verlauf["tage"][tag] is not None:
@@ -86,8 +118,11 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
         offen_txt = "offen gesamt unbekannt (Trockenlauf: %d Kandidaten)" % len(rows)
     else:
         diff = ("%+d zum Vortag" % (offen - prev)) if prev is not None else "kein Vortagswert"
-        offen_txt = "offen gesamt %d (%s)" % (offen, diff)
+        offen_txt = "%s %d (%s)" % ("in Klaerfaelle-Tabelle offen" if m else "offen gesamt", offen, diff)
     L.append("3. Klaerfaelle: %s%s" % (offen_txt, ", Erstlauf (alle gelten als bekannt)" if erst else ", neu entstanden: %d" % len(neu)))
+    if m:
+        L.append("   Mensch entscheidet %d (wie Konsole): Belege %d | Ereignisse %d | Sendungen %d | Limit/sonstige %d" % (
+            m.get("gesamt", 0), m.get("belege", 0), m.get("ereignisse", 0), m.get("sendungen", 0), m.get("sonstige", 0)))
     for r in neu[:MAX_FAELLE]:
         v = r.get("values") or {}
         L.append("   - %s: %s" % (_kurz(r.get("category"), 40), _kurz(v.get("Warum offen") or v.get("Was"), 110)))
@@ -95,8 +130,12 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
         L.append("   - und %d weitere" % (len(neu) - MAX_FAELLE))
     # 4. Warnungen
     w = list(facts.get("warnungen") or [])
-    L.append("4. Warnungen: " + ("keine" if not w else "%d" % len(w)))
-    L += ["   - " + _kurz(x, 160) for x in w[:8]] + (["   - und %d weitere" % (len(w) - 8)] if len(w) > 8 else [])
+    wneu, wbek, wtage, _ = warnungen_split(w, verlauf, now)
+    kopf = "keine" if not w else "%d neu" % len(wneu)
+    if wbek:
+        kopf += " | %d bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit %s)" % (wbek, "%d Tag%s" % (wtage, "" if wtage == 1 else "en") if wtage is not None else "unbekannt")
+    L.append("4. Warnungen: " + kopf)
+    L += ["   - " + _kurz(x, 160) for x in wneu[:8]] + (["   - und %d weitere neue" % (len(wneu) - 8)] if len(wneu) > 8 else [])
     # 5. Aliase
     al = facts.get("aliase") or []
     L.append("5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): " + ("keine" if not al else str(len(al))))
@@ -126,6 +165,7 @@ def write(intake, exit_code, mode, state_text="", now=None, step_summary=None):
             verlauf.setdefault("tage", {})[now.strftime("%Y-%m-%d")] = facts["klaer_offen"]
         elif now.strftime("%Y-%m-%d") not in verlauf.setdefault("tage", {}):
             verlauf["tage"][now.strftime("%Y-%m-%d")] = None
+        verlauf["warnungen"] = warnungen_split(facts.get("warnungen") or [], verlauf, now)[3]
         verlauf["tage"] = dict(sorted(verlauf["tage"].items())[-30:])
         seen = list(verlauf.get("gesehen") or [])
         seen += [r["marker"] for r in facts.get("klaer_rows") or [] if r.get("marker") and r["marker"] not in seen]
