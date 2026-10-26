@@ -111,6 +111,10 @@ class Plan(unittest.TestCase):
         r = pp.plan([order(pays=real)])
         self.assertEqual(r["actions"], []); self.assertEqual(len(r["klaer"]), 1); self.assertIn("Summe", r["klaer"][0]["values"]["Was"])
 
+    def test_eigener_plan_ohne_faelligkeiten_ist_kein_klaerfall(self):
+        pays = [{"id": "p%d" % i, "name": "x", "status": "Unpaid", "amount": 250.0, "dueDate": None, "terms": ""} for i in range(4)]
+        self.assertEqual(pp.plan([order(pays=pays)])["klaer"], [])
+
     def test_limit_pro_lauf(self):
         os_ = [order("O%d" % i, "PO-A-%02d" % i, "Offen: unbekannt.") for i in range(14)]
         r = pp.plan(os_, max_orders=10)

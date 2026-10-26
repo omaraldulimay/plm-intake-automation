@@ -326,7 +326,7 @@ def plan(orders, vendor_terms=None, today=None, max_orders=MAX_ORDERS):
                 reasons.append("Summe der Raten %.2f != Gesamtwert %.2f (%+.2f)" % (s, total, s - total))
             if CONFLICT_RE.search(notes):
                 reasons.append("Notiz der Order nennt widerspruechliche/nicht abgeglichene Bedingungen")
-            if len(pays) >= 3 and len({str(p.get("dueDate")) for p in pays}) == 1 and not vt:
+            if len(pays) >= 3 and all(p.get("dueDate") not in (None, "") for p in pays) and len({str(p.get("dueDate")) for p in pays}) == 1 and not vt:
                 reasons.append("alle %d Raten mit gleicher Faelligkeit (Vorlage, nicht abgeglichen)" % len(pays))
             if reasons:
                 klaer.append(klaer_row(o, vname, "plan", "Zahlungsplan pruefen: " + "; ".join(reasons), "Plan unveraendert (echte Zahlungen). Lieferantenfeld: %s" % (str(vt)[:100] if vt else "keine"),
