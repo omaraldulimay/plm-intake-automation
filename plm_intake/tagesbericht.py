@@ -146,6 +146,13 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     if facts.get("status") is not None:   # Status-Regeln (status_apply.auto): Vorschlaege / gesetzt
         stt = facts["status"]
         L.append("   Status: Vorschlaege %s, gesetzt %s%s%s" % (stt.get("vorschlaege", 0), stt.get("gesetzt", 0), "" if stt.get("auto") else " (STATUS_AUTO aus)", "  WARNUNG: Status setzen fehlerhaft" if stt.get("fehler") else ""))
+    if facts.get("anhaenge") is not None:   # Beleg-Anhaenge an Orders (order_attachments)
+        an = facts["anhaenge"]
+        L.append("   Anhaenge: neu %s, uebersprungen %s, Fehler %s%s" % (an.get("neu", 0), an.get("uebersprungen", 0), an.get("fehler", 0), "  WARNUNG: Anhang-Upload fehlerhaft" if an.get("fehler") else ""))
+    if facts.get("zahlungen") is not None:   # Zahlungsplaene (payments_plan): Platzhalter entfernt / Plaene aufgebaut / Klaerfaelle / Paid gesetzt / Fehler
+        zp = facts["zahlungen"]
+        L.append("   Zahlungen: Platzhalter entfernt %s, Plaene aufgebaut %s, Klaerfaelle %s, Paid gesetzt %s, Fehler %s%s" % (
+            zp.get("platzhalter", 0), zp.get("plaene", 0), zp.get("klaerfaelle", 0), zp.get("paid", 0), zp.get("fehler", 0), "  WARNUNG: Zahlungsaenderung fehlerhaft" if zp.get("fehler") else ""))
     if facts.get("projekt_produkte") is not None:   # Projekt-Produkte (vendor_project_products)
         pp = facts["projekt_produkte"]
         L.append("   Projekt-Produkte: neu %s, Fehler %s%s" % (pp.get("neu", 0), pp.get("fehler", 0), "  WARNUNG: Produkt-Verknuepfung fehlerhaft" if pp.get("fehler") else ""))

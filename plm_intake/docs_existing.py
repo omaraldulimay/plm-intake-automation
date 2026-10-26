@@ -212,7 +212,7 @@ def run(inbox, ctx, overrides, out, today=None, only=None, price_plan=None):
             rows.append({"file": f.name, "kind": "BLOCKER", "why": "; ".join(i.msg for i in r.issues if i.level == "ERROR")[:160]}); continue
         kind, pid = classify(f.name, po, r, overrides)
         parent = orders.get(pid) if pid else None
-        row = {"file": f.name, "kind": kind, "po": po.get("po_number"), "parent": ("#%s %s" % (parent.get("orderNumber"), parent.get("title"))) if parent else None}
+        row = {"file": f.name, "kind": kind, "po": po.get("po_number"), "parent": ("#%s %s" % (parent.get("orderNumber"), parent.get("title"))) if parent else None, "pid": parent["id"] if parent else None}
         if kind in ("DELIVERY_DOC", "PI_CHANGED") and parent:
             ev_files[f.stem] = make_event(f.name, po, kind, parent, r, today)
             price_docs.append((f.name, parent["id"], po))

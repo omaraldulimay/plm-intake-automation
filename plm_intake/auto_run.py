@@ -297,6 +297,18 @@ def main(argv=None):
             rep += ["", "## Status", "- FEHLER: %s" % str(e)[:200]]
             facts["status"] = {"vorschlaege": 0, "gesetzt": 0, "fehler": 1, "auto": False}
             facts["warnungen"].append("Status-Schritt fehlgeschlagen: %s" % str(e)[:120])
+        # Zahlungsplaene: Platzhalter-Zahlungszeilen entfernen, Plaene aus bekannten Bedingungen, Paid nur bei Beleg/Betragstreffer, Unklares als Klaerfall (nur apply, max. 10 Orders/Lauf; Fehler brechen den Lauf nie ab)
+        try:
+            from plm_intake import payments_plan
+            from plm_intake.context import fetch_all as _fa2
+            pz_lines, pz_res = payments_plan.run(_fa2(plm_client.call, "orders"), True, payments_plan.MAX_ORDERS)
+            rep += ["", "## Zahlungen"] + pz_lines
+            facts["zahlungen"] = {k: pz_res[k] for k in ("platzhalter", "plaene", "klaerfaelle", "paid", "fehler")}
+            facts["warnungen"] += pz_res["warnungen"]
+        except (Exception, SystemExit) as e:
+            rep += ["", "## Zahlungen", "- FEHLER: %s" % str(e)[:200]]
+            facts["zahlungen"] = {"platzhalter": 0, "plaene": 0, "klaerfaelle": 0, "paid": 0, "fehler": 1}
+            facts["warnungen"].append("Zahlungen-Schritt fehlgeschlagen: %s" % str(e)[:120])
         # Merkbuch: neue POs, Belege mit Ereignis, vollstaendig zugeordnete Ereignis-Dateien
         for n, p in payloads.items():
             if p["title"] in applied["orders"]: ledger.mark(led, inbox / n, "applied", p["title"])
@@ -340,6 +352,18 @@ def main(argv=None):
     except (Exception, SystemExit) as e:   # Klaerfaelle duerfen den Lauf nie abbrechen
         rep += ["", "## Klärfälle (PLM-Tabelle)", "- FEHLER: %s" % str(e)[:200]]
         facts["warnungen"].append("Klaerfaelle-Schritt fehlgeschlagen: %s" % str(e)[:120])
+    # Beleg-Anhaenge: Rechnung/Packliste/PI/PO als Datei an die eindeutig zugeordnete Order (nur apply; max. 30 pro Lauf; Fehler brechen den Lauf nie ab)
+    if a.apply:
+        try:
+            from plm_intake import order_attachments
+            oa_lines, oa_res = order_attachments.auto(inbox, ctx, intake, True, overrides)
+            rep += ["", "## Anhaenge"] + oa_lines
+            facts["anhaenge"] = {"neu": oa_res["neu"], "uebersprungen": oa_res["uebersprungen"], "fehler": oa_res["fehler"]}
+            facts["warnungen"] += oa_res["warnungen"][:5]
+        except (Exception, SystemExit) as e:
+            rep += ["", "## Anhaenge", "- FEHLER: %s" % str(e)[:200]]
+            facts["anhaenge"] = {"neu": 0, "uebersprungen": 0, "fehler": 1}
+            facts["warnungen"].append("Anhaenge-Schritt fehlgeschlagen: %s" % str(e)[:120])
     # Techpacks/Specs aus neuen Mail-Anhaengen als Datei ans Produkt (Fehler brechen den Lauf nie ab; Trockenlauf schreibt nichts)
     try:
         from plm_intake import techpack_daily
