@@ -68,6 +68,36 @@ class LieferantenZuordnung(unittest.TestCase):
         self.assertTrue(events.plan([e], self.O, self.V, vendor_only=True)["orders"][0]["date_patch"])
 
 
+class AbweichungKlaerfall(unittest.TestCase):
+    V = [{"id": "VS", "name": "Lieferant I"}]
+    O = [{"id": "O96", "orderNumber": 96, "title": "PO-LIEFERANT_I-SPR2026000000409", "manufacturer": {"id": "VS"}, "status": {"status": "In Transit"}, "totalNumberOfPieces": 10852,
+          "items": [{"name": "26246 BAYAN TAYT"}, {"name": "26779 KADIN SWEAT"}, {"name": "26557 KADIN ESOFMAN ALTI"}, {"name": "26585-U X"}, {"name": "26701 Y"}]}]
+
+    def e(self, summary, style):
+        return {"type": "SHIPMENT", "vendor": "Lieferant I", "ref": {"po_number": None, "style": style, "container": None}, "date": None, "summary": summary, "details": {},
+                "confidence": 0.9, "_mail": {"id": "m", "date": "2026-10-20 17:17"}}
+
+    def test_beispiel_422_style_treffer_aber_menge_und_styles_weichen_ab_ist_klaerfall(self):
+        o, why = events.find_order(self.e("Shipment documents and commercial invoice for 19,275 pieces issued on 20.10.2026.", "26246, 26779, HD210, 26591-U, 26704, 26296"), self.O, self.V)
+        self.assertIsNone(o); self.assertTrue(why.startswith("abweichend"), why)
+
+    def test_datum_im_text_ist_keine_stueckzahl_und_details_qty_zaehlt(self):
+        e = self.e("Shipment documents and commercial invoice for 19,275 pieces issued on 20.10.2026.", "26246, 26779, HD210, 26591-U, 26704, 26296"); e["details"] = {"qty": 19275}
+        self.assertEqual(events.exact_pieces(e), 19275)
+        self.assertTrue(events.find_order(e, self.O, self.V)[1].startswith("abweichend"))
+
+    def test_gleiche_styles_andere_menge_bleibt_zugeordnet(self):   # Teillieferung: Styles decken ab
+        o, why = events.find_order(self.e("Shipment documents sent for 5000 pieces", "26246, 26779"), self.O, self.V)
+        self.assertEqual(o["id"], "O96")
+
+    def test_po_nr_treffer_wird_nie_durch_die_menge_verworfen(self):
+        e = self.e("Shipment 30000 pieces", "26246, 26779, HD210, 26591-U, 26704, 26296"); e["ref"]["po_number"] = "SPR2026000000409"
+        self.assertEqual(events.find_order(e, self.O, self.V)[0]["id"], "O96")
+
+    def test_ohne_menge_keine_pruefung(self):
+        self.assertEqual(events.find_order(self.e("Shipment documents sent", "26246, HD210, 26704, 26296"), self.O, self.V)[0]["id"], "O96")
+
+
 class StatusProzess(unittest.TestCase):
     ST = {n: {"id": "S" + str(i), "status": n, "color": "#000", "order": i} for n, i in events.STATUS_ORDER.items()}
 

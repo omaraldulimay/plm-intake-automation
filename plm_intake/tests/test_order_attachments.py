@@ -71,6 +71,15 @@ class Plan(unittest.TestCase):
         items, ex = self.go({"a_1.json": doc("X", "LIEFERANT_AA26104")}, rows, [att("LIEFERANT_AA26104 -invoice.pdf")])
         self.assertEqual(items, []); self.assertIn("SPERRE", ex[0][1])
 
+    def test_sperre_lieferant_i_nur_fuer_order_96_nicht_fuer_die_neuen_orders(self):
+        for srcdoc, titel, erlaubt in (("SPR2026000000422", "PO-LIEFERANT_I-SPR2026000000409", False), ("SPR2026000000422", "PO-LIEFERANT_I-SPR2026000000422", True),
+                                       ("SPR2026000000438", "PO-LIEFERANT_I-SPR2026000000409", False), ("SPR2026000000438", "PO-LIEFERANT_I-SPR2026000000438", True)):
+            rows = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#9 " + titel}]
+            items, ex = self.go({"a_1.json": doc(None, srcdoc)}, rows, [att(srcdoc + ".pdf")])
+            self.assertEqual(len(items), 1 if erlaubt else 0, (srcdoc, titel))
+            if not erlaubt:
+                self.assertIn("SPERRE", ex[0][1])
+
     def test_test_order_und_override_skip(self):
         r = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-ZZ-TEST"}]
         self.assertEqual(self.go({"a_1.json": doc("SMI2612", "SMI2612")}, r, [att("SMI2612 invoice.pdf")])[0], [])

@@ -44,6 +44,47 @@ class Ereignis(unittest.TestCase):
         self.assertEqual(e["type"], "ORDER_CHANGE"); self.assertTrue(e["action_needed"]); self.assertIn("NEUE FASSUNG", e["summary"])
 
 
+class SchwacheZuordnungSchaerfer(unittest.TestCase):
+    """Beleg ohne PO-Nr: nur Lieferant/Style darf nicht an eine Order gehen, wenn Menge UND Styles klar abweichen (Lieferant I #96 vs. Rechnungen 422/438)."""
+    V = {"id": "VS", "name": "Lieferant I"}
+    O96 = {"id": "O96", "orderNumber": 96, "title": "PO-LIEFERANT_I-SPR2026000000409", "poNumber": "SPR2026000000409", "manufacturer": {"id": "VS"}, "totalNumberOfPieces": 10852,
+           "items": [{"name": "26246 BAYAN TAYT"}, {"name": "26779 KADIN SWEAT"}, {"name": "26557 KADIN ESOFMAN ALTI"}, {"name": "26585-U KADIN ESOFMAN ALTI"}, {"name": "26701 ERKEK TSHIRT"}, {"name": "26805 BAYAN TAYT"}]}
+
+    def beleg(self, pcs, skus, **kw):
+        d = {"doc_type": "INVOICE", "po_number": None, "total_pieces": pcs, "source": {"doc": "SPR-X"}, "items": [{"sku": s, "name": s} for s in skus]}
+        d.update(kw); return d
+
+    def test_beispiel_422_menge_1_78x_und_2_von_6_styles_ist_klaerfall(self):
+        info = {}
+        p, amb = de.parent_for(self.V, self.beleg(19275, ["26246", "26779", "HD210", "26591-U", "26704", "26296"]), [self.O96], {"products": []}, info)
+        self.assertIsNone(p); self.assertEqual(amb, []); self.assertIn("1.78x", info["abweichend"][0]); self.assertIn("Style-Ueberdeckung", info["abweichend"][0])
+
+    def test_beispiel_438_menge_unter_0_67x_ist_klaerfall(self):
+        p, _ = de.parent_for(self.V, self.beleg(7267, ["26598_O", "26598_U", "26779", "26504", "26592_U", "26557"]), [self.O96], {"products": []}, {})
+        self.assertIsNone(p)
+
+    def test_teillieferung_mit_denselben_styles_bleibt_zuordenbar(self):   # Menge 0,5x, aber Styles voll abgedeckt
+        p, _ = de.parent_for(self.V, self.beleg(5000, ["26246", "26779", "26557"]), [self.O96], {"products": []}, {})
+        self.assertEqual(p["id"], "O96")
+
+    def test_andere_menge_aber_passende_styles_oder_umgekehrt_bleibt_zuordenbar(self):
+        self.assertEqual(de.parent_for(self.V, self.beleg(30000, ["26246", "26779"]), [self.O96], {"products": []}, {})[0]["id"], "O96")   # Menge 2,8x, Styles 100 %
+        self.assertEqual(de.parent_for(self.V, self.beleg(10500, ["26246", "26779", "HD210", "26591-U"]), [self.O96], {"products": []}, {})[0]["id"], "O96")   # Menge passt, Styles 50 %
+
+    def test_unbekannte_menge_urteilt_nicht(self):
+        self.assertEqual(de.parent_for(self.V, self.beleg(None, ["26246", "HD210", "26704"]), [self.O96], {"products": []}, {})[0]["id"], "O96")
+
+    def test_rechnungsnummer_als_po_nr_der_eigenen_order_ist_stark(self):   # neue Order PO-...-422: Beleg landet dort, nicht bei #96
+        o98 = {"id": "O98", "orderNumber": 98, "title": "PO-LIEFERANT_I-SPR2026000000422", "poNumber": "SPR2026000000422", "manufacturer": {"id": "VS"}, "totalNumberOfPieces": 19275, "items": [{"name": "26246 BAYAN TAYT"}]}
+        p, _ = de.parent_for(self.V, self.beleg(19275, ["26246", "26779", "HD210"], source={"doc": "SPR2026000000422"}), [self.O96, o98], {"products": []}, {})
+        self.assertEqual(p["id"], "O98")
+
+    def test_delivery_doc_meldet_klaerfall_statt_zuordnung(self):
+        ctx = {"vendors": [self.V], "products": [], "aliases": {}}
+        row, _ = de.delivery_doc("x.json", dict(self.beleg(19275, ["26246", "26779", "HD210", "26591-U", "26704", "26296"]), vendor="Lieferant I"), ctx, {"O96": self.O96}, {})
+        self.assertEqual(row["kind"], "AMBIGUOUS_DOC"); self.assertIn("weichen klar", row["why"])
+
+
 class ElternOrder(unittest.TestCase):
     V = {"id": "V1", "name": "LIEFERANT_AA"}
     O = [{"id": "A", "title": "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER", "manufacturer": {"id": "V1"}, "items": [{"name": "SMI2604 SHORTS"}]},

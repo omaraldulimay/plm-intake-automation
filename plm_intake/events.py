@@ -244,6 +244,8 @@ def exact_pieces(e):
         if val < 500:
             continue
         before, after = txt[max(0, m.start() - 14):m.start()], txt[m.end():m.end() + 14]
+        if re.search(r"\d[./\-]$", before) or re.match(r"[./\-]\d", after):   # Teil eines Datums (20.10.2026), keine Stueckzahl
+            continue
         if _APPROX.search(before) or _RANGE_BEFORE.search(before) or _RANGE_AFTER.search(after):
             return None
         nums.add(val)
@@ -256,6 +258,28 @@ def _by_exact_qty(e, cands):
     if not n:
         return []
     return [o for o in cands if _status(o) not in ACTIVE_NOT and abs(n - float(o.get("totalNumberOfPieces") or 0)) <= 0.015 * n]
+
+
+def _ev_styles(e):
+    ref = e.get("ref") or {}
+    out = set()
+    for part in re.split(r"[,;/\s]+", str(ref.get("style") or "")):
+        n = core.norm(part)
+        if len(n) >= 4 and re.search(r"\d", n):
+            out.add(n)
+    return out
+
+
+def _deviates(e, o, idx=None):
+    """Schwache Zuordnung (ohne PO-Nr): weichen Menge UND Styles des Ereignisses klar von der Order ab (core.clear_mismatch)? -> Text oder None.
+    Menge = EINE exakte Zahl im Ereignis (exact_pieces); Styles = ref.style des Ereignisses gegen SKUs/Positionsnamen der Order."""
+    n = exact_pieces(e)
+    if not n:
+        return None
+    theirs = set(idx.get(o["id"], {}).get("skus", ())) if idx else set()
+    theirs |= {core.norm(i.get("name")) for i in o.get("items") or []} - {""}
+    off, why = core.clear_mismatch(n, o.get("totalNumberOfPieces"), _ev_styles(e), theirs)
+    return "%s: %s" % (o.get("title"), why) if off else None
 
 
 def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None, style_aliases=None):
@@ -293,6 +317,7 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
         for o in orders:
             if any(c == core.norm(o.get("poNumber")) for c in pos) or any(core.po_in_title(r, o.get("title")) for r in raw if len(core.norm(r)) >= 4):   # Wortgrenze: '...-2' trifft nicht '...-2EXTRA'
                 hits.append(o)
+    by_po = bool(hits)
     if not hits:   # Style: auch eine 'PO-Nr', die in Wahrheit eine Stylenummer ist (26M10_001, AL29008), und Listen 'GT0301, GT0302'
         sts = codes(ref.get("style"), ref.get("po_number")) + [x for x in [core.norm(ref.get("style"))] if len(x) >= 4]   # auch beschreibende Styles ('fleece kenna jacket')
         for o in orders:
@@ -300,6 +325,7 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
             skus = idx.get(o["id"], {}).get("skus", ()) if idx else ()
             if any(any(st in n for n in names) or any(k == st or k.startswith(st) for k in skus) for st in sts):
                 hits.append(o)
+    from_style = bool(hits) and not by_po
     if not hits and idx:   # bekannte Kennung (z. B. HBL/Container aus frueheren Notizen derselben Order)
         toks = event_tokens(e)
         if toks:
@@ -329,6 +355,11 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
         q = _by_exact_qty(e, hits)
         if len(q) == 1:
             hits, by_qty = q, True
+    if hits and (from_style or via_text):   # schwacher Weg (nur Style/Text, kein PO-Nr-/Kennungs-Treffer): Menge UND Styles gegenpruefen
+        bad = {o["id"]: m for o in hits for m in [_deviates(e, o, idx)] if m}
+        hits = [o for o in hits if o["id"] not in bad]
+        if bad and not hits:
+            return None, "abweichend: Menge und Styles passen nicht zur Order (%s)" % "; ".join(bad.values())[:200]
     if len(hits) == 1:
         subj_ref = str((e.get("details") or {}).get("ref_quelle") or "") == "betreff"   # Style nur aus Betreff/Anhangsnamen abgeleitet (Apps Script-Rueckfall): nur Notiz
         return hits[0], ("menge" if by_qty else "text" if (via_text or subj_ref) else "ok")

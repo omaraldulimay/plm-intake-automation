@@ -75,7 +75,13 @@ class _R:
     existing_id = None
 
 
-def parent_for(vendor, po, orders, ctx):
+def _mismatch(po, o, wanted, by_id):
+    """Beleg weicht von der Order klar ab (Menge UND Styles, core.clear_mismatch)? -> Text oder None."""
+    off, why = core.clear_mismatch(po.get("total_pieces"), o.get("totalNumberOfPieces"), wanted, core.order_styles(o, by_id))
+    return "%s %s: %s" % ("#%s" % o.get("orderNumber"), o.get("title"), why) if off else None
+
+
+def parent_for(vendor, po, orders, ctx, info=None):
     """Eltern-Order eines Belegs: (1) PO-Nr (core.find_parent), (2) Vertragsnummer als Anfang der Beleg-Nr im Titel (min. 8 Zeichen), (3) EINZIGE Order des Lieferanten
     mit gleichem Style. Mehrere Kandidaten -> (None, [Titel]) = Mensch entscheidet. Keine Kandidaten -> (None, [])."""
     vid = vendor["id"]
@@ -93,6 +99,10 @@ def parent_for(vendor, po, orders, ctx):
             mf = ao.get("manufacturer") if ao else None
             if ao and (not mf or (mf.get("id") if isinstance(mf, dict) else mf) == vid):
                 return ao, []
+    for key in (po.get("invoice_number"), (po.get("source") or {}).get("doc") if isinstance(po.get("source"), dict) else None):   # Rechnungs-/Dokumentnummer = PO-Nr einer eigenen Order (z. B. Teillieferung mit eigener Order SPR...422)
+        if key and len(core.norm(key)) >= 8:
+            p = core.find_parent(vid, key, orders)
+            if p: return p, []
     mine = [o for o in orders if (o.get("manufacturer", {}).get("id") if isinstance(o.get("manufacturer"), dict) else o.get("manufacturer")) == vid]
     pn = core.norm(po.get("po_number"))
     by_id = {x["id"]: x.get("sku") for x in ctx.get("products") or [] if x.get("sku")}
@@ -120,6 +130,10 @@ def parent_for(vendor, po, orders, ctx):
                 return None, [o["title"] for o in (narrowed or hit)[:4]]
     if wanted:
         hits = by_style(mine)
+        # schwache Wege (nur Lieferant + Style, kein PO-Nr-Treffer): weichen Menge UND Styles klar ab, geht der Beleg nicht an diese Order, sondern als Klaerfall (core.clear_mismatch)
+        bad = {o["id"]: m for o in hits for m in [_mismatch(po, o, wanted, by_id)] if m}
+        if bad and info is not None: info["abweichend"] = [bad[o["id"]] for o in hits if o["id"] in bad]
+        hits = [o for o in hits if o["id"] not in bad]
         if len(hits) == 1: return hits[0], []
         if len(hits) > 1: return None, [o["title"] for o in hits[:4]]
     return None, []
@@ -159,7 +173,9 @@ def narrow_candidates(po, titles, orders):
     unit = _doc_unit_price(po)   # Stueckpreis des Belegs = Preis genau einer Kandidaten-Order (z. B. Jacke 13,75 USD nur in der Winter-Order, 13,40 in der Nachbestellung)
     if unit:
         hit = [o for o in cands if any(abs(pr - unit) <= 0.01 * unit for pr in _order_prices(o, po))]
-        if len(hit) == 1: return hit[0]
+        if len(hit) == 1:
+            wanted = {core.norm(i.get("sku")) for i in po.get("items") or [] if i.get("sku")}
+            if not core.clear_mismatch(po.get("total_pieces"), hit[0].get("totalNumberOfPieces"), wanted, core.order_styles(hit[0], {}))[0]: return hit[0]
     pcs = po.get("total_pieces")
     try: pcs = float(pcs)
     except (TypeError, ValueError): pcs = 0
@@ -174,7 +190,10 @@ def delivery_doc(name, po, ctx, orders, overrides):
     if (overrides or {}).get(name) == "SKIP": return {"file": name, "kind": "SKIP"}, _R()
     vendor, why = core.match_vendor(po.get("vendor") or "", ctx.get("vendors") or [], ctx.get("aliases"))
     if not vendor: return {"file": name, "kind": "BLOCKER", "why": "Lieferant unbekannt: %s (%s)" % (po.get("vendor"), why)}, _R()
-    parent, amb = parent_for(vendor, po, list(orders.values()), ctx)
+    info = {}
+    parent, amb = parent_for(vendor, po, list(orders.values()), ctx, info)
+    if not parent and not amb and info.get("abweichend"):
+        return {"file": name, "kind": "AMBIGUOUS_DOC", "po": po.get("po_number"), "why": "Menge und Styles weichen klar von der naechstpassenden Order ab (keine PO-Nr im Beleg, gehoert evtl. zu einer anderen/neuen Order): " + "; ".join(info["abweichend"])[:300]}, _R()
     if amb and not parent:
         one = narrow_candidates(po, amb, list(orders.values()))
         if one: parent, amb = one, []

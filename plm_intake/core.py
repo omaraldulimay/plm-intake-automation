@@ -230,6 +230,32 @@ def order_styles(o, products_by_id):
     return out
 
 
+QTY_HIGH, QTY_LOW, COVER_MIN = 1.5, 0.67, 0.5
+
+
+def style_covered(style, theirs):
+    """Style (normalisiert) steckt in den Styles der Order: exakt oder Variantenschreibweise (gleicher Anfang, mind. 5 Zeichen)."""
+    return style in theirs or any(len(t) >= 5 and len(style) >= 5 and (style.startswith(t) or t.startswith(style)) for t in theirs)
+
+
+def clear_mismatch(pieces, order_pieces, wanted, theirs):
+    """Zuordnungspruefung fuer SCHWACHE Wege (kein PO-Nr-Treffer, nur Lieferant/Style/'einzige laufende Order'): weichen Menge UND Styles klar ab?
+    Menge klar anders = Beleg-Menge > 1,5x oder < 0,67x der Order-Menge; Styles klar anders = weniger als 50 % der Beleg-Styles kommen in der Order vor.
+    Nur wenn beides zutrifft (eine Teillieferung mit denselben Styles oder ein Beleg ueber alle Styles in anderer Menge bleibt zuordenbar). Unbekannte Menge/Styles = False.
+    -> (bool, Text)"""
+    try:
+        pieces, order_pieces = float(pieces or 0), float(order_pieces or 0)
+    except (TypeError, ValueError):
+        return False, ""
+    wanted = {w for w in wanted or () if w}
+    if pieces <= 0 or order_pieces <= 0 or not wanted:
+        return False, ""
+    ratio = pieces / order_pieces
+    cover = sum(1 for w in wanted if style_covered(w, theirs or set())) / len(wanted)
+    off = (ratio > QTY_HIGH or ratio < QTY_LOW) and cover < COVER_MIN
+    return off, "Menge %d Stk vs. Order %d Stk (%.2fx), Style-Ueberdeckung %d %%" % (pieces, order_pieces, ratio, round(cover * 100))
+
+
 def find_style_overlap(vendor_id, items, orders, products):
     """Bestehende Order DESSELBEN Lieferanten mit mindestens einem gleichen Style -> (Order, Styles) oder None."""
     by_id = {p["id"]: p.get("sku") for p in products or [] if p.get("sku")}
