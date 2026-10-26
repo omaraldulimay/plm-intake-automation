@@ -352,6 +352,21 @@ def main(argv=None):
     except (Exception, SystemExit) as e:   # Klaerfaelle duerfen den Lauf nie abbrechen
         rep += ["", "## Klärfälle (PLM-Tabelle)", "- FEHLER: %s" % str(e)[:200]]
         facts["warnungen"].append("Klaerfaelle-Schritt fehlgeschlagen: %s" % str(e)[:120])
+    # Zuordnungen aus der Tabelle (Spalte 'Zuordnung' -> event_overrides/po_aliases, Rueckmeldung in die Tabelle; wirkt im naechsten Lauf). Fehler brechen den Lauf nie ab
+    try:
+        from plm_intake import klaerfaelle as _kf, zuordnung
+        if _kf.CFG.exists():
+            def _run_z(js):
+                p_ = intake / ("zuordnung_%s.js" % dt.datetime.now().strftime("%Y%m%d_%H%M%S")); p_.write_text(js); return browser(p_)
+            zr = zuordnung.run(ctx["orders"], intake, evt, runner=_run_z, apply=a.apply)
+            facts["zuordnung"] = {"angewendet": zr["angewendet"], "abgelehnt": zr["abgelehnt"]}
+            rep += ["", "## Zuordnungen aus der Tabelle", "- %s: angewendet %d, abgelehnt %d, schon angewendet %d, nicht gelesen (Limit %d) %d%s" % (
+                "geschrieben" if a.apply else "Trockenlauf", zr["angewendet"], zr["abgelehnt"], zr["schon"], zuordnung.MAX_ROWS, zr["ungelesen"], (" | Fehler: %s" % zr["fehler"][:3]) if zr["fehler"] else "")]
+            if zr["fehler"]:
+                facts["warnungen"].append("Zuordnung aus Tabelle: %s" % zr["fehler"][:2])
+    except (Exception, SystemExit) as e:
+        rep += ["", "## Zuordnungen aus der Tabelle", "- FEHLER: %s" % str(e)[:200]]
+        facts["warnungen"].append("Zuordnungs-Schritt fehlgeschlagen: %s" % str(e)[:120])
     # Beleg-Anhaenge: Rechnung/Packliste/PI/PO als Datei an die eindeutig zugeordnete Order (nur apply; max. 30 pro Lauf; Fehler brechen den Lauf nie ab)
     if a.apply:
         try:
