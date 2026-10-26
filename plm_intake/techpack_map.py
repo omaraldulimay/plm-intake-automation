@@ -29,11 +29,14 @@ def load_aliases(path=ALIASES):
         return {}
 
 
-def codes(text):
+def codes(text, short=False):
+    """Stylecodes im Text. short=True (nur Dateinamen): zusaetzlich 4-Zeichen-Codes mit mind. 2 Ziffern (MP21); resolve nimmt sie nur bei exakter SKU."""
     out = []
     for m in CODE_RX.findall(re.sub(r"\.[A-Za-z]{2,4}$", "", str(text or ""))):
         k = nk(m)
-        if len(k) >= 5 and k not in out:
+        if k in out:
+            continue
+        if len(k) >= 5 or (short and len(k) == 4 and sum(ch.isdigit() for ch in k) >= 2):
             out.append(k)
     return out
 
@@ -59,9 +62,15 @@ def resolve(file_name, products, aliases=None, content=""):
     by = _index(products)
     aliases = aliases if aliases is not None else load_aliases()
     hits, how = {}, []
-    for c in codes(file_name):
+    for c in codes(file_name, short=True):
         ids = [p for p in by.get(c, [])]
         meth = "exakt"
+        if len(c) < 5:   # kurzer Code: nur exakte SKU, keine Regel/Alias/Suffix
+            for p in ids:
+                hits[p["id"]] = p
+            if ids:
+                how.append("exakt %s->%s" % (c, ",".join(sorted({p["sku"] for p in ids}))))
+            continue
         if not ids:
             for k in _kunde_y(c):
                 ids = by.get(k, [])

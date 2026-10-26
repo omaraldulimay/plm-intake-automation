@@ -40,6 +40,15 @@ class Zuordnung(unittest.TestCase):
         self.assertEqual(tm.resolve("Techpack Dawson Hoodie.pdf", P, AL, content="Dawson")[1], "offen")
         self.assertEqual(tm.resolve("SKM26-099_TP.pdf", P, AL)[1], "offen")   # Regel nur, wenn das Ziel existiert
 
+    def test_kurzer_code_nur_im_namen_und_nur_exakt(self):
+        P2 = P + [{"id": "m", "sku": "MP21"}, {"id": "n", "sku": "MP21X"}]
+        self.assertEqual(self.ids(tm.resolve("MP21_TP-Unisex zipper Hood.pdf", P2, AL)), ["m"])
+        self.assertEqual(tm.resolve("MP22_TP.pdf", P2, AL)[1], "offen")          # keine SKU -> offen
+        self.assertEqual(tm.resolve("AB12_TP.pdf", P, AL)[1], "offen")
+        self.assertEqual(tm.resolve("SHM26-009_TP.pdf", P2, AL, content="siehe MP21 und AB12")[1], "offen")   # Inhalt: keine kurzen Codes
+        self.assertEqual(tm.codes("MP21_TP.pdf"), [])
+
+
 class LeserFehlt(unittest.TestCase):
     def test_fehlender_pdf_leser_wird_gemeldet(self):
         import builtins
