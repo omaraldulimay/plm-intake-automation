@@ -94,9 +94,15 @@ def candidates(assigned, rows, orders_by_id):
 def learn(aliases, assigned, rows, orders, apply=False):
     """Gibt (neue_aliases, neu:list, konflikte:list) zurueck. Aendert `aliases` nur bei apply=True (Trockenlauf lernt nichts, rechnet aber die Vorschau)."""
     by_id = {o["id"]: o for o in orders}
+    return merge(aliases, candidates(assigned, rows, by_id), orders, apply)
+
+
+def merge(aliases, pairs, orders, apply=False):
+    """pairs: [(Kennung, order_id, Quelle)] -> (work, neu, konflikte). Gleiche Regeln wie learn (Konflikt = mehrdeutig)."""
+    by_id = {o["id"]: o for o in orders}
     work = dict(aliases or {})
     new, conflicts = [], []
-    for key, oid, src in candidates(assigned, rows, by_id):
+    for key, oid, src in pairs:
         nk = core.norm(key)
         cur_key = next((a for a in work if core.norm(a) == nk), None)
         if cur_key is None:
