@@ -62,6 +62,11 @@ def resolve(file_name, products, aliases=None, content=""):
     by = _index(products)
     aliases = aliases if aliases is not None else load_aliases()
     hits, how = {}, []
+    fa = aliases.get(nk(file_name))   # belegte Datei-Uebersetzung (Schluessel = kompletter Dateiname, z. B. Dawson_BOM_MC.pdf)
+    if fa:
+        ids = by.get(nk(fa), [])
+        if ids:
+            return list(ids), "alias", "alias Datei %s->%s" % (file_name, ",".join(sorted({p["sku"] for p in ids})))
     for c in codes(file_name, short=True):
         ids = [p for p in by.get(c, [])]
         meth = "exakt"

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DRIVE = Path.home() / "Library/CloudStorage/kontakt@firma.example/Meine Ablage/PLM-Mails"
 BANK_RX = re.compile(r"(?i)\biban\b|\bswift\b|\bbic\b\s*[:=]|account\s*(no|number)|kontonummer|\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}\b")
 ATT_RX = re.compile(r"^(\d{4}-\d{2}-\d{2})_([0-9a-f]{16})_(.+)$")
-TYP_RULES = [("QC", r"inspection|durability|test report|\bqc\b"), ("TP", r"tech ?pack|\btp\b|_tp|bom"),
+TYP_RULES = [("QC", r"inspection|durability|test report|\bqc\b"), ("TP", r"tech[ _-]?(pack|sheet)|\btp\b|_tp|bom"),
              ("Spec", r"spec|size ?chart|measure|mass|maß"), ("PL", r"packing|packliste|\bpl\b"),
              ("CI", r"invoice|\binv\b|inv#|rechnung|\bci\b"), ("PI", r"\bpi\b|proforma|pro forma|sales contract"),
              ("PO", r"\bpo\b|order"), ("Versand", r"\bbl\b|b/l|hbl|ohbl|cro|mawb|awb|shipment|shipping")]

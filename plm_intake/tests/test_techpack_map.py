@@ -26,6 +26,12 @@ class Zuordnung(unittest.TestCase):
         r = tm.resolve("TP_Spec SLM26-001_Men's T-Shirt.pdf", P, AL)
         self.assertEqual((self.ids(r), r[1]), (["c"], "alias"))
 
+    def test_datei_alias(self):
+        al = {tm.nk("Dawson_BOM_MC.pdf"): "SNM26-008"}
+        r = tm.resolve("Dawson_BOM_MC.pdf", P, al)
+        self.assertEqual((self.ids(r), r[1]), (["d"], "alias"))
+        self.assertEqual(tm.resolve("Andere_BOM_MC.pdf", P, al)[1], "offen")
+
     def test_mehrere_styles(self):
         self.assertEqual(self.ids(tm.resolve("SKM26-005+SKM26-006_TP.pdf", P, AL)), ["a", "b"])
 
@@ -37,7 +43,7 @@ class Zuordnung(unittest.TestCase):
         self.assertEqual((self.ids(r), r[1]), (["d"], "inhalt"))
 
     def test_kein_treffer_bleibt_offen(self):
-        self.assertEqual(tm.resolve("Techpack Dawson Hoodie.pdf", P, AL, content="Dawson")[1], "offen")
+        self.assertEqual(tm.resolve("Techpack Dawson Hoodie.pdf", P, AL, content="Dawson")[1], "offen")  # ohne Datei-Alias bleibt offen
         self.assertEqual(tm.resolve("SKM26-099_TP.pdf", P, AL)[1], "offen")   # Regel nur, wenn das Ziel existiert
 
     def test_kurzer_code_nur_im_namen_und_nur_exakt(self):

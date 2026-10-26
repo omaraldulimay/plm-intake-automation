@@ -38,9 +38,14 @@ def real(a):
 def plan(products):
     al = tm.load_aliases()
     best = {}
-    for s in load_sources():
-        if s.get("typ") != "TP":   # nur echte Techpacks, keine Specs
-            continue
+    srcs = [s for s in load_sources() if s.get("typ") == "TP"]   # nur echte Techpacks, keine Specs
+    have = {s["datei"] for s in srcs}
+    if ANH.is_dir():   # Dateien im Anhang-Ordner, die die Quellenlisten nicht (mehr) als TP fuehren (z. B. neue Namensregel)
+        from plm_intake.techpack_daily import is_techpack_name
+        for f in sorted(os.listdir(ANH)):
+            if f not in have and is_techpack_name(f):
+                srcs.append({"typ": "TP", "datei": f, "datum": f[:10] if f[:4].isdigit() else ""})
+    for s in srcs:
         name, path = display_name(s["datei"]), ANH / s["datei"]
         if not path.exists() or path.stat().st_size > MAXB:
             continue
