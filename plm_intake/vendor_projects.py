@@ -1,4 +1,4 @@
-"""Lieferanten-Projekte im Lifecycle-PLM: je Lieferant (manufacturer) mit mindestens einer echten Order ein Projekt (Name exakt = Lieferantenname);
+"""Lieferanten-Projekte im Lifecycle-PLM: je Lieferant (manufacturer) mit mindestens einer echten Order ODER mindestens 5 echten Produkten (Main Vendor) ein Projekt (Name exakt = Lieferantenname);
 jede echte Order ohne Projektverknuepfung wird mit dem Projekt ihres Lieferanten verknuepft.
 
 Regeln: Test-Orders (ZZ-/T1-/TEST-Titel) zaehlen nicht. Eine Order hoechstens in EINEM Projekt; vorhandene Verknuepfungen werden nie geaendert oder geloest.
@@ -42,7 +42,7 @@ def order_vendor_id(o):
     return m or o.get("manufacturerId") or None
 
 
-def plan(vendors, orders, projects, max_links=MAX_LINKS, max_creates=MAX_CREATES):
+def plan(vendors, orders, projects, max_links=MAX_LINKS, max_creates=MAX_CREATES, product_vendors=()):
     """Reine Planung. projects: [{id,name,linkedOrders:[{_id,orderId}]}]. -> dict create/links/warnings/vendors_ohne_projekt/orders_ohne_projekt/..."""
     vname = {v["id"]: v.get("name") or "" for v in vendors}
     linked = {}   # orderId -> Projekt-ID (jede Verknuepfung, egal in welchem Projekt)
@@ -67,7 +67,9 @@ def plan(vendors, orders, projects, max_links=MAX_LINKS, max_creates=MAX_CREATES
         if str(o["id"]) not in linked:
             open_orders.append((vid, o))
     proj_for, ohne_projekt, create = {}, [], []
-    for vid in sorted(vendors_with_orders, key=lambda v: vname[v].casefold()):
+    # Lieferanten mit genuegend Produkten (product_vendors, vom Aufrufer berechnet) bekommen auch ohne Bestellung ein Projekt
+    need = set(vendors_with_orders) | {v for v in product_vendors if v in vname and norm(vname[v]) and not re.match(r"(?i)\s*zz", vname[v])}
+    for vid in sorted(need, key=lambda v: vname[v].casefold()):
         hit = by_name.get(norm(vname[vid]), [])
         if len(hit) > 1:
             warnings.append("Mehrere Projekte mit Namen '%s' (%s), Lieferant uebersprungen" % (vname[vid], ", ".join(p["id"] for p in hit)))
@@ -200,10 +202,10 @@ def backup(projects, pl, now=None):
     return p
 
 
-def run(vendors, orders, apply=False, runner=run_js, backup_fn=backup):
+def run(vendors, orders, apply=False, runner=run_js, backup_fn=backup, product_vendors=()):
     """-> (zeilen, ergebnis{neu,verknuepft,fehler,warnungen,plan}). Trockenlauf liest nur."""
     projects = read_projects(runner)
-    pl = plan(vendors, orders, projects)
+    pl = plan(vendors, orders, projects, product_vendors=product_vendors)
     res = {"neu": 0, "verknuepft": 0, "fehler": 0, "warnungen": list(pl["warnings"]), "plan": pl}
     L = ["- Projekte im PLM: %d | Lieferanten ohne Projekt: %d | Orders ohne Projekt: %d | geplant: %d neue Projekte, %d Verknuepfungen" % (
         len(projects), len(pl["vendors_ohne_projekt"]), len(pl["orders_ohne_projekt"]), len(pl["create"]), len(pl["links"]))]
@@ -230,8 +232,10 @@ def main(argv=None):
     sys.path.insert(0, str(ROOT))
     import plm_client
     from plm_intake.context import fetch_all
+    from plm_intake import vendor_project_products as vpp
     vendors, orders = fetch_all(plm_client.call, "vendors"), fetch_all(plm_client.call, "orders")
-    L, res = run(vendors, orders, a.apply)
+    pv = vpp.vendors_needing_project(vendors, fetch_all(plm_client.call, "products"))
+    L, res = run(vendors, orders, a.apply, product_vendors=pv)
     print("\n".join(L))
     if not a.apply:
         pl = res["plan"]

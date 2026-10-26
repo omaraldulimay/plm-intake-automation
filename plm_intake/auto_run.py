@@ -10,6 +10,7 @@ Menschen-Liste im Bericht: Blocker, mehrdeutige Belege, Belege ohne PO, Reorder-
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -262,7 +263,10 @@ def main(argv=None):
             rep += ["", "## Projekte"] + vp_lines
             # Projekt-Produkte: Main-Vendor-Produkte ins Lieferanten-Projekt (max. 100 pro Lauf, nur apply; Fehler brechen den Lauf nie ab)
             try:
-                pp_lines, pp_res = vpp.run(_vend, _prod, True, limit=vpp.MAX_PRODUCTS)
+                _pp_auto = os.environ.get("PROJEKT_PRODUKTE_AUTO") == "1"   # bis Omar nach dem Pilot freigibt: nur zaehlen, nichts schreiben
+                pp_lines, pp_res = vpp.run(_vend, _prod, _pp_auto, limit=vpp.MAX_PRODUCTS)
+                if not _pp_auto:
+                    pp_lines = ["- Schreiben aus (PROJEKT_PRODUKTE_AUTO!=1)"] + pp_lines
                 rep += ["", "## Projekt-Produkte"] + pp_lines
                 facts["projekt_produkte"] = {"neu": pp_res["neu"], "fehler": pp_res["fehler"]}
                 facts["warnungen"] += pp_res["warnungen"]
