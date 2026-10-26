@@ -256,14 +256,43 @@ def main(argv=None):
         try:
             from plm_intake import vendor_projects
             from plm_intake.context import fetch_all as _fa
-            vp_lines, vp_res = vendor_projects.run(_fa(plm_client.call, "vendors"), _fa(plm_client.call, "orders"), True)
+            from plm_intake import vendor_project_products as vpp
+            _vend, _prod = _fa(plm_client.call, "vendors"), _fa(plm_client.call, "products")
+            vp_lines, vp_res = vendor_projects.run(_vend, _fa(plm_client.call, "orders"), True, product_vendors=vpp.vendors_needing_project(_vend, _prod))
             rep += ["", "## Projekte"] + vp_lines
+            # Projekt-Produkte: Main-Vendor-Produkte ins Lieferanten-Projekt (max. 100 pro Lauf, nur apply; Fehler brechen den Lauf nie ab)
+            try:
+                pp_lines, pp_res = vpp.run(_vend, _prod, True, limit=vpp.MAX_PRODUCTS)
+                rep += ["", "## Projekt-Produkte"] + pp_lines
+                facts["projekt_produkte"] = {"neu": pp_res["neu"], "fehler": pp_res["fehler"]}
+                facts["warnungen"] += pp_res["warnungen"]
+            except (Exception, SystemExit) as e:
+                rep += ["", "## Projekt-Produkte", "- FEHLER: %s" % str(e)[:200]]
+                facts["projekt_produkte"] = {"neu": 0, "fehler": 1}
+                facts["warnungen"].append("Projekt-Produkte-Schritt fehlgeschlagen: %s" % str(e)[:120])
             facts["projekte"] = {"neu": vp_res["neu"], "verknuepft": vp_res["verknuepft"], "fehler": vp_res["fehler"]}
             facts["warnungen"] += vp_res["warnungen"]
         except (Exception, SystemExit) as e:
             rep += ["", "## Projekte", "- FEHLER: %s" % str(e)[:200]]
             facts["projekte"] = {"neu": 0, "verknuepft": 0, "fehler": 1}
             facts["warnungen"].append("Projekte-Schritt fehlgeschlagen: %s" % str(e)[:120])
+        # Status-Regeln: Vorschlaege zaehlen; automatisch gesetzt wird nur mit STATUS_AUTO=1 und nur Sicherheit hoch (max. 10 je Lauf). Fehler brechen den Lauf nie ab
+        try:
+            from plm_intake import status_apply
+            from plm_intake.context import fetch_all as _fa2
+            st_orders, st_ships = _fa2(plm_client.call, "orders"), _fa2(plm_client.call, "shipments")
+            from plm_intake.context import add_po_numbers as _apn
+            _apn({"orders": st_orders})
+            ev_st = {p_["id"]: {"to": p_["status"]["to"]["status"], "why": p_["status"]["why"]} for p_ in pl["orders"] if p_.get("status")}
+            st_lines, st_res = status_apply.auto(st_orders, st_ships, status_apply.status_objects(st_orders), True, event_status=ev_st)
+            rep += ["", "## Status"] + st_lines
+            facts["status"] = {"vorschlaege": st_res["vorschlaege"], "gesetzt": st_res["gesetzt"], "fehler": st_res["fehler"], "auto": st_res["auto"]}
+            if st_res["fehler"]:
+                facts["warnungen"].append("Status setzen: %d Fehler" % st_res["fehler"])
+        except (Exception, SystemExit) as e:
+            rep += ["", "## Status", "- FEHLER: %s" % str(e)[:200]]
+            facts["status"] = {"vorschlaege": 0, "gesetzt": 0, "fehler": 1, "auto": False}
+            facts["warnungen"].append("Status-Schritt fehlgeschlagen: %s" % str(e)[:120])
         # Merkbuch: neue POs, Belege mit Ereignis, vollstaendig zugeordnete Ereignis-Dateien
         for n, p in payloads.items():
             if p["title"] in applied["orders"]: ledger.mark(led, inbox / n, "applied", p["title"])

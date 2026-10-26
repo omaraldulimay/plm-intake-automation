@@ -143,6 +143,12 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     if facts.get("projekte") is not None:   # Lieferanten-Projekte (vendor_projects): neu / verknuepft / Fehler
         pj = facts["projekte"]
         L.append("   Projekte: neu %s, verknuepft %s, Fehler %s%s" % (pj.get("neu", 0), pj.get("verknuepft", 0), pj.get("fehler", 0), "  WARNUNG: Projekt-Verknuepfung fehlerhaft" if pj.get("fehler") else ""))
+    if facts.get("status") is not None:   # Status-Regeln (status_apply.auto): Vorschlaege / gesetzt
+        stt = facts["status"]
+        L.append("   Status: Vorschlaege %s, gesetzt %s%s%s" % (stt.get("vorschlaege", 0), stt.get("gesetzt", 0), "" if stt.get("auto") else " (STATUS_AUTO aus)", "  WARNUNG: Status setzen fehlerhaft" if stt.get("fehler") else ""))
+    if facts.get("projekt_produkte") is not None:   # Projekt-Produkte (vendor_project_products)
+        pp = facts["projekt_produkte"]
+        L.append("   Projekt-Produkte: neu %s, Fehler %s%s" % (pp.get("neu", 0), pp.get("fehler", 0), "  WARNUNG: Produkt-Verknuepfung fehlerhaft" if pp.get("fehler") else ""))
     # 5. Aliase
     al = facts.get("aliase") or []
     L.append("5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): " + ("keine" if not al else str(len(al))))
