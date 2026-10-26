@@ -77,10 +77,15 @@ def id_tokens(text):
 def order_index(orders, products=None):
     """Pro Order: SKUs der verlinkten Produkte und bekannte Kennungen aus Notizen/PO-Nummer (Container, HBL, Rechnungsnummern ...). Grundlage fuer die Zuordnung ueber Kennung und Style."""
     sku = {p["id"]: core.norm(p.get("sku")) for p in products or [] if p.get("sku")}
+    pname = {p["id"]: " ".join(str(p.get(k) or "") for k in ("name", "description")) for p in products or []}
     idx = {}
     for o in orders:
         skus = {sku[i["product"]["id"]] for i in o.get("items") or [] if isinstance(i.get("product"), dict) and i["product"].get("id") in sku}
-        idx[o["id"]] = {"skus": skus, "idents": id_tokens(o.get("_notes")) | id_tokens(o.get("poNumber"))}
+        pw = set()
+        for i in o.get("items") or []:
+            if isinstance(i.get("product"), dict):
+                pw |= set(re.findall(r"[a-z]{4,}", pname.get(i["product"].get("id"), "").lower()))
+        idx[o["id"]] = {"skus": skus, "idents": id_tokens(o.get("_notes")) | id_tokens(o.get("poNumber")), "pwords": pw}
     return idx
 
 
@@ -368,6 +373,22 @@ def _general_info(e, why, vendors, vendor_aliases, dom):
     return None
 
 
+def _content(e, cands, idx, vendor_only, v=None):
+    """Inhaltsbasierte Zuordnung (plm_intake.content_match) NUR im Mehrdeutigkeitsfall, nur mit Schalter CONTENT_MATCH=1, nur bei bekanntem Lieferanten (v) und nur unter
+    dessen laufenden Orders (vendor_only-Lauf). -> (Order, 'inhalt') oder None."""
+    from plm_intake import content_match
+    if not (vendor_only and v and content_match.enabled()):
+        return None
+    cands = [o for o in cands if (o.get("manufacturer") or {}).get("id") == v["id"]]
+    if len(cands) < 2:
+        return None
+    o, beleg, _det = content_match.match(e, cands, idx)
+    if not o:
+        return None
+    e["_content_hit"] = beleg
+    return o, "inhalt"
+
+
 def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None, style_aliases=None):
     """Genau eine Order oder None (+ Grund). Zaehlt: PO-Nummer/Titel, Style (Positionsname oder Produkt-SKU), bekannte Kennung (Container/HBL/Rechnungsnr. aus den Notizen).
     Lieferant allein reicht nur schwach und nur bei vendor_only (mehrdeutig sonst)."""
@@ -450,6 +471,9 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
         subj_ref = str((e.get("details") or {}).get("ref_quelle") or "") == "betreff"   # Style nur aus Betreff/Anhangsnamen abgeleitet (Apps Script-Rueckfall): nur Notiz
         return hits[0], ("menge" if by_qty else "text" if (via_text or subj_ref) else "ok")
     if hits:
+        got = _content(e, [o for o in hits if _status(o) not in ACTIVE_NOT], idx, vendor_only, v)
+        if got:
+            return got
         return None, "mehrdeutig: " + ", ".join(o["title"] for o in hits[:5])
     if vendor_only and not po and not hits and CARRIER.search(str(e.get("vendor") or "")) and not (v and v.get("name") and CARRIER.search(v["name"]) is None):
         return None, "info: Dienstleister (%s) ohne Bestellbezug (Paket/Zoll/Spedition)" % e.get("vendor")
@@ -468,6 +492,9 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
                 named = [o for o in mine if any(re.search(r"\b%s\b" % re.escape(w), words) for w in title_words(o, v["name"]))]
                 if len(named) == 1:   # Text nennt ein unterscheidendes Wort aus genau EINEM Order-Titel (z. B. Projektname)
                     return named[0], "vendor_title"
+                got = _content(e, mine, idx, vendor_only, v)
+                if got:
+                    return got
                 return None, "mehrdeutig: %d laufende Orders von %s" % (len(mine), v["name"])
     return None, "keine Order gefunden"
 
@@ -497,7 +524,8 @@ WEAK = {"vendor_only": " [Zuordnung: einzige laufende Order des Lieferanten, nic
         "vendor_title": " [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]",
         "thread": " [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]",
         "text": " [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]",
-        "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]"}
+        "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]",
+        "inhalt": " [Zuordnung: inhaltlich zugeordnet, nicht per PO-Nr belegt]"}
 
 
 INFO_OVERRIDE = "__info__"
@@ -569,6 +597,8 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
         p = per.setdefault(o["id"], {"id": o["id"], "title": o["title"], "orderNumber": o.get("orderNumber"), "lines": [], "date_patch": {}, "date_mail": "", "pay": []})
         weak = why in WEAK   # nur ueber den Lieferanten/Verlauf zugeordnet: Notizzeile ja, Termin-/Zahlungs-/Statusaenderung nein
         txt = line(e) + WEAK.get(why, "")
+        if why == "inhalt" and e.get("_content_hit"):
+            txt = line(e) + " [Zuordnung: inhaltlich zugeordnet: %s; nicht per PO-Nr belegt]" % str(e["_content_hit"])[:160]
         p["lines"].append({"marker": mk, "text": txt, "type": e.get("type"), "mail_date": str(e["_mail"].get("date") or ""), "weak": weak})
         d = e.get("details") or {}
         if weak:

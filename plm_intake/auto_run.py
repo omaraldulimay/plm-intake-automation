@@ -398,6 +398,9 @@ def main(argv=None):
         facts["zahlen"].update({"orders": len(applied["orders"]) if a.apply else len(payloads), "notes": len(facts["stichprobe_pool"]),
                                 "ship_new": len(sh_create), "ship_upd": len(sh_update)})
         facts["zahlen"].setdefault("techpacks", 0)
+        from plm_intake import content_match
+        facts["zahlen"]["inhalt_aktiv"] = content_match.enabled()
+        facts["zahlen"]["inhalt"] = sum(1 for _e, _oid, _why in pl.get("assigned") or [] if _why == "inhalt")
         facts["quote"] = {   # Automatisierungsquote (Tagesbericht Abschnitt 3): Marker/Dateinamen je Zustand; Belege = neue POs, Ereignisse = Notizzeilen
             "ok": sorted({l["marker"] for o in pl["orders"] if done is None or o.get("title") in done for l in o["lines"]}
                          | {"doc:" + n for n, p_ in payloads.items() if not a.apply or p_["title"] in applied["orders"]}),
