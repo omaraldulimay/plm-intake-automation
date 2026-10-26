@@ -86,7 +86,7 @@ class Rules(unittest.TestCase):
     def test_rechnung_als_basis(self):
         n = "Quelle: PO X (Mail vom 2026-03-04). Phase 2: Menge = bisher gelieferte Menge laut Rechnungen AK/1."
         r = ev([order("A", "Draft", notes=n)])["A"]
-        self.assertEqual((r["regel"], r["sicherheit"], r["auto"]), ("RECHNUNG_ALS_BASIS", "hoch", True))
+        self.assertEqual((r["regel"], r["sicherheit"], r["auto"]), ("RECHNUNG_ALS_BASIS", "mittel", False))
         r = ev([order("A", "Draft", notes=n.replace("2026-03-04", "2026-10-20"))])   # Quellmail jung: nichts
         self.assertEqual(r["A"]["art"], "Hinweis")
 

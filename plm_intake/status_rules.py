@@ -9,7 +9,7 @@ Regeln (Sicherheit):
   ZAHLUNG_PAID        mindestens eine Rate Paid, Order steht auf Draft/Awaiting Approval  -> Approved              hoch
   BELEG_OHNE_SENDUNG  Rechnung/Packliste (BELEG-Zeile >= 30 Tage alt), keine offene Sendung -> In Transit          mittel
   RECHNUNG_PACKLISTE  Rechnung UND Packliste (oder AWB/B-L) liegen vor (BELEG-Zeilen bzw. 'laut Rechnung' + Packliste in der Notiz), keine offene Sendung -> In Transit hoch
-  RECHNUNG_ALS_BASIS  Notiz: Order aus Rechnungen/'gelieferte Menge' angelegt, Quellmail >= 30 Tage, keine offene Sendung -> In Transit hoch (Ware war laut Rechnung versandt)
+  RECHNUNG_ALS_BASIS  Notiz: Order aus Rechnungen/'gelieferte Menge' angelegt, Quellmail >= 30 Tage, keine offene Sendung -> In Transit mittel (nur Hinweis, nie automatisch; indirekter Beleg)
   WARENEINGANG_BELEGT BELEG-Zeile Wareneingang/delivered, alle Raten Paid                -> Complete              mittel (ohne bezahlte Raten nie)
   COMPLETE_BELEGT     alle Sendungen delivered UND alle Raten Paid (Menge >= 98 %)       -> Complete              hoch (sonst mittel)
   COMPLETE_RATEN_OFFEN alle Sendungen delivered, aber Raten offen                       -> Complete (Vorschlag)  niedrig
@@ -142,7 +142,7 @@ def candidates(o, ships, today, event_to=None):
         except (AttributeError, ValueError):
             alt = False
         if alt:
-            c.append({"ziel": "In Transit", "regel": "RECHNUNG_ALS_BASIS", "sicherheit": "hoch", "beleg": "Notiz: Order aus Rechnungen angelegt ('%s'), Quellmail %s" % (m_.group(1), MAIL_VOM.search(notes).group(1))})
+            c.append({"ziel": "In Transit", "regel": "RECHNUNG_ALS_BASIS", "sicherheit": "mittel", "beleg": "Notiz: Order aus Rechnungen angelegt ('%s'), Quellmail %s" % (m_.group(1), MAIL_VOM.search(notes).group(1))})
     if ships and not openish and all(s.get("status") == "delivered" for s in ships):
         total = float(o.get("totalNumberOfPieces") or 0)
         shipped = sum(float(s.get("totalQuantity") or 0) for s in ships)
