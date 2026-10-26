@@ -1,9 +1,10 @@
-# Alltagslauf 2026-10-23 11:12 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-26 07:17 (AUSGEFUEHRT)
 
-Neu: 11 Dokument-Dateien, 308 Ereignis-Dateien
+Neu: 17 Dokument-Dateien, 317 Ereignis-Dateien
 
 ## Lieferanten
-- keine neuen
+- Lieferant AC FZCO: ALIAS_VERDACHT Aehnlicher Lieferant existiert schon: Alias setzen oder Mensch entscheidet
+- LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ.: MENSCH ALIAS_PRUEFEN [('Lieferant J', 1.0)]
 
 PO-Nummern per Browser nachgeladen: 72
 
@@ -11,6 +12,9 @@ PO-Nummern per Browser nachgeladen: 72
 - keine
 
 ## Neue Bestellungen (CREATE)
+- keine
+
+## Preis-Nachtrag (Beleg mit Stueckpreisen zu Order mit Preis 0)
 - keine
 
 ## Belege zu bestehenden Bestellungen
@@ -29,12 +33,19 @@ PO-Nummern per Browser nachgeladen: 72
 | 1a15e58e8bf56e63_1.json | ORPHAN_DOC | 6300 | - |
 | 1a1631c440498b5e_1.json | ORPHAN_DOC | 6300 | - |
 | 1a1682ab9dcc2d5a_1.json | ORPHAN_DOC | - | - |
+| 1a1685b25906026e_1.json | BLOCKER | - | Vorgaenger fehlt: Vendor 'Lieferant AC FZCO' (nicht gefunden). Erst Vendor anlegen/zuordnen |
+| 1a168c1bddb1726c_1.json | BLOCKER | - | Lieferant unbekannt: None (nicht gefunden) |
+| 1a168f1c8a9d3d4c_1.json | DELIVERY_DOC | - | #96 PO-LIEFERANT_I-SPR2026000000409 |
+| 1a16d3964b454ec4_1.json | DELIVERY_DOC | 26069 | #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03 |
+| 1a16da17151841e4_1.json | ORPHAN_DOC | 6300 | - |
+| 1a176dd5eaeba732_1.json | BLOCKER | - | Lieferant unbekannt: LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ. (nicht gefunden) |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a13103fd472a81b_1.json (62092211)
 - 1a15e58e8bf56e63_1.json (6300)
 - 1a1631c440498b5e_1.json (6300)
 - 1a1682ab9dcc2d5a_1.json (None)
+- 1a16da17151841e4_1.json (6300)
 
 ## Dienstleister-Belege ohne Warenpositionen (Spedition, Zoll): kein PO-Bezug, nur zur Info
 - 1a0a957bca78ab0b_1.json (SI_2026_06_0047)
@@ -55,24 +66,27 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-12 22:02 ev:b26b8665] SHIPMENT: Sendung per Seefracht (4*40HQ) mit MBL XIA1965473 und HBL XIME26070257, ETD Xiamen 7. August, Spediteur fragt nach Palettierungs- und Sortieranweisungen. (Mail 1a131b5dbbcc7e59)
 ## #34 PO-WONDERS-XW-SM260811
 - [2026-10-14 05:51 ev:55678539] OTHER: Der Lieferant meldet, dass XW26-008 (Long Sleeve) und XW26-009 (Tank Top) die Farbe light grey nicht haben, daher entfaellt die E-Serie fuer diese Styles. Er fragt, ob die anderen Farbgruppen die E-Serie ueberspringen oder ersetzen sollen. (Mail 1a138891a17b99d9)
+- [2026-10-26 06:39 ev:d7fd809e] SAMPLE: Nicole Chen requests confirmation of the updated size chart for the tank top (style XW26-009) in order to arrange the PP sample urgently. (Mail 1a176b95fadafc1e)
 ## #96 PO-LIEFERANT_I-SPR2026000000409
 - [2026-10-14 09:29 ev:c300c053] QUALITY: White printing defects noticed on the snake print; suggested switching to a black base fabric. (Mail 1a13951c52d8cf78) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-14 09:29 ev:91118219] ORDER_CHANGE: Request to add regular leggings with leo pattern (same as leggings 26803) to the production list. (Mail 1a13951c52d8cf78)
+- [2026-10-23 15:27 ev:b2b9181c] SHIPMENT: Shipment documents sent for 7267 pieces across 623 cartons. (Mail 1a168f1c8a9d3d4c)
+- [2026-10-23 15:27 ev:4efc6e3e] BELEG INVOICE: INVOICE ? | 7267 Stk | 54984.3 EUR | Zahlungen: MAL MUKABİLİ 54984.3 Unpaid: Top 7267 Adet, 623 Koli, Brut 5377 kg, Net 4754 kg. Abweichung zwischen Positionssummen und Rechnungs-Gesamtwert im Dokument vorhanden. (Mail 1a168f1c8a9d3d4c)
 ## #38 PO-ALPHA-SWEAT-PROGRAM-2026-06-03
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
-- [2026-10-21 11:58 ev:0eb9d076] SCHEDULE: Plan for 2nd batch (116 CBM) of KUNDE_X Polyester: Ex-mill 30.10.2026, sailing 03.11.2026, ETA 02.12.2026. (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-21 11:58 ev:74ee19f0] SHIPMENT: 4th air shipment of Sweat Styles (~4,000 pcs) scheduled to be dispatched by 22.10. (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-21 11:58 ev:4780466a] SCHEDULE: Smilodox Sweat Styles production balance committed for 05.11 (~30,000 pcs). (Mail 1a15de5cd594ccf1) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:53bb666d] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Mail 1a163038333c6ecb) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:ba660989] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Mail 1a163038333c6ecb) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
+- [2026-10-23 16:49 ev:a8cedebb] SHIPMENT: Some photo samples have already been dispatched, and specific styles are ready to dispatch. (Mail 1a1693d1f3184736)
+- [2026-10-24 09:13 ev:717f8fe5] SHIPMENT: Commercial invoice and packing list for shipment AK/630/26 sent via air, MAWB 065-5830 7664, flight SV-801. (Mail 1a16cc1d7966233c) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-24 09:19 ev:ad319a33] SHIPMENT: Shipment has been dispatched by air with MAWB 065-5830 7664, containing hoodies and pants. (Mail 1a16cc73e1de040d) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
+- [2026-10-24 11:23 ev:7b2b06a3] SHIPMENT: Commercial invoice and packing list provided for air shipment under MAWB 065-5830 7664, flight SV-801. (Mail 1a16d3964b454ec4)
+- [2026-10-24 11:23 ev:53735ba3] BELEG INVOICE: INVOICE 26069 | 3832 Stk | 29023.05 USD | Zahlungen: Open Account 29023.05 Unpaid: Invoice includes packing list and shipment details via air (MAWB 065-5830 7664, Flight SV-801 on 2026-10-25). Multiple order numbers mentioned in items (26069, AL-29007, AL-29009, AL-29013, AL-29018, AL-29026, AL-29030). (Mail 1a16d3964b454ec4)
 ## #26 PO-LIEFERANT_AH-SMI-SOHO-0526
-- [2026-10-23 11:05 ev:e752cf18] SHIPMENT: All goods were fully shipped via sea on MADRID MAERSK V.642W under B/L NGBE26101254. (Mail 1a168025869a4cbc)
-- [2026-10-23 11:05 ev:f8939710] PAYMENT: Supplier requested balance payment for the shipment. (Mail 1a168025869a4cbc)
-- STATUS: QC -> In Transit (Meilenstein SHIPPED (1a168025869a4cbc))
-## #9 PO-LIEFERANT_V-KCCN0513
-- [2026-10-23 11:53 ev:e16635c9] PAYMENT: Vendor is requesting the balance payment for styles KC-JK-00027 and KC-PT-00058 before arranging shipment. (Mail 1a1682df93e02e92)
+- [2026-10-23 10:12 ev:a384e08b] SHIPMENT: Bill of Lading issued for shipment with 1x40'HQ container containing 432 cartons of knitted sweaters, shipped from Ningbo to Hamburg. (Mail 1a167d1a83c0f85d)
+## #70 PO-LIEFERANT_AI-2026-03-18-751E
+- [2026-10-26 07:19 ev:b43ae605] SHIPMENT: Export documents and packing list provided for shipment of 30711 pieces in 515 boxes. (Mail 1a176dd5eaeba732)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] DELAY: The schedule for the Kunde Y Black Friday Program development and delivery is getting delayed, requiring urgent discussion and a solution. (None) -> keine Order gefunden
@@ -134,36 +148,26 @@ PO-Nummern per Browser nachgeladen: 72
 - [2026-10-22 12:15] SHIPMENT: Updated invoice and packing list with correct composition details provided. (6300) -> keine Order gefunden
 - [2026-10-22 23:12] PAYMENT: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for the first container with updated material composition and payment breakdown. (6300) -> keine Order gefunden
 - [2026-10-23 07:08] PAYMENT: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice terms are 50% on scan BL and 50% on 75 days from BL date. (Lieferant B) -> mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd
-- [2026-10-23 10:12] SHIPMENT: Bill of Lading issued for shipment with 1x40'HQ container containing 432 cartons of knitted sweaters, shipped from Ningbo to Hamburg. (NGBE26101252) -> keine Order gefunden
+- [2026-10-24 13:17] PAYMENT: Smilodox confirmed that the payment will be arranged tomorrow. (6300) -> keine Order gefunden
+- [2026-10-24 13:17] SHIPMENT: First container (2265-EXP-2026) shipped by sea via vessel ONE MARVEL / 0085. (6300) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 307 Ereignisse
+- 311 Ereignisse
 
 ## Sendungen (Bereich Shipments)
-- neu: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 (sea, in_transit, 2 Pos.)
+- neu: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 26069 (air, pending, 7 Pos.)
+- aktualisiert: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 {}
+- aktualisiert: Sendung PO-LIEFERANT_I-SPR2026000000409 {'status': 'in_transit'}
+- aktualisiert: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 {'status': 'in_transit'}
+- aktualisiert: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 {'trackingNumber': 'HLK4171804'}
+- Mensch: 1a168f1c8a9d3d4c_1.json: Beleg laesst sich der Order nicht vollstaendig zuordnen (26598_O, 26598_U, 26504, 26592_U ...): keine Sendung angelegt
 
-- KLAERFALL Preis fehlt: 1a13103fd472a81b_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_2.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1538b5bb3f6600_2.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
-- KLAERFALL Preis fehlt: 1a1682ab9dcc2d5a_1.json (nicht angelegt; Einkauf muss Stueckpreis liefern)
 ## Ergebnis Sendungen
-- Sendung neu: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 -> HTTP 201
+- Sendung neu: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 26069 -> HTTP 201
+- Sendung aktualisiert: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 ['notes'] -> HTTP 200
+- Sendung aktualisiert: Sendung PO-LIEFERANT_I-SPR2026000000409 ['notes', 'status'] -> HTTP 200
+- Sendung aktualisiert: Sendung PO-ALPHA-SWEAT-PROGRAM-2026-06-03 ['notes', 'status'] -> HTTP 200
+- Sendung aktualisiert: Sendung PO-LIEFERANT_AH-SMI-SOHO-0526 ['notes', 'trackingNumber'] -> HTTP 200
 - per REST zurueckgelesen: alle vorhanden
 
 ## Ergebnis Notizen
@@ -179,27 +183,19 @@ PO-Nummern per Browser nachgeladen: 72
  },
  {
   "title": "PO-WONDERS-XW-SM260811",
-  "unchanged": true
- },
- {
-  "title": "PO-LIEFERANT_I-SPR2026000000409",
-  "unchanged": true
- },
- {
-  "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
   "statusSet": null,
   "statusOk": true,
-  "notesAdded": 6,
+  "notesAdded": 1,
   "dates": [],
   "paymentsMarkedPaid": 0,
   "dataUnchanged": true,
   "notesOk": true,
   "datesOk": true,
-  "chat": 6
+  "chat": 1
  },
  {
-  "title": "PO-LIEFERANT_AH-SMI-SOHO-0526",
-  "statusSet": "In Transit",
+  "title": "PO-LIEFERANT_I-SPR2026000000409",
+  "statusSet": null,
   "statusOk": true,
   "notesAdded": 2,
   "dates": [],
@@ -210,7 +206,31 @@ PO-Nummern per Browser nachgeladen: 72
   "chat": 2
  },
  {
-  "title": "PO-LIEFERANT_V-KCCN0513",
+  "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 5,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 5
+ },
+ {
+  "title": "PO-LIEFERANT_AH-SMI-SOHO-0526",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 1
+ },
+ {
+  "title": "PO-LIEFERANT_AI-2026-03-18-751E",
   "statusSet": null,
   "statusOk": true,
   "notesAdded": 1,
@@ -225,26 +245,33 @@ PO-Nummern per Browser nachgeladen: 72
 ```
 
 ## PO-IDs
-- nichts zu tun (Nachtrag heute schon gelaufen)
+- geschrieben 0 (neu angelegt: 0), Fehler/Abweichungen nach Zuruecklesen: 0
 
 ## Gelernte Aliase (gespeichert)
-- 92615116043H -> 6acdf5ce5f317983615892e3 (Ereignis)
-- HLBU2404454 -> 6acdf5ce5f317983615892e3 (Ereignis)
-- NGBE26101254 -> 6acdf5ce5f317983615892e3 (Ereignis)
+- NGBE26101252 -> 6acdf5ce5f317983615892e3 (Ereignis)
+- SPR2026000000438 -> 6ad87e6c658cc409a430ddc6 (Ereignis)
+- AK/630/26 -> 6ace076f5f317983615c62b8 (Ereignis)
+- 065-5830 -> 6ace076f5f317983615c62b8 (Ereignis)
+- IRT2026TSLK00036 -> 6ad5d0724571ad8d3afef888 (Ereignis)
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 33, neu eingetragen 0, abgehakt 5, offen gesamt 45 | Fehler: ['Kategorie Lieferant AD: Failed to create category']
+- Kandidaten 34, neu eingetragen 2, abgehakt 0, offen gesamt 47
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-23T11:13: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-26T07:18: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-## Mensch entscheidet (66)
+## Mensch entscheidet (72)
+- Sendung: 1a168f1c8a9d3d4c_1.json: Beleg laesst sich der Order nicht vollstaendig zuordnen (26598_O, 26598_U, 26504, 26592_U ...): keine Sendung angelegt
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a15e58e8bf56e63_1.json: ORPHAN_DOC 6300
 - 1a1631c440498b5e_1.json: ORPHAN_DOC 6300
 - 1a1682ab9dcc2d5a_1.json: ORPHAN_DOC 
+- 1a1685b25906026e_1.json: BLOCKER Vorgaenger fehlt: Vendor 'Lieferant AC FZCO' (nicht gefunden). Erst Vendor anlegen/zuordnen
+- 1a168c1bddb1726c_1.json: BLOCKER Lieferant unbekannt: None (nicht gefunden)
+- 1a16da17151841e4_1.json: ORPHAN_DOC 6300
+- 1a176dd5eaeba732_1.json: BLOCKER Lieferant unbekannt: LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ. (nicht gefunden)
 - Ereignis nicht zuordenbar: The schedule for the Kunde Y Black Friday Program development and delivery is getting del (keine Order gefunden)
 - Ereignis nicht zuordenbar: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Lieferant A confirmed ex-goods date by 30th September. (mehrdeutig: 26 laufende Orders von Lieferant A)
@@ -304,4 +331,5 @@ PO-Nummern per Browser nachgeladen: 72
 - Ereignis nicht zuordenbar: Updated invoice and packing list with correct composition details provided. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Smilodox will arrange the payment tomorrow and requested a revised Commercial Invoice for  (keine Order gefunden)
 - Ereignis nicht zuordenbar: Vendor explains that for the 2nd container, there is no advance remaining, so the invoice  (mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd)
-- Ereignis nicht zuordenbar: Bill of Lading issued for shipment with 1x40'HQ container containing 432 cartons of knitte (keine Order gefunden)
+- Ereignis nicht zuordenbar: Smilodox confirmed that the payment will be arranged tomorrow. (keine Order gefunden)
+- Ereignis nicht zuordenbar: First container (2265-EXP-2026) shipped by sea via vessel ONE MARVEL / 0085. (keine Order gefunden)
