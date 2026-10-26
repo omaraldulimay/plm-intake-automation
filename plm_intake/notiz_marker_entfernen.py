@@ -36,6 +36,7 @@ def _run(js, name, runner=None):
     from plm_intake.auto_run import browser
     runner = runner or browser
     p = ROOT / "output" / "intake" / name
+    p.parent.mkdir(parents=True, exist_ok=True)   # in der Cloud existiert output/intake nicht
     p.write_text(js)
     for i in range(8):   # Profil-Lock: Start scheitert vor jedem Schreiben
         try:
