@@ -1,26 +1,26 @@
-# Tagesbericht Einpflege 26.10.2026 07:18 (Montag)
-1. Status: OK | Modus: schreibt ins PLM (apply) | Dauer: 7 Min
-2. Zahlen (geschrieben): neue Bestellungen 0 | ergaenzte Notizen 21 | Sendungen neu/aktualisiert 1/4 | neue Techpacks 0 | neu gelernte Aliase 5
-3. Klaerfaelle: in Klaerfaelle-Tabelle offen 47 (+2 zum Vortag), neu entstanden: 2
-   Mensch entscheidet 72 (wie Konsole): Belege 10 | Ereignisse 61 | Sendungen 1 | Limit/sonstige 0
+# Tagesbericht Einpflege 26.10.2026 12:49 (Montag)
+1. Status: OK | Modus: schreibt ins PLM (apply) | Dauer: 10 Min
+2. Zahlen (geschrieben): neue Bestellungen 0 | ergaenzte Notizen 20 | Sendungen neu/aktualisiert 0/2 | neue Techpacks 0 | neu gelernte Aliase 4
+3. Klaerfaelle: in Tabelle offen 65 (gesamt 65, geloescht heute 0; +20 zum Vortag), neu entstanden: 6
+   Mensch entscheidet 79 (wie Konsole): Belege 12 | Ereignisse 67 | Sendungen 0 | Limit/sonstige 0
+   - Lieferant B Enterprises (Pvt) Ltd: keine passende PO im PLM
+   - Lieferant AD: keine passende PO im PLM
    - Lieferant B Enterprises (Pvt) Ltd: keine passende PO im PLM
    - Lieferant B Enterprises (Pvt) Ltd: keine passende PO im PLM
-4. Warnungen: 13 neu
-   - BLOCK empty_order (1a0a957bca78ab0b_1.json): Positionen ergeben 0 Stk / 0.00 (laut Beleg None Stk / 4397.44): leere Bestellung wird nicht angelegt
-   - BLOCK empty_order (1a0a96031405ab96_1.json): Positionen ergeben 0 Stk / 0.00 (laut Beleg None Stk / 4397.44): leere Bestellung wird nicht angelegt
-   - BLOCK empty_order (1a0a9c85d2b85dfb_1.json): Positionen ergeben 0 Stk / 0.00 (laut Beleg None Stk / 4397.44): leere Bestellung wird nicht angelegt
-   - Bestellungen mit Summe 0 im PLM (12): PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN, PO-LIEFERANT_B-OFFICIAL-BASIC, PO-KUNDE_Y-Q2-2027-LIEFERANT_Y, PO-KUNDE_Y-Q2-2027-TAUS…
-   - Lieferant ohne Lieferanten-ID: Lieferant AB Pvt Ltd: Kuerzel im Stammdaten-Register vergeben und zuordnen lassen (wird nicht automatisch vergeben)
-   - Lieferant ohne Lieferanten-ID: Lieferant Q Co., Ltd.: Kuerzel im Stammdaten-Register vergeben und zuordnen lassen (wird nicht automatis…
-   - Lieferant ohne Lieferanten-ID: Müvret: Kuerzel im Stammdaten-Register vergeben und zuordnen lassen (wird nicht automatisch vergeben)
-   - Lieferant ohne Lieferanten-ID: SEAMTECH / ROOFTECH: Kuerzel im Stammdaten-Register vergeben und zuordnen lassen (wird nicht automatisch vergeben)
-   - und 5 weitere neue
-5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): 5
-   - NGBE26101252 -> PO-LIEFERANT_AH-SMI-SOHO-0526
-   - SPR2026000000438 -> PO-LIEFERANT_I-SPR2026000000409
-   - AK/630/26 -> PO-ALPHA-SWEAT-PROGRAM-2026-06-03
-   - 065-5830 -> PO-ALPHA-SWEAT-PROGRAM-2026-06-03
-   - IRT2026TSLK00036 -> PO-LIEFERANT_AI-2026-03-18-751E
+   - Ohne Lieferant: keine passende PO im PLM
+   - und 1 weitere
+4. Warnungen: 1 neu | 4 bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit 0 Tagen)
+   - Lieferant A: 1 Produkt(e) ohne Variante nicht aufgenommen
+   Projekte: neu 0, verknuepft 2, Fehler 0
+   Status: Vorschlaege 1, gesetzt 0
+   Anhaenge: neu 1, uebersprungen 23, Fehler 0
+   Zahlungen: Platzhalter entfernt 0, Plaene aufgebaut 0, Klaerfaelle 0, Paid gesetzt 0, Fehler 0
+   Projekt-Produkte: neu 0, Fehler 0
+5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): 4
+   - XAGU6045570 -> PO-LIEFERANT_D-ALI20260821
+   - HLBU3258375 -> PO-LIEFERANT_D-ALI20260821
+   - TGBU9633622 -> PO-LIEFERANT_D-ALI20260821
+   - NGBE26101866 -> PO-LIEFERANT_D-ALI20260821
 6. Preis ausstehend: 12 Bestellungen ohne Preis | davon 8 seit 14+ Tagen (auffaellig)
    - PO-ALPHA-TBC-EASYFITNESS-ALPHA-ALPHAMEN: 19 Tage AUFFAELLIG
    - PO-LIEFERANT_B-OFFICIAL-BASIC: 14 Tage AUFFAELLIG
