@@ -86,7 +86,28 @@ class Rules(unittest.TestCase):
     def test_rechnung_als_basis(self):
         n = "Quelle: PO X (Mail vom 2026-03-04). Phase 2: Menge = bisher gelieferte Menge laut Rechnungen AK/1."
         r = ev([order("A", "Draft", notes=n)])["A"]
-        self.assertEqual((r["regel"], r["sicherheit"], r["auto"]), ("RECHNUNG_ALS_BASIS", "mittel", False))
+        self.assertEqual((r["regel"], r["sicherheit"], r["auto"]), ("RECHNUNG_ALS_BASIS", "hoch", True))
+        r = ev([order("A", "Draft", notes=n.replace("2026-03-04", "2026-10-20"))])   # Quellmail jung: nichts
+        self.assertEqual(r["A"]["art"], "Hinweis")
+
+    def test_rechnung_packliste_hart(self):
+        n = "[2026-10-20 ev:1] BELEG INVOICE: INV 1 | 10 Stk\n[2026-10-20 ev:2] BELEG PACKING_LIST: PL 1"
+        r = ev([order("A", "Draft", notes=n)])["A"]
+        self.assertEqual((r["ziel"], r["regel"], r["sicherheit"], r["auto"]), ("In Transit", "RECHNUNG_PACKLISTE", "hoch", True))
+        r = ev([order("A", "Draft", notes="[2026-10-20 ev:2] BELEG AWB: 607-1")])["A"]
+        self.assertEqual(r["regel"], "RECHNUNG_PACKLISTE")
+        r = ev([order("A", "Draft", notes="[2026-10-20 ev:1] BELEG INVOICE: INV 1 | 10 Stk")], [])   # nur Rechnung, jung: kein Uebergang
+        self.assertEqual(r["A"]["art"], "Hinweis")
+        r = ev([order("A", "Draft", notes=n)], [ship("A", "pending")])   # offene Sendung: Sendungsregeln zaehlen
+        self.assertEqual(r["A"]["art"], "Hinweis")
+        r = ev([order("A", "Draft", notes="Bestellung laut Rechnung X vom 20.10.; Groessen laut Packliste vom Lieferdatum.")])["A"]
+        self.assertEqual(r["regel"], "RECHNUNG_PACKLISTE")
+
+    def test_wareneingang_nur_mit_bezahlten_raten(self):
+        n = "[2026-10-01 ev:1] BELEG DELIVERED: Wareneingang komplett"
+        self.assertEqual(ev([order("A", "In Transit", ["Paid", "Paid"], notes=n)])["A"]["ziel"], "Complete")
+        self.assertNotIn("A", ev([order("A", "In Transit", ["Paid", "Unpaid"], notes=n)]))
+        self.assertNotIn("A", ev([order("A", "In Transit", [], notes=n)]))
 
     def test_csv_und_md(self):
         rows = sr.evaluate([order("A", "Draft", ["Paid"]), order("B", "Complete", ["Unpaid"])], [], today=TODAY)

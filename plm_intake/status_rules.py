@@ -8,7 +8,9 @@ Regeln (Sicherheit):
   SENDUNG_TRACKING    Sendung pending MIT Tracking-Nummer                                -> In Transit            mittel
   ZAHLUNG_PAID        mindestens eine Rate Paid, Order steht auf Draft/Awaiting Approval  -> Approved              hoch
   BELEG_OHNE_SENDUNG  Rechnung/Packliste (BELEG-Zeile >= 30 Tage alt), keine offene Sendung -> In Transit          mittel
-  RECHNUNG_ALS_BASIS  Notiz: Order aus Rechnungen/'gelieferte Menge' angelegt, Quellmail >= 30 Tage, keine offene Sendung -> In Transit mittel
+  RECHNUNG_PACKLISTE  Rechnung UND Packliste (oder AWB/B-L) liegen vor (BELEG-Zeilen bzw. 'laut Rechnung' + Packliste in der Notiz), keine offene Sendung -> In Transit hoch
+  RECHNUNG_ALS_BASIS  Notiz: Order aus Rechnungen/'gelieferte Menge' angelegt, Quellmail >= 30 Tage, keine offene Sendung -> In Transit hoch (Ware war laut Rechnung versandt)
+  WARENEINGANG_BELEGT BELEG-Zeile Wareneingang/delivered, alle Raten Paid                -> Complete              mittel (ohne bezahlte Raten nie)
   COMPLETE_BELEGT     alle Sendungen delivered UND alle Raten Paid (Menge >= 98 %)       -> Complete              hoch (sonst mittel)
   COMPLETE_RATEN_OFFEN alle Sendungen delivered, aber Raten offen                       -> Complete (Vorschlag)  niedrig
   EREIGNIS_MEILENSTEIN Produktionsstart/PI/Anzahlung laut Ereignis (direkt zugeordnet)   -> Approved/In Production hoch (schreibt events.py)
@@ -37,6 +39,11 @@ BELEG = re.compile(r"\[(\d{4}-\d{2}-\d{2})[^\]]*\]\s*BELEG\s+(\w+)\s*:\s*([^\n]{
 RECHNUNG_BASIS = re.compile(r"(gelieferte Menge|laut (?:Alpha-)?Rechnung|aus (?:den )?(?:Alpha-)?Rechnungen)", re.I)   # Order wurde aus Rechnungen angelegt = Ware war schon unterwegs
 MAIL_VOM = re.compile(r"Mail vom (\d{4}-\d{2}-\d{2})")
 BELEG_ART = re.compile(r"invoice|rechnung|packing|packliste", re.I)
+ART_RECHNUNG = re.compile(r"invoice|rechnung", re.I)
+ART_PACKLISTE = re.compile(r"packing|packliste", re.I)
+ART_TRANSPORT = re.compile(r"\b(awb|b_?l|bol|bill_?of_?lading|airwaybill|konnossement)\b", re.I)
+ART_WARENEINGANG = re.compile(r"wareneingang|goods_?receipt|delivered|received", re.I)
+RECHNUNG_PACKLISTE_TEXT = re.compile(r"laut (?:Alpha-)?Rechnung.{0,200}Packliste", re.I | re.S)
 
 
 def status_name(o):
@@ -71,6 +78,34 @@ def beleg_lines(notes, today):
     return out
 
 
+def beleg_arten(notes):
+    """[(datum, art, text)] aller BELEG-Zeilen der Notiz ohne Altersgrenze."""
+    return [(d, art.upper(), txt.strip()) for d, art, txt in BELEG.findall(str(notes or ""))]
+
+
+def transport_beleg(notes):
+    """Beleg dafuer, dass Ware versandt wurde: Rechnung + Packliste (auch in einer Zeile 'Rechnung/Packliste'), AWB/B-L, oder 'laut Rechnung ... Packliste'. -> Text oder None."""
+    bl = beleg_arten(notes)
+    rech = [b for b in bl if ART_RECHNUNG.search(b[1] + " " + b[2][:40])]
+    pack = [b for b in bl if ART_PACKLISTE.search(b[1] + " " + b[2])]
+    trans = [b for b in bl if ART_TRANSPORT.search(b[1])]
+    if trans:
+        return "BELEG %s vom %s" % (trans[-1][1], trans[-1][0])
+    if rech and pack:
+        return "BELEG Rechnung+Packliste (%s vom %s)" % (pack[-1][2][:60], pack[-1][0])
+    m = RECHNUNG_PACKLISTE_TEXT.search(str(notes or ""))
+    if m:
+        return "Notiz: Order laut Rechnung angelegt, Groessen/Farben laut Packliste"
+    return None
+
+
+def wareneingang_beleg(notes):
+    for d, art, txt in beleg_arten(notes):
+        if ART_WARENEINGANG.search(art):
+            return "BELEG %s vom %s" % (art, d)
+    return None
+
+
 def candidates(o, ships, today, event_to=None):
     """Alle Regeln, die auf die Order zutreffen: [{ziel, regel, beleg, sicherheit}] (auch solche ohne Fortschritt; Filter macht evaluate)."""
     c = []
@@ -90,18 +125,24 @@ def candidates(o, ships, today, event_to=None):
         p = paid[0]
         c.append({"ziel": "Approved", "regel": "ZAHLUNG_PAID", "sicherheit": "hoch", "beleg": "Rate '%s' %s Paid" % (p.get("name"), p.get("amount"))})
     bl = beleg_lines(o.get("_notes"), today)
+    tb = transport_beleg(o.get("_notes"))
+    if tb and not openish:
+        c.append({"ziel": "In Transit", "regel": "RECHNUNG_PACKLISTE", "sicherheit": "hoch", "beleg": tb})
+    we = wareneingang_beleg(o.get("_notes"))
+    if we and pays and not any(_pay_open(p) for p in pays):
+        c.append({"ziel": "Complete", "regel": "WARENEINGANG_BELEGT", "sicherheit": "mittel", "beleg": "%s, alle %d Raten Paid" % (we, len(pays))})
     if bl and not openish:
         d, art, txt = bl[-1]
         c.append({"ziel": "In Transit", "regel": "BELEG_OHNE_SENDUNG", "sicherheit": "mittel", "beleg": "Notiz BELEG %s vom %s: %s" % (art, d, txt[:80])})
     notes = str(o.get("_notes") or "")
     m_ = RECHNUNG_BASIS.search(notes)
-    if m_ and not openish and not bl:
+    if m_ and not openish and not bl and not tb:
         try:
             alt = (today - dt.date.fromisoformat(MAIL_VOM.search(notes).group(1))).days >= MIN_BELEG_TAGE
         except (AttributeError, ValueError):
             alt = False
         if alt:
-            c.append({"ziel": "In Transit", "regel": "RECHNUNG_ALS_BASIS", "sicherheit": "mittel", "beleg": "Notiz: Order aus Rechnungen angelegt ('%s'), Quellmail %s" % (m_.group(1), MAIL_VOM.search(notes).group(1))})
+            c.append({"ziel": "In Transit", "regel": "RECHNUNG_ALS_BASIS", "sicherheit": "hoch", "beleg": "Notiz: Order aus Rechnungen angelegt ('%s'), Quellmail %s" % (m_.group(1), MAIL_VOM.search(notes).group(1))})
     if ships and not openish and all(s.get("status") == "delivered" for s in ships):
         total = float(o.get("totalNumberOfPieces") or 0)
         shipped = sum(float(s.get("totalQuantity") or 0) for s in ships)
