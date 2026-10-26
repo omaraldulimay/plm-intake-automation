@@ -278,3 +278,22 @@ class Zuordnung(unittest.TestCase):
         u = []
         c, h = sh.plan_from_docs([("b", part, "T")], {"T": o}, gen, by, updates=u)   # Teilmenge -> braucht Positionen -> Mensch
         self.assertEqual(c, []); self.assertIn("nur Gesamtmenge", h[0][1]); self.assertEqual(u, [])
+
+
+class LieferantISchreibweise(unittest.TestCase):
+    def test_2xl_im_beleg_ist_xxl_in_der_order(self):
+        o = {"id": "S", "title": "PO-S", "items": [{"name": "26591-U ERKEK", "product": {"id": "PA"}, "variants": [{"name": "Schwarz", "variantId": "VA", "amounts": [{"key": "S", "quantity": 5}, {"key": "XXL", "quantity": 7}]}]}]}
+        d = {"doc_type": "PO", "po_number": "X", "source": {"mail_id": "m"}, "items": [{"sku": "26591-U", "name": "ERKEK", "variants": [{"color": "Schwarz", "sizes": {"S": 5, "2XL": 7}}]}]}
+        c, h = sh.plan_from_docs([("x", d, "S")], {"S": o}, [], {"PA": "26591U"})
+        self.assertEqual(h, [])
+        self.assertEqual({q["size"]: q["quantityToShip"] for q in c[0]["products"][0]["variants"][0]["sizes"]}, {"S": 5, "XXL": 7})
+
+    def test_suffix_entscheidet_bei_gleicher_stylenummer(self):
+        def pos(name, pid):
+            return {"name": name, "product": {"id": pid}, "variants": [{"name": "Schwarz", "variantId": "V" + pid, "amounts": [{"key": "S", "quantity": 3}]}]}
+        o = {"id": "S", "title": "PO-S", "items": [pos("26598_O ERKEK SWEAT", "PO"), pos("26598_U ERKEK ALT", "PU")]}
+        d = {"doc_type": "PO", "po_number": "X", "source": {"mail_id": "m"}, "items": [
+            {"sku": "26598_O", "name": "ERKEK SWEAT", "variants": [{"color": "Schwarz", "sizes": {"S": 3}}]}, {"sku": "26598_U", "name": "ERKEK ALT", "variants": [{"color": "Schwarz", "sizes": {"S": 3}}]}]}
+        c, h = sh.plan_from_docs([("x", d, "S")], {"S": o}, [], {"PO": "26598O", "PU": "26598U"})
+        self.assertEqual(h, [])
+        self.assertEqual(sorted(l["id"] for l in c[0]["products"]), ["PO", "PU"])

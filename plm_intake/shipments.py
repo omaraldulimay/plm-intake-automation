@@ -143,6 +143,11 @@ def _item_for(doc_item, order, products_by_id, siblings=()):
         have = (core.style_tokens(it.get("name")) | {core.norm(products_by_id.get(pid))}) - {""}
         if want & have or any(len(h) >= 5 and (w.startswith(h) or h.startswith(w)) for w in want for h in have):
             hits.add(pid)
+    if len(hits) > 1:   # gleiche Stylenummer mit Suffix (26598_O / 26598_U): die Kennung mit Suffix entscheidet, wenn sie genau EINER Produkt-SKU entspricht
+        full = core.norm(doc_item.get("sku"))
+        exact = {pid for pid in hits if full and core.norm(products_by_id.get(pid)) == full}
+        if len(exact) == 1:
+            return next(iter(exact))
     if len(hits) == 1:
         return next(iter(hits))
     if hits or styled:
@@ -153,6 +158,28 @@ def _item_for(doc_item, order, products_by_id, siblings=()):
         if len(hits) == 1:
             return next(iter(hits))
     return None
+
+
+_SIZE_SYN = {"2XL": "XXL", "XXXL": "3XL", "3XXL": "3XL", "3X": "3XL", "2X": "XXL"}
+
+
+def _size_canon(s):
+    t = re.sub(r"[\s\-]+", "", str(s or "").upper())
+    return _SIZE_SYN.get(t, t)
+
+
+def _align_sizes(sizes, order_sizes):
+    """Belegmengen {Groesse: Menge} -> Schreibweise der Order-Zeile (2XL im Beleg, XXL in der Order). Nur bei genau einer gleichwertigen Order-Groesse und ohne Kollision."""
+    canon = {}
+    for k in order_sizes:
+        canon.setdefault(_size_canon(k), []).append(k)
+    out = {}
+    for k, q in sizes.items():
+        tgt = k if k in order_sizes else (canon.get(_size_canon(k)) or [k])[0] if len(canon.get(_size_canon(k)) or []) == 1 else k
+        if tgt in out:
+            return sizes
+        out[tgt] = q
+    return out
 
 
 def lines_from_doc(doc, order, products_by_id, siblings=(), totals=None):
@@ -182,6 +209,7 @@ def lines_from_doc(doc, order, products_by_id, siblings=(), totals=None):
             if not sizes and v.get("quantity"):
                 sizes = {(next(iter(ov["sizes"])) if len(ov["sizes"]) == 1 else "ONE SIZE"): v["quantity"]}
             if sizes and ov["sizes"]:
+                sizes = _align_sizes(sizes, ov["sizes"])   # 2XL = XXL, XXXL = 3XL: Schreibweise der Order uebernehmen (gleiche Groesse, keine neue)
                 bad = [k for k in sizes if k not in ov["sizes"]]
                 if bad and len(ov["sizes"]) == 1:   # PO fuehrt die Zeile nur als eine Groesse (z. B. ONE SIZE): Belegmengen dort zusammenfassen
                     only = next(iter(ov["sizes"])); sizes = {only: sum(sizes.values())}
