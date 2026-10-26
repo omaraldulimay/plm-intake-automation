@@ -46,11 +46,30 @@ class Plan(unittest.TestCase):
         items, ex = self.go({"a_1.json": doc("SMI2612", "SMI2612")}, rows, files)
         self.assertEqual(items, []); self.assertEqual(len(ex), 7)
 
-    def test_iban_swift_im_text(self):
+    def test_bankdaten_des_lieferanten_erlaubt(self):
         rows = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-X"}]
+        for t in ("Total 5 EUR IBAN DE89 3704 0044 0532 0130 00", "pay to SWIFT: BKCHCNBJ", "Beneficiary: ACME", "x" * 5, ""):
+            items, ex = self.go({"a_1.json": doc("SMI2612", "SMI2612")}, rows, [att("SMI2612 invoice.pdf")], text=t)
+            self.assertEqual(len(items), 1, t)
+
+    def test_zahlungsnachweis_im_inhalt_bleibt_aus(self):
+        rows = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-X"}]
+        for t in ("MT103 Ordering customer Smilodox GmbH", "Payment confirmation 5000 EUR", "Remittance advice"):
+            items, ex = self.go({"a_1.json": doc("SMI2612", "SMI2612")}, rows, [att("SMI2612 invoice.pdf")], text=t)
+            self.assertEqual(items, [], t)
+
+    def test_iban_swift_im_text_alte_sperre(self):
+        rows = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-X"}]
+        old = oa.BANKDATEN_ERLAUBT; oa.BANKDATEN_ERLAUBT = False
+        self.addCleanup(setattr, oa, "BANKDATEN_ERLAUBT", old)
         for t in ("Total 5 EUR IBAN DE89 3704 0044 0532 0130 00", "pay to SWIFT: BKCHCNBJ", "Beneficiary: ACME", "x" * 5):
             items, ex = self.go({"a_1.json": doc("SMI2612", "SMI2612")}, rows, [att("SMI2612 invoice.pdf")], text=t)
             self.assertEqual(items, [], t)
+
+    def test_sperre_falsche_zuordnung(self):
+        rows = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER"}]
+        items, ex = self.go({"a_1.json": doc("X", "LIEFERANT_AA26104")}, rows, [att("LIEFERANT_AA26104 -invoice.pdf")])
+        self.assertEqual(items, []); self.assertIn("SPERRE", ex[0][1])
 
     def test_test_order_und_override_skip(self):
         r = [{"file": "a_1.json", "kind": "DELIVERY_DOC", "pid": "o1", "parent": "#3 PO-ZZ-TEST"}]

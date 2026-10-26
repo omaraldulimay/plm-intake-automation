@@ -8,7 +8,9 @@ Regeln (nie lockern ohne Omar):
 - nur Belege mit EINDEUTIG zugeordneter Order (docs_existing: DELIVERY_DOC bzw. Dublette einer vorhandenen Order); AMBIGUOUS/ORPHAN/BLOCKER/SERVICE/REORDER/PI_CHANGED nie;
   eine Datei, die zu Belegen verschiedener Orders passt, wird nicht angehaengt; Test-Orders (ZZ-/T1-/TEST-Titel) nie
 - keine Zahlungsnachweise/Bank-Slips (Dateiname), keine BL/Zoll/Inspektions-/Etiketten-Dateien, nur PDF/Excel/Word, max. 20 MB
-- keine Datei mit IBAN/SWIFT/Kontodaten im Text (Textcheck wie core.BANK_PATTERNS); nicht lesbarer Text (Scan, .doc) gilt als nicht pruefbar -> ausgeschlossen
+- Bankdaten des LIEFERANTEN im Rechnungsfuss (Beneficiary/IBAN/SWIFT) sind erlaubt (BANKDATEN_ERLAUBT=True, Omar 26.10.; Zugriff im PLM nur Smilodox) fuer Rechnung/Proforma/Packliste/PO;
+  Zahlungsnachweise bleiben aus (Dateiname PAY_RX und Inhalt PAYSLIP_TEXT = eigene Ueberweisungsbelege). Nicht lesbarer Text ist dann kein Ausschlussgrund.
+  BANKDATEN_ERLAUBT=False stellt die alte Sperre (IBAN/SWIFT/Kontodaten im Text, Text muss lesbar sein) wieder her. IBAN/SWIFT gehoeren NIE in Notizen.
 - Dubletten: Merkbuch (intake/order_attachments_ledger.json, Order+SHA-1) und orderAttachments der Order (Dateiname ohne Endung); gleicher Name mit anderem Inhalt aus dem
   Merkbuch -> Name mit Mail-Datum; gleicher Name, nicht aus dem Merkbuch -> uebersprungen
 - max. 30 Dateien pro Lauf, in Bloecken zu 10, nach jedem Block Zuruecklesen (Anhang mit Namen in orderAttachments), bei Abweichung Abbruch
@@ -30,6 +32,10 @@ sys.path.insert(0, str(ROOT))
 BROWSER = Path(__file__).resolve().parent / "browser"
 HELPER = BROWSER / "order_upload_helpers.js"
 LEDGER_NAME = "order_attachments_ledger.json"
+BANKDATEN_ERLAUBT = True
+# Dateien, die NICHT an die zugeordnete Order duerfen (Zuordnung geprueft, falsch): (Anzeigename, Order-Titel)
+# LIEFERANT_AA26104-Rechnung/Debit Note gehoeren zu SMI2612 = PO-LIEFERANT_AA-WINTER (dort stehen die LIEFERANT_AA26104-Zahlungen), nicht zu 26WJD-107 (Mail nennt dessen S/C)
+SPERRE = {("LIEFERANT_AA26104 -invoice.pdf", "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER"), ("LIEFERANT_AA26104-2 -invoice TRAIN FREIGHT.pdf", "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER")}
 MAX_FILES = 30
 BLOCK = 10
 MAXB = 20 * 1024 * 1024
@@ -43,6 +49,8 @@ PAY_RX = re.compile(r"(?i)swift|bank|remit|receipt|\bslip\b|dekont|havale|mt103|
 # keine Beleg-Art: Transport/Zoll/Pruefung/Etiketten/Grafik
 NOTDOC_RX = re.compile(r"(?i)preisvergleich|angebot|quotation|target|\bresult|\bpass\b|\breport|\bb/?l\b|\bbl[\s_-]|bill of lading|konşimento|konsimento|\bawb\b|beyanname|zoll|\btax\b|inspection|inspektion|barcode|sticker|shipping marks|carton marks|logo|tech ?pack|\blabel|aufkleber|\bqc\b")
 BANK_TEXT = re.compile(r"(?i)\biban\b|\bswift\b|\bbic\b\s*[:\-=]?\s*[A-Z0-9]{8}|account\s*(no|number|name)|kontonummer|beneficiary|bank\s*(name|account|details|information|:)|\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}\b")
+# Inhalt eines eigenen Ueberweisungsbelegs (Smilodox als Auftraggeber), nie anhaengen
+PAYSLIP_TEXT = re.compile(r"(?i)mt\s?103|remittance\s+advice|ordering\s+customer|debit\s+account|transfer\s+(slip|receipt|confirmation)|payment\s+(confirmation|advice|receipt)|zahlungsauftrag|[uü]berweisungs(beleg|auftrag)|\bdekont\b|havale\s+dekont")
 
 
 def norm(s):
@@ -205,6 +213,8 @@ def plan(inbox, rows, files, overrides=None, text_of=None, load_data=True):
             why = "Dateiname nicht als Rechnung/Packliste/PI/PO erkennbar"
         if why:
             excluded.append((disp, why)); continue
+        if (disp, title) in SPERRE:
+            excluded.append((disp, "Zuordnung geprueft und falsch (SPERRE)")); continue
         if f.get("size", 0) > MAXB:
             excluded.append((disp, "groesser als 20 MB")); continue
         try:
@@ -212,11 +222,16 @@ def plan(inbox, rows, files, overrides=None, text_of=None, load_data=True):
         except Exception as e:
             excluded.append((disp, "Download fehlgeschlagen: %s" % str(e)[:60])); continue
         txt = text_of(disp, data)
-        if len((txt or "").strip()) < 20:
-            excluded.append((disp, "Text nicht lesbar, Bankdaten-Pruefung nicht moeglich")); continue
-        hit = bank_hit(txt)
-        if hit:
-            excluded.append((disp, "Bank-/Kontodaten im Text (%s)" % hit)); continue
+        if BANKDATEN_ERLAUBT:
+            m = PAYSLIP_TEXT.search(txt or "")
+            if m:
+                excluded.append((disp, "Zahlungsnachweis im Inhalt (%s)" % m.group(0)[:25])); continue
+        else:
+            if len((txt or "").strip()) < 20:
+                excluded.append((disp, "Text nicht lesbar, Bankdaten-Pruefung nicht moeglich")); continue
+            hit = bank_hit(txt)
+            if hit:
+                excluded.append((disp, "Bank-/Kontodaten im Text (%s)" % hit)); continue
         h = sha1(data)
         if (pid, h) in seen:
             excluded.append((disp, "gleicher Inhalt schon in diesem Lauf fuer die Order")); continue
