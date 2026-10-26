@@ -252,6 +252,18 @@ def main(argv=None):
         except Exception as e:
             rep += ["", "## PO-IDs", "- FEHLER: %s" % str(e)[:200]]
             facts["warnungen"].append("PO-ID-Schritt fehlgeschlagen: %s" % str(e)[:120])
+        # Lieferanten-Projekte: je Lieferant ein Projekt, echte Orders ohne Projekt verknuepfen (nur apply; Fehler brechen den Lauf nie ab)
+        try:
+            from plm_intake import vendor_projects
+            from plm_intake.context import fetch_all as _fa
+            vp_lines, vp_res = vendor_projects.run(_fa(plm_client.call, "vendors"), _fa(plm_client.call, "orders"), True)
+            rep += ["", "## Projekte"] + vp_lines
+            facts["projekte"] = {"neu": vp_res["neu"], "verknuepft": vp_res["verknuepft"], "fehler": vp_res["fehler"]}
+            facts["warnungen"] += vp_res["warnungen"]
+        except (Exception, SystemExit) as e:
+            rep += ["", "## Projekte", "- FEHLER: %s" % str(e)[:200]]
+            facts["projekte"] = {"neu": 0, "verknuepft": 0, "fehler": 1}
+            facts["warnungen"].append("Projekte-Schritt fehlgeschlagen: %s" % str(e)[:120])
         # Merkbuch: neue POs, Belege mit Ereignis, vollstaendig zugeordnete Ereignis-Dateien
         for n, p in payloads.items():
             if p["title"] in applied["orders"]: ledger.mark(led, inbox / n, "applied", p["title"])

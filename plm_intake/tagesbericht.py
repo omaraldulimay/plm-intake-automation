@@ -140,6 +140,9 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
         kopf += " | %d bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit %s)" % (wbek, "%d Tag%s" % (wtage, "" if wtage == 1 else "en") if wtage is not None else "unbekannt")
     L.append("4. Warnungen: " + kopf)
     L += ["   - " + _kurz(x, 160) for x in wneu[:8]] + (["   - und %d weitere neue" % (len(wneu) - 8)] if len(wneu) > 8 else [])
+    if facts.get("projekte") is not None:   # Lieferanten-Projekte (vendor_projects): neu / verknuepft / Fehler
+        pj = facts["projekte"]
+        L.append("   Projekte: neu %s, verknuepft %s, Fehler %s%s" % (pj.get("neu", 0), pj.get("verknuepft", 0), pj.get("fehler", 0), "  WARNUNG: Projekt-Verknuepfung fehlerhaft" if pj.get("fehler") else ""))
     # 5. Aliase
     al = facts.get("aliase") or []
     L.append("5. Auffaelligkeiten, neu gelernte Aliase (Kennung -> Bestellung): " + ("keine" if not al else str(len(al))))
