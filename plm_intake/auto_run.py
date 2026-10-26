@@ -398,6 +398,11 @@ def main(argv=None):
         facts["zahlen"].update({"orders": len(applied["orders"]) if a.apply else len(payloads), "notes": len(facts["stichprobe_pool"]),
                                 "ship_new": len(sh_create), "ship_upd": len(sh_update)})
         facts["zahlen"].setdefault("techpacks", 0)
+        facts["quote"] = {   # Automatisierungsquote (Tagesbericht Abschnitt 3): Marker/Dateinamen je Zustand; Belege = neue POs, Ereignisse = Notizzeilen
+            "ok": sorted({l["marker"] for o in pl["orders"] if done is None or o.get("title") in done for l in o["lines"]}
+                         | {"doc:" + n for n, p_ in payloads.items() if not a.apply or p_["title"] in applied["orders"]}),
+            "info": sorted({events.marker(u["event"]) for u in pl["unmatched"] if str(u["reason"]).startswith("info:")}),
+            "offen": sorted({events.marker(u["event"]) for u in um_h} | {"doc:" + r["file"] for r in human})}
         facts["warnungen"] += ["UNSTIMMIG/Mensch: Sendung %s: %s" % (n, w) for n, w in sh_human if "UNSTIMMIG" in str(w)]
         facts["dauer_s"] = int((dt.datetime.now() - t0).total_seconds())
         (intake / "tagesdaten.json").write_text(json.dumps(facts, ensure_ascii=False))

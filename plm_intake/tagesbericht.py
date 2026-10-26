@@ -87,6 +87,33 @@ def stichprobe(pool, now, n=STICHPROBE_N, rng=None):
     return rng.sample(pool, min(n, len(pool)))
 
 
+def _pct(a, n):
+    return "%.0f %%" % (100.0 * a / n) if n else "-"
+
+
+def quote_summe(stand):
+    """{marker: 'ok'|'info'|'offen'} -> (ok, info, offen)."""
+    v = list((stand or {}).values())
+    return v.count("ok"), v.count("info"), v.count("offen")
+
+
+def quote_zeilen(quote, verlauf):
+    """Automatisierungsquote = geschriebene Ereignisse+Belege / alle verarbeiteten (geschrieben + Info + offen). Lauf und seit Start (letzter Zustand je Marker, Verlauf 'quote_stand' inkl. dieses Laufs)."""
+    if not quote:
+        return []
+    ok, info, offen = len(quote.get("ok") or []), len(quote.get("info") or []), len(quote.get("offen") or [])
+    stand = dict(verlauf.get("quote_stand") or {})
+    for k in ("ok", "info", "offen"):
+        for m in quote.get(k) or []:
+            stand[m] = k
+    so, si, sf = quote_summe(stand)
+    return ["   Automatisierungsquote: Lauf %s (geschrieben %d von %d | Info %d | offen %d), ohne Mensch (geschrieben+Info) %s | seit Start %s (geschrieben %d von %d | Info %d | offen %d), ohne Mensch %s | neu offen %d, neu Info %d" % (
+        _pct(ok, ok + info + offen), ok, ok + info + offen, info, offen, _pct(ok + info, ok + info + offen),
+        _pct(so, so + si + sf), so, so + si + sf, si, sf, _pct(so + si, so + si + sf),
+        sum(1 for m in quote.get("offen") or [] if (verlauf.get("quote_stand") or {}).get(m) != "offen"),
+        sum(1 for m in quote.get("info") or [] if (verlauf.get("quote_stand") or {}).get(m) != "info"))]
+
+
 def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s=None, rng=None):
     """Berichtstext (Markdown). facts darf None/leer sein (Lauf vorzeitig abgebrochen)."""
     now = now or dt.datetime.now()
@@ -127,6 +154,9 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     if m:
         L.append("   Mensch entscheidet %d (wie Konsole): Belege %d | Ereignisse %d | Sendungen %d | Limit/sonstige %d" % (
             m.get("gesamt", 0), m.get("belege", 0), m.get("ereignisse", 0), m.get("sendungen", 0), m.get("sonstige", 0)))
+    q = quote_zeilen(facts.get("quote"), verlauf)
+    if q:
+        L += q
     for r in neu[:MAX_FAELLE]:
         v = r.get("values") or {}
         L.append("   - %s: %s" % (_kurz(r.get("category"), 40), _kurz(v.get("Warum offen") or v.get("Was"), 110)))
@@ -194,6 +224,12 @@ def write(intake, exit_code, mode, state_text="", now=None, step_summary=None):
             verlauf.setdefault("tage", {})[now.strftime("%Y-%m-%d")] = facts["klaer_offen"]
         elif now.strftime("%Y-%m-%d") not in verlauf.setdefault("tage", {}):
             verlauf["tage"][now.strftime("%Y-%m-%d")] = None
+        if facts.get("quote"):
+            qs = dict(verlauf.get("quote_stand") or {})
+            for k in ("ok", "info", "offen"):
+                for m in facts["quote"].get(k) or []:
+                    qs[m] = k
+            verlauf["quote_stand"] = dict(list(qs.items())[-20000:])
         verlauf["warnungen"] = warnungen_split(facts.get("warnungen") or [], verlauf, now)[3]
         verlauf["tage"] = dict(sorted(verlauf["tage"].items())[-30:])
         seen = list(verlauf.get("gesehen") or [])

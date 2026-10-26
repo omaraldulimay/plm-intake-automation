@@ -576,3 +576,63 @@ class ZuordnungVerbesserungen1910(unittest.TestCase):
 
     def test_kurze_belegnummer_zaehlt_als_kennung(self):
         self.assertIn("ak62326", events.id_tokens("Rechnung AK/623/26"))
+
+
+class LieferantAusVerlaufUndInfo(unittest.TestCase):
+    V = [{"id": "VA", "name": "Lieferant A"}, {"id": "VW", "name": "Lieferant C"}, {"id": "VC", "name": "Ningbo Lieferant D Co., Ltd"},
+         {"id": "VH", "name": "Lieferant U"}]
+    DOM = {"lieferant-d.example": {"VC"}, "lieferant-a.example": {"VA"}}
+
+    def e(self, mid="m1", sub="Fwd: Re: Lieferant D Leggings care label 6 cm", **kw):
+        b = {"type": "ORDER_CHANGE", "vendor": None, "ref": {"po_number": None, "style": None, "container": None}, "date": None, "summary": "Hangtags von drei auf zwei reduziert", "details": {},
+             "confidence": 0.9, "_mail": {"id": mid, "date": "2026-10-12 18:51", "from": "kontakt@firma.example", "subject": sub}}
+        b.update(kw); return b
+
+    def test_verlauf_gleiche_mail_oder_betreff(self):
+        a = self.e(mid="m1", vendor="Ningbo Lieferant D Co., Ltd")
+        b = self.e(mid="m2", sub="Fwd: Lieferant D Leggings care label 6 cm")   # anderer Prefix, gleicher Verlauf
+        c = self.e(mid="m3", sub="Fwd: Warnstreik am Hafen")
+        self.assertEqual(events.infer_vendors([a, b, c], self.V, None, self.DOM), 1)
+        self.assertEqual(events.vendor_of(b, self.V, None, self.DOM)["id"], "VC")
+        self.assertIsNone(events.vendor_of(c, self.V, None, self.DOM))
+
+    def test_verlauf_mit_zwei_lieferanten_bleibt_offen(self):
+        a = self.e(mid="m1", vendor="Lieferant A", sub="Fwd: Status Update Required"); b = self.e(mid="m2", vendor="Lieferant D", sub="Fwd: Status Update Required")
+        c = self.e(mid="m3", sub="Fwd: Status Update Required")
+        self.assertEqual(events.infer_vendors([a, b, c], self.V, None, self.DOM), 0)
+
+    def test_zitierter_text_nur_wenn_eindeutig(self):
+        body = "Von: kontakt@firma.example\n----- Original -----\nFrom: kontakt@lieferant-d.example\nTo: kontakt@example.com"
+        self.assertEqual(events.forward_vendor(body, self.V, self.DOM)["id"], "VC")
+        self.assertIsNone(events.forward_vendor(body + "\nCc: kontakt@lieferant-a.example", self.V, self.DOM))
+        self.assertIsNone(events.forward_vendor("Von: kontakt@firma.example", self.V, self.DOM))
+
+    def info(self, e, orders=(), vendors=None):
+        pl = events.plan([e], list(orders), vendors or self.V, vendor_only=True)
+        return pl["unmatched"][0]["reason"] if pl["unmatched"] else "ZUGEORDNET"
+
+    def test_info_nur_allgemein_ohne_kennung_und_ohne_lieferant(self):
+        e = self.e(sub="Fwd: Barcodes stickers layout and carton marking", type="ORDER_CHANGE", summary="Layout der Barcode-Sticker und Kartonmarkierung geaendert")
+        self.assertTrue(self.info(e).startswith("info:"), self.info(e))
+        # Kennung / Menge / Betrag / falscher Typ -> kein Info
+        for kw in ({"ref": {"po_number": "6300", "style": None, "container": None}}, {"summary": "Barcode-Sticker fuer 5000 Stk"}, {"summary": "Barcode Label Rechnung 2265-EXP-2026"},
+                   {"summary": "Label Aufpreis 0.15 USD"}, {"summary": "Label Aufpreis 5 EUR"}, {"type": "PAYMENT"}, {"type": "SHIPMENT"}, {"type": "SCHEDULE"}, {"summary": "Zahlung offen"}, {"details": {"container": "TGBU1234567"}}):
+            e2 = self.e(sub="Fwd: Barcodes stickers layout", type="ORDER_CHANGE", summary="Layout der Barcode-Sticker geaendert"); e2.update(kw)
+            self.assertFalse(self.info(e2).startswith("info:"), kw)
+        e3 = self.e(sub="Barcodes layout", type="ORDER_CHANGE", vendor="Lieferant A", summary="Layout der Barcode-Sticker geaendert")   # Lieferant erkannt: Regel (a) greift nicht
+        self.assertNotIn("allgemeines", self.info(e3))
+
+    def test_info_bei_nur_abgeleitetem_lieferant_und_vielen_orders(self):
+        orders = [{"id": "A%d" % i, "title": "PO-ALPHA-%d" % i, "manufacturer": {"id": "VA"}, "status": {"status": "In Production"}, "items": []} for i in range(3)]
+        bel = self.e(mid="m0", sub="Fwd: NEW DEVELOPMENT Kunde Y Black Friday", type="SCHEDULE", vendor="Lieferant A", summary="Status zu 10,000 T-Shirts")
+        e = self.e(mid="m1", sub="Fwd: NEW DEVELOPMENT Kunde Y Black Friday", type="DELAY", summary="Entwicklung des Black Friday Programms verzoegert sich")
+        pl = events.plan([bel, e], orders, self.V, vendor_only=True)
+        rs = {u["event"]["type"]: u["reason"] for u in pl["unmatched"]}
+        self.assertTrue(rs["DELAY"].startswith("info:"), rs); self.assertTrue(rs["SCHEDULE"].startswith("mehrdeutig"), rs)   # Typ SCHEDULE bleibt Klaerfall
+
+    def test_verlauf_erbt_vor_info(self):   # Streik-Notiz im Verlauf einer belegten Order bleibt Notiz, wird nicht Info
+        o = {"id": "A1", "title": "PO-ALPHA-1", "manufacturer": {"id": "VA"}, "status": {"status": "In Production"}, "items": []}
+        a = self.e(mid="m1", sub="Streik Hafen Hamburg Verzoegerung", type="SCHEDULE", vendor="Lieferant A", ref={"po_number": "PO-ALPHA-1", "style": None, "container": None}, summary="ETD neu")
+        b = self.e(mid="m2", sub="Re: Streik Hafen Hamburg Verzoegerung", type="DELAY", summary="Streik am Hafen verzoegert den Hafenumschlag")
+        pl = events.plan([a, b], [o], self.V, vendor_only=True)
+        self.assertEqual(len(pl["orders"]), 1); self.assertEqual(len(pl["orders"][0]["lines"]), 2)

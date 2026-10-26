@@ -155,3 +155,21 @@ class Ablage(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Automatisierungsquote(unittest.TestCase):
+    def q(self):
+        f = facts(); f["quote"] = {"ok": ["a", "b", "c", "doc:x"], "info": ["i1", "i2"], "offen": ["o1", "o2"]}; return f
+
+    def test_lauf_und_seit_start(self):
+        t = tb.build(self.q(), 0, "apply", now=MI, verlauf={"quote_stand": {"o1": "offen", "old": "ok", "i1": "info"}})
+        self.assertIn("Automatisierungsquote: Lauf 50 % (geschrieben 4 von 8 | Info 2 | offen 2), ohne Mensch (geschrieben+Info) 75 %", t)
+        self.assertIn("seit Start 56 % (geschrieben 5 von 9 | Info 2 | offen 2)", t)   # old+4 ok; i1 bleibt Info, i2 neu
+        self.assertIn("neu offen 1, neu Info 1", t)   # o1 war schon offen
+
+    def test_ohne_quote_keine_zeile_und_write_fuehrt_stand(self):
+        self.assertNotIn("Automatisierungsquote", tb.build(facts(), 0, "apply", now=MI, verlauf={}))
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / tb.DATEN).write_text(json.dumps(self.q()))
+            tb.write(d, 0, "apply", now=MI, step_summary=str(d / "s.md"))
+            self.assertEqual(json.loads((d / tb.VERLAUF).read_text())["quote_stand"]["o1"], "offen")

@@ -167,7 +167,56 @@ def vendor_of(e, vendors, vendor_aliases=None, dom=None):
             return next((v for v in vendors if v["id"] == next(iter(hit))), None)
     except Exception:
         pass
-    return None
+    vid = e.get("_vendor_inferred")   # aus dem Mail-Verlauf / zitierten Absendern abgeleitet (infer_vendors), nie aus Smilodox-Absendern
+    return next((v for v in vendors if v["id"] == vid), None) if vid else None
+
+
+FREE_MAIL = {"gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "yahoo.com", "qq.com", "163.com", "126.com", "icloud.com", "web.de", "gmx.de", "gmx.net", "live.com", "foxmail.com"}
+
+
+def forward_vendor(body, vendors, dom):
+    """Lieferant aus dem zitierten Mailverlauf einer weitergeleiteten Mail: Absender-/Empfaenger-Domains im Text (From:/Von:/To:/Nachricht von ...),
+    ohne Smilodox und ohne Freemail. Genau EIN Lieferant ueber alle Domains = Treffer, sonst None."""
+    ids = set()
+    for d in re.findall(r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)", str(body or "")):
+        d = d.lower()
+        if "smilodox" in d or d in FREE_MAIL:
+            continue
+        ids |= (dom or {}).get(d) or set()
+    return next((v for v in vendors if v["id"] == next(iter(ids))), None) if len(ids) == 1 else None
+
+
+def _vkey(e):
+    """Betreff-Schluessel fuer die Lieferanten-Ableitung (kuerzer erlaubt als thread_key: 'label list' ist weitergeleitet oft der einzige Anker; Eindeutigkeit prueft infer_vendors)."""
+    sub = re.sub(r"^(\s*(re|fwd?|aw|wg|tr)\s*:\s*)+", "", str((e.get("_mail") or {}).get("subject") or ""), flags=re.I)
+    k = re.sub(r"[^a-z0-9]", "", sub.lower())
+    return k if len(k) >= 8 else None
+
+
+def infer_vendors(evs, vendors, vendor_aliases=None, dom=None):
+    """Ereignisse ohne erkannten Lieferanten (v. a. weitergeleitete 'Fwd:'/'WG:'-Mails von Smilodox-Kollegen) bekommen den Lieferanten ihres Verlaufs:
+    1) zitierter Mailtext (nur wenn e['_mail']['body'] vorhanden, offline), 2) Ereignisse DERSELBEN Mail oder desselben Betreff-Verlaufs (thread_key) mit erkanntem Lieferanten,
+    aber nur wenn dort genau EIN Lieferant vorkommt. Setzt e['_vendor_inferred'] (Vendor-ID); aendert sonst nichts."""
+    by = {}
+    for e in evs:
+        v = vendor_of(e, vendors, vendor_aliases, dom)
+        if v:
+            for k in (("m", (e.get("_mail") or {}).get("id")), ("t", _vkey(e))):
+                if k[1]:
+                    by.setdefault(k, set()).add(v["id"])
+    n = 0
+    for e in evs:
+        if vendor_of(e, vendors, vendor_aliases, dom):
+            continue
+        v = forward_vendor((e.get("_mail") or {}).get("body"), vendors, dom)
+        vid = v["id"] if v else None
+        if not vid:
+            for k in (("m", (e.get("_mail") or {}).get("id")), ("t", _vkey(e))):
+                if k[1] and len(by.get(k, ())) == 1:
+                    vid = next(iter(by[k])); break
+        if vid:
+            e["_vendor_inferred"] = vid; n += 1
+    return n
 
 
 STYLE_TOKEN = re.compile(r"[A-Za-z]{1,6}[-_ ]?\d{2,}[A-Za-z0-9_\-]*")
@@ -280,6 +329,43 @@ def _deviates(e, o, idx=None):
     theirs |= {core.norm(i.get("name")) for i in o.get("items") or []} - {""}
     off, why = core.clear_mismatch(n, o.get("totalNumberOfPieces"), _ev_styles(e), theirs)
     return "%s: %s" % (o.get("title"), why) if off else None
+
+
+GENERAL_TYPES = ("SAMPLE", "OTHER", "ORDER_CHANGE", "DELAY")
+GENERAL_TOPIC = re.compile(r"\b(labels?|etikett\w*|hang ?tags?|care label|barcodes?|stickers?|layout|carton marking|packaging|artwork|streik\w*|strike|development|entwicklung\w*|patterns?|logo)\b", re.I)
+BELEG_WORT = re.compile(r"zahlung|payment|invoice|rechnung|proforma|b/l|bill of lading|\\bhbl\\b|\\bawb\\b|container|vessel|shipped|verschifft|\\bprice\\b|preis|\\bpaid\\b|bezahlt", re.I)   # Beleg-/Zahlungs-/Versandsprache: nie allgemein
+_DATE = re.compile(r"\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b|\b\d{4}-\d{2}-\d{2}\b")
+
+
+def _general_topic(e):
+    """Allgemeines Thema ohne Bestellbezug (Etiketten, Barcode-Layout, Streik, Entwicklungsprogramm): Typ SAMPLE/OTHER/ORDER_CHANGE/DELAY, Thema im Betreff/Text UND
+    keinerlei Kennung (PO/Style/Container/Rechnung/Nummern >= 3 Ziffern), Menge oder Betrag. Nur zusammen mit 'kein Lieferant erkannt' benutzt (find_order)."""
+    if e.get("type") not in GENERAL_TYPES:
+        return False
+    ref = e.get("ref") or {}
+    d = e.get("details") or {}
+    if any(ref.get(k) for k in ("po_number", "style", "container")) or event_tokens(e) or text_codes(e) or mentioned_pieces(e):
+        return False
+    if any(d.get(k) not in (None, "", False) for k in ("qty", "quantity", "pieces", "amount", "total", "invoice_number") + tuple(IDENT_KEYS)):
+        return False
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
+    if re.search(r"\d{3,}|[$\u20ac]|\b(usd|eur)\b", _DATE.sub(" ", txt), re.I):
+        return False
+    subj = str((e.get("_mail") or {}).get("subject") or "")
+    return bool(GENERAL_TOPIC.search(txt + " " + subj)) and not BELEG_WORT.search(txt + " " + subj)
+
+
+def _general_info(e, why, vendors, vendor_aliases, dom):
+    """Info-Grund (str) fuer ein allgemeines Thema ohne Bestellbezug, sonst None. Erst NACH der Verlaufs-Zuordnung (plan), damit Ereignisse belegter Verlaeufe ihre Order erben.
+    Faelle: (a) kein Lieferant erkannt und keine Order gefunden; (b) Lieferant nur aus dem Verlauf abgeleitet (kein eigener Beleg) und nur 'mehrdeutig: N laufende Orders' (ohne Order-Namen)."""
+    if not _general_topic(e):
+        return None
+    v = vendor_of(e, vendors, vendor_aliases, dom)
+    if why == "keine Order gefunden" and not v:
+        return "info: allgemeines Thema ohne Lieferant/Bestellbezug (%s)" % e.get("type")
+    if v and e.get("_vendor_inferred") and str(why).startswith("mehrdeutig:") and "laufende Orders" in str(why):
+        return "info: allgemeines Thema ohne Bestellbezug (%s, Lieferant nur aus Verlauf: %s)" % (e.get("type"), v["name"])
+    return None
 
 
 def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, idx=None, dom=None, style_aliases=None):
@@ -443,6 +529,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
         seen.add(mk)
         evs.append(e)
     by_oid = {o["id"]: o for o in orders}
+    infer_vendors(evs, vendors, vendor_aliases, dom)
     results = []
     for e in evs:
         ov = (event_overrides or {}).get(marker(e))
@@ -473,6 +560,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             else:
                 fixed.append((e, (o, why)))
         results = fixed
+        results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or why))) for e, (o, why) in results]
     for e, (o, why) in results:
         mk = marker(e)
         if not o:
