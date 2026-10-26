@@ -35,3 +35,16 @@ class T(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BuildJobsTest(unittest.TestCase):
+    def test_vorhandene_werte_bleiben(self):
+        from plm_intake import project_costing as pc
+        proj = {"zeilen": [{"variantId": "a", "produkt": "P", "variante": "V", "menge": 10, "preis": 2.0},
+                           {"variantId": "b", "produkt": "P", "variante": "W", "menge": 5, "preis": 3.0}]}
+        costing = {"variants": [{"variantId": "a", "projectProductId": "pp", "quantity": 10, "buyingPrice": 0},
+                                {"variantId": "b", "projectProductId": "pp", "quantity": 7, "buyingPrice": 0}]}
+        jobs, skip = pc.build_jobs(proj, costing)
+        self.assertEqual([(j["variantId"], j["qty"], j["price"]) for j in jobs], [("a", None, 2.0), ("b", None, 3.0)])
+        self.assertEqual(len(skip), 1)
+        self.assertEqual(pc.costing_sum(costing), 0.0)
