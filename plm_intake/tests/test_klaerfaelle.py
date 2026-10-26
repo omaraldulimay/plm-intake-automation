@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -69,3 +70,63 @@ class Auswahl(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Loeschen(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.tmp = Path(tempfile.mkdtemp())
+        self.bk = self.tmp / "b.json"
+        self.cfg = {"tableId": "T"}
+
+    def cand(self, i, marker="abcdef01"):
+        return {"id": "r%d" % i, "marker": marker, "category": "X", "values": {"Datum": "2026-10-01", "Art": "Versand", "Was": "w", "Status": "erledigt"}}
+
+    def test_js_loescht_nicht_ohne_sicherung_und_nicht_im_sync(self):
+        self.assertNotIn("deleteCustomRow", klaerfaelle.SYNC_JS)
+        self.assertNotIn("Status: 'erledigt' }", klaerfaelle.SYNC_JS)
+        self.assertIn("deleteCustomRow", klaerfaelle.DELETE_JS)
+        self.assertIn("resolved.has(it.marker)", klaerfaelle.DELETE_JS)
+
+    def test_sicherung_vor_loeschen_und_felder(self):
+        calls = []
+
+        def runner(js):
+            calls.append(js)
+            self.assertTrue(self.bk.exists())   # Sicherung steht schon
+            return {"deleted": 1, "rows_total": 5, "open_total": 4, "errors": []}
+        r = klaerfaelle.delete_solved([self.cand(1)], {"abcdef01"}, self.cfg, runner, {"abcdef01": "PO-1"}, "lauf1", self.bk)
+        self.assertEqual(r["deleted"], 1)
+        e = json.loads(self.bk.read_text())[0]
+        self.assertEqual((e["Marker"], e["Datum"], e["Art"], e["Text"], e["Order"], e["Lauf"]), ("abcdef01", "2026-10-01", "Versand", "w", "PO-1", "lauf1"))
+        self.assertIn("geloest am", e)
+
+    def test_limit_50_und_rest(self):
+        n = []
+        r = klaerfaelle.delete_solved([self.cand(i, "%08x" % i) for i in range(60)], set(), self.cfg, lambda js: n.append(js) or {"deleted": 50, "errors": []}, {}, "l", self.bk)
+        self.assertEqual(r["pending"], 10)
+        self.assertEqual(len(json.loads(self.bk.read_text())), 50)
+        self.assertEqual(json.loads(n[0].split("const P = ")[1].split(";\n")[0])["items"].__len__(), 50)
+
+    def test_trockenlauf_loescht_nichts(self):
+        r = klaerfaelle.delete_solved([self.cand(1)], set(), self.cfg, lambda js: self.fail("Lauf"), {}, "l", self.bk, dry=True)
+        self.assertEqual(r["would_delete"], 1)
+        self.assertFalse(self.bk.exists())
+
+    def test_ohne_marker_nie(self):
+        c = self.cand(1); c["marker"] = None
+        r = klaerfaelle.delete_solved([c], set(), self.cfg, lambda js: self.fail("Lauf"), {}, "l", self.bk)
+        self.assertEqual(r["deleted"], 0)
+
+    def test_sicherung_scheitert_kein_loeschen(self):
+        orig = klaerfaelle.save_backup
+        klaerfaelle.save_backup = lambda *a, **k: False
+        try:
+            r = klaerfaelle.delete_solved([self.cand(1)], set(), self.cfg, lambda js: self.fail("Lauf"), {}, "l", self.bk)
+        finally:
+            klaerfaelle.save_backup = orig
+        self.assertTrue(r["errors"])
+
+    def test_state_file(self):
+        from plm_intake import cloud
+        self.assertIn("intake/klaerfaelle_erledigt.json", cloud.STATE_FILES)

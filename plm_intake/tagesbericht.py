@@ -121,6 +121,8 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
     else:
         diff = ("%+d zum Vortag" % (offen - prev)) if prev is not None else "kein Vortagswert"
         offen_txt = "%s %d (%s)" % ("in Klaerfaelle-Tabelle offen" if m else "offen gesamt", offen, diff)
+        if facts.get("klaer_rows_total") is not None:
+            offen_txt = "in Tabelle offen %d (gesamt %d, geloescht heute %d; %s)" % (offen, facts["klaer_rows_total"], facts.get("klaer_geloescht") or 0, diff)
     L.append("3. Klaerfaelle: %s%s" % (offen_txt, ", Erstlauf (alle gelten als bekannt)" if erst else ", neu entstanden: %d" % len(neu)))
     if m:
         L.append("   Mensch entscheidet %d (wie Konsole): Belege %d | Ereignisse %d | Sendungen %d | Limit/sonstige %d" % (

@@ -283,11 +283,11 @@ def main(argv=None):
             if a.apply:
                 def _run(js):
                     p_ = intake / ("klaerfaelle_%s.js" % dt.datetime.now().strftime("%Y%m%d_%H%M%S")); p_.write_text(js); return browser(p_)
-                kf_rows, kf_res = klaerfaelle.sync(pl, ctx, ctx.get("aliases"), runner=_run)
-                facts["klaer_rows"] = kf_rows; facts["klaer_offen"] = kf_res.get("open_total")
+                kf_rows, kf_res = klaerfaelle.sync(pl, ctx, ctx.get("aliases"), runner=_run, lauf="auto_run " + dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+                facts["klaer_rows"] = kf_rows; facts["klaer_offen"] = kf_res.get("open_total"); facts["klaer_geloescht"] = kf_res.get("geloescht", 0); facts["klaer_rows_total"] = kf_res.get("rows_total")
                 if kf_res.get("errors"): facts["warnungen"].append("Klaerfaelle-Tabelle: %s" % kf_res["errors"][:2])
-                rep += ["", "## Klärfälle (PLM-Tabelle)", "- Kandidaten %d, neu eingetragen %s, abgehakt %s, offen gesamt %s%s" % (
-                    len(kf_rows), kf_res.get("created"), kf_res.get("closed"), kf_res.get("open_total"), (" | Fehler: %s" % kf_res["errors"][:3]) if kf_res.get("errors") else "")]
+                rep += ["", "## Klärfälle (PLM-Tabelle)", "- Kandidaten %d, neu eingetragen %s, geloescht %s (Rest naechster Lauf: %s), offen gesamt %s%s" % (
+                    len(kf_rows), kf_res.get("created"), kf_res.get("geloescht"), kf_res.get("loeschen_offen"), kf_res.get("open_total"), (" | Fehler: %s" % kf_res["errors"][:3]) if kf_res.get("errors") else "")]
             else:
                 kf_rows = klaerfaelle.select(pl["unmatched"], ctx["vendors"], ctx.get("aliases"), events.domain_vendors(ctx["vendors"]))
                 facts["klaer_rows"] = kf_rows
