@@ -107,9 +107,10 @@ def quote_zeilen(quote, verlauf):
         for m in quote.get(k) or []:
             stand[m] = k
     so, si, sf = quote_summe(stand)
-    return ["   Automatisierungsquote: Lauf %s (geschrieben %d von %d | Info %d | offen %d), ohne Mensch (geschrieben+Info) %s | seit Start %s (geschrieben %d von %d | Info %d | offen %d), ohne Mensch %s | neu offen %d, neu Info %d" % (
-        _pct(ok, ok + info + offen), ok, ok + info + offen, info, offen, _pct(ok + info, ok + info + offen),
-        _pct(so, so + si + sf), so, so + si + sf, si, sf, _pct(so + si, so + si + sf),
+    n = ok + info + offen
+    return ["   Automatisierungsquote (ohne Mensch = geschrieben + Info): Lauf %s (geschrieben %d, Info %d, offen %d, zusammen %d) | seit Start %s (zusammen %d) | neu offen %d, neu Info %d" % (
+        _pct(ok + info, n), ok, info, offen, n,
+        _pct(so + si, so + si + sf), so + si + sf,
         sum(1 for m in quote.get("offen") or [] if (verlauf.get("quote_stand") or {}).get(m) != "offen"),
         sum(1 for m in quote.get("info") or [] if (verlauf.get("quote_stand") or {}).get(m) != "info"))]
 

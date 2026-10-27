@@ -163,8 +163,8 @@ class Automatisierungsquote(unittest.TestCase):
 
     def test_lauf_und_seit_start(self):
         t = tb.build(self.q(), 0, "apply", now=MI, verlauf={"quote_stand": {"o1": "offen", "old": "ok", "i1": "info"}})
-        self.assertIn("Automatisierungsquote: Lauf 50 % (geschrieben 4 von 8 | Info 2 | offen 2), ohne Mensch (geschrieben+Info) 75 %", t)
-        self.assertIn("seit Start 56 % (geschrieben 5 von 9 | Info 2 | offen 2)", t)   # old+4 ok; i1 bleibt Info, i2 neu
+        self.assertIn("Automatisierungsquote (ohne Mensch = geschrieben + Info): Lauf 75 % (geschrieben 4, Info 2, offen 2, zusammen 8)", t)
+        self.assertIn("seit Start 78 % (zusammen 9)", t)   # old+4 ok; i1 bleibt Info, i2 neu: (5+2)/9
         self.assertIn("neu offen 1, neu Info 1", t)   # o1 war schon offen
 
     def test_ohne_quote_keine_zeile_und_write_fuehrt_stand(self):
