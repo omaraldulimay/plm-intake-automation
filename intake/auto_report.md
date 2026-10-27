@@ -1,9 +1,8 @@
-# Alltagslauf 2026-10-27 12:21 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-27 14:01 (AUSGEFUEHRT)
 
-Neu: 14 Dokument-Dateien, 338 Ereignis-Dateien
+Neu: 14 Dokument-Dateien, 342 Ereignis-Dateien
 
 ## Lieferanten
-- Lieferant AC FZCO: ALIAS_AUTO Mail-Domain gehoert zu Lieferant B Enterprises (Pvt) Ltd
 - LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ.: MENSCH ALIAS_PRUEFEN [('Lieferant J', 1.0)]
 
 PO-Nummern per Browser nachgeladen: 72
