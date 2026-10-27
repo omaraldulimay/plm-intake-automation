@@ -46,7 +46,7 @@ COLS_JS = '''(async () => {
 })()'''
 
 # Reihenfolge der Spalten: zuerst das, was der Mensch zum Zuordnen braucht, ganz hinten die Technik
-REIHENFOLGE = ("Status", "Zuordnung", "Datum", "Art", "Was", "Warum offen", "Mögliche PO", "Nummer", "Aktion", "Absender", "Betreff", "Rückmeldung", "Zitat", "Suche", "Mail-ID", "Quelle")
+REIHENFOLGE = ("Status", "Zuordnung", "Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Rückmeldung", "Details", "Mail-ID", "Quelle")
 
 ORDER_JS = '''(async () => {
   const P = __PAYLOAD__;
@@ -62,6 +62,39 @@ ORDER_JS = '''(async () => {
   const after = await readFields(); const rowsAfter = await readRows();
   out.after = after.map(f => f.key); out.rows_unchanged = JSON.stringify(rowsBefore.map(r => [r.id, r.values])) === JSON.stringify(rowsAfter.map(r => [r.id, r.values]));
   out.fields_same_defs = JSON.stringify(before.slice().sort((a, b) => a.key.localeCompare(b.key))) === JSON.stringify(after.slice().sort((a, b) => a.key.localeCompare(b.key)));
+  return out;
+})()'''
+
+KOMPAKT_READ_JS = '''(async () => {
+  const P = __PAYLOAD__;
+  ''' + _HEAD + r'''
+  return { fields: await readFields(), rows: await readRows() };
+})()'''
+
+KOMPAKT_JS = '''(async () => {
+  const P = __PAYLOAD__;
+  ''' + _HEAD + r'''
+  const out = { errors: [], updated: 0 };
+  const before = await readFields();
+  const keep = before.filter(f => P.keep.includes(f.key));
+  if (!before.some(f => f.key === 'Details')) {
+    const withD = before.concat([{ key: 'Details', type: 'string', required: false, enumValues: null, multipleSelection: false }]);
+    const r1 = await c.mutate({ mutation: op('mutation', 'updateCustomTable', [['id', 'ID'], ['input', 'UpdateCustomTableInput']], [F('id')]), variables: { id: P.tableId, input: { fields: withD } }, errorPolicy: 'all' });
+    if (!r1.data || !r1.data.updateCustomTable) { out.errors.push('Details anlegen: ' + (r1.errors || []).map(e => e.message).join('; ').slice(0, 200)); return out; }
+  }
+  for (const r of P.rows) {
+    const ur = await c.mutate({ mutation: op('mutation', 'updateCustomRow', [['id', 'ID'], ['input', 'UpdateCustomRowInput']], [F('id')]), variables: { id: r.id, input: { values: r.values } }, errorPolicy: 'all' });
+    if (ur.data && ur.data.updateCustomRow) out.updated++; else out.errors.push('Zeile ' + r.id + ': ' + (ur.errors || []).map(e => e.message).join('; ').slice(0, 160));
+  }
+  if (out.errors.length) return out;   // Spalten erst entfernen, wenn alle Zeilen umgeschrieben sind
+  const now = await readFields();
+  const order = P.keep; const rank = k => order.indexOf(k);
+  const fields = now.filter(f => order.includes(f.key)).sort((a, b) => rank(a.key) - rank(b.key));
+  const r2 = await c.mutate({ mutation: op('mutation', 'updateCustomTable', [['id', 'ID'], ['input', 'UpdateCustomTableInput']], [F('id')]), variables: { id: P.tableId, input: { fields } }, errorPolicy: 'all' });
+  if (!r2.data || !r2.data.updateCustomTable) out.errors.push('Spalten kuerzen: ' + (r2.errors || []).map(e => e.message).join('; ').slice(0, 200));
+  out.fields_after = (await readFields()).map(f => f.key);
+  const rows = await readRows(); out.rows_after = rows.length;
+  out.sample = rows.slice(0, 2).map(r => r.values);
   return out;
 })()'''
 
@@ -239,11 +272,23 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--spalten", action="store_true")
+    ap.add_argument("--kompakt", action="store_true", help="Tabelle auf die wichtigsten Spalten kuerzen (Rest in 'Details'); Trockenlauf ohne --apply, mit Sicherung aller Zeilen")
     ap.add_argument("--reihenfolge", action="store_true", help="Spalten in die Reihenfolge fuer den Menschen bringen (Trockenlauf ohne --apply)")
     ap.add_argument("--nur-marker")
     a = ap.parse_args(argv)
     cfg = json.loads(klaerfaelle.CFG.read_text())
     from plm_intake.barcodes import run_js
+    if a.kompakt:
+        import datetime
+        cur = run_js(KOMPAKT_READ_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"]})))
+        bk = ROOT / "output" / "backup" / ("klaerfaelle_vor_kompakt_%s.json" % datetime.date.today().isoformat())
+        bk.parent.mkdir(parents=True, exist_ok=True); bk.write_text(json.dumps(cur, ensure_ascii=False, indent=1))
+        rows = [{"id": r["id"], "values": klaerfaelle.kompakt(r.get("values") or {})} for r in cur["rows"]]
+        print("Zeilen: %d | Sicherung: %s | Beispiel neu: %s" % (len(rows), bk, json.dumps(rows[0]["values"], ensure_ascii=False)[:400] if rows else "-"))
+        if not a.apply:
+            return 0
+        r = run_js(KOMPAKT_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "rows": rows, "keep": list(REIHENFOLGE)}, ensure_ascii=False)))
+        print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
     if a.reihenfolge:
         r = run_js(ORDER_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "order": list(REIHENFOLGE), "apply": a.apply})))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1

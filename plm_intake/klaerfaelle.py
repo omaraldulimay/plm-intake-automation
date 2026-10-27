@@ -62,7 +62,23 @@ def moegliche(reason, v, orders):
 
 MAILS = Path.home() / "Library/CloudStorage/kontakt@firma.example/Meine Ablage/PLM-Mails"   # je Mail ein Ordner "<Datum>_<Zeit>_<Absender>_<Betreff>_<Gmail-ID>" mit mail.txt ("Message-ID: <id>")
 AKTUELL = ("Was", "Warum offen", "Mögliche PO")   # Texte offener Zeilen ohne Eingabe des Menschen werden auf den neuen Klartext gebracht
-NEU = ("Nummer", "Mögliche PO", "Aktion", "Zitat", "Absender", "Betreff", "Mail-ID", "Suche")
+NEU = ("Mögliche PO", "Betreff", "Details", "Mail-ID")
+DETAILS = (("Art", "Art"), ("Nummer", "Nr"), ("Aktion", "Aktion"), ("Absender", "Von"), ("Suche", "Suche"), ("Zitat", "Zitat"))   # (altes Feld, Beschriftung)
+SICHTBAR = ("Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Details", "Mail-ID", "Quelle", "Status", "Zuordnung", "Rückmeldung")
+
+
+def kompakt(v):
+    """Alte, lange Zeile (viele Spalten) -> schlanke Zeile: Art steht vor 'Was', der Rest in EINER Spalte 'Details'."""
+    out = {k: x for k, x in v.items() if k in SICHTBAR and k != "Details"}
+    art, was = str(v.get("Art") or ""), str(out.get("Was") or "")
+    if art and not was.lower().startswith(art.lower() + ":"):
+        was = "%s: %s" % (art, was)
+    out["Was"] = was[:150]
+    teile = ["%s: %s" % (lab, str(v[k]).strip()) for k, lab in DETAILS if k != "Art" and str(v.get(k) or "").strip()]
+    if v.get("Details"):
+        teile = [str(v["Details"])]
+    out["Details"] = " | ".join(teile)[:900]
+    return {k: x for k, x in out.items() if x not in (None, "")}
 
 
 def mail_dirs(root=None):
@@ -131,7 +147,7 @@ def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None, orders=
         if ident and core.norm(ident) not in core.norm(was):
             was = "%s (%s)" % (was, ident)
         rows.append({"marker": mk, "category": v["name"] if v else OHNE,
-                     "values": {"Datum": datum if re.fullmatch(r"\d{4}-\d{2}-\d{2}", datum) else None, "Art": ART[e["type"]], "Was": was[:140],
+                     "values": kompakt({"Datum": datum if re.fullmatch(r"\d{4}-\d{2}-\d{2}", datum) else None, "Art": ART[e["type"]], "Was": was[:140],
                                 "Warum offen": warum(reason)[:80],
                                 "Nummer": ident[:200],
                                 "Mögliche PO": moegliche(reason, v, orders),
@@ -142,7 +158,7 @@ def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None, orders=
                                 "Mail-ID": str(m.get("id") or ""),
                                 "Suche": suche(m.get("id"), m.get("from"), m.get("date"), dirs),
                                 "Quelle": ("Mail %s | %s | ev:%s" % (str(m.get("date") or "")[:16], str(m.get("subject") or "")[:70], mk)),
-                                "Status": "offen"}})
+                                "Status": "offen"})})
     return rows
 
 
@@ -235,7 +251,7 @@ def backup_entries(cands, order_of, lauf, now=None):
     out = []
     for c in cands:
         v = c.get("values") or {}
-        out.append({"Marker": c["marker"], "Datum": v.get("Datum"), "Art": v.get("Art"), "Text": v.get("Was"), "Order": order_of.get(c["marker"]),
+        out.append({"Marker": c["marker"], "Datum": v.get("Datum"), "Art": v.get("Art") or str(v.get("Was") or "").split(":", 1)[0], "Text": v.get("Was"), "Order": order_of.get(c["marker"]),
                     "geloest am": ts, "Lauf": lauf, "Kategorie": c.get("category"), "felder": v, "id": c.get("id")})
     return out
 

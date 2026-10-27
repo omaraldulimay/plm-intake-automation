@@ -20,21 +20,21 @@ class NeueSpalten(unittest.TestCase):
         x["event"]["action_needed"] = "Termin bestaetigen"
         x["event"]["source_quote"] = "Q " * 400
         r = klaerfaelle.select([x], V, None, None, {"m1": "Datei mails_2026-10-12_100000_1.txt"})[0]["values"]
-        self.assertEqual(r["Nummer"], "PO-1 / XW-042")
+        self.assertIn("Nr: PO-1 / XW-042", r["Details"])
         self.assertEqual(r["Mögliche PO"], "PO-A, PO-B")
-        self.assertEqual(r["Aktion"], "Termin bestaetigen")
-        self.assertLessEqual(len(r["Zitat"]), 300)
+        self.assertIn("Aktion: Termin bestaetigen", r["Details"])
+        self.assertLessEqual(len(r["Details"]), 900)
         self.assertEqual(r["Mail-ID"], "m1")
         self.assertEqual(r["Betreff"], "Re: XW-042")
-        self.assertTrue(r["Suche"].startswith("m1 | PLM-Mails/Datei mails_2026-10-12_1000"))
-        self.assertIn("from:kontakt@lieferant-c.example after:2026/10/11 before:2026/10/14", r["Suche"])
+        self.assertIn("Suche: m1 | PLM-Mails/Datei mails_2026-10-12_1000", r["Details"])
+        self.assertIn("from:kontakt@lieferant-c.example after:2026/10/11 before:2026/10/14", r["Details"])
 
     def test_ohne_kandidaten_und_bankdaten(self):
         x = u(vendor="Lieferant C", reason="mehrdeutig: 3 laufende Orders von X")
         x["event"]["source_quote"] = "IBAN DE89 3704 0044 0532 0130 00 bitte"
         r = klaerfaelle.select([x], V)[0]["values"]
-        self.assertEqual(r["Mögliche PO"], "")
-        self.assertNotIn("3704", r["Zitat"])
+        self.assertNotIn("Mögliche PO", r)
+        self.assertNotIn("3704", r.get("Details", ""))
 
     def test_sync_js_fuellt_nur_leere(self):
         js = klaerfaelle.SYNC_JS
@@ -48,7 +48,7 @@ class Auswahl(unittest.TestCase):
         r = klaerfaelle.select([u(vendor="LIEFERANT_C CO.,LTD.", style="XW-042", reason="mehrdeutig: PO-XW-SM260730, PO-XW042-20260709")], V)
         self.assertEqual(len(r), 1)
         self.assertEqual(r[0]["category"], "Lieferant C")
-        self.assertEqual(r[0]["values"]["Art"], "Versand")
+        self.assertTrue(r[0]["values"]["Was"].startswith("Versand: "))
         self.assertTrue(r[0]["values"]["Warum offen"].startswith("Passt zu mehreren"))
         self.assertIn("ev:" + r[0]["marker"], r[0]["values"]["Quelle"])
         self.assertEqual(r[0]["values"]["Status"], "offen")
@@ -86,7 +86,7 @@ class KlartextFuerMenschen(unittest.TestCase):
         x = u(vendor="Lieferant C", reason="mehrdeutig: PO-ALPHA-1, PO-ALPHA-3", summary="S " * 200)
         r = klaerfaelle.select([x], V, None, None, {}, self.O)[0]["values"]
         self.assertTrue(r["Mögliche PO"].startswith("PO26-057 (PO-ALPHA-1"))
-        self.assertLessEqual(len(r["Was"]), 140)
+        self.assertLessEqual(len(r["Was"]), 150)
         self.assertLessEqual(len(r["Warum offen"]), 80)
 
     def test_ohne_orders_unveraendert(self):
@@ -96,6 +96,18 @@ class KlartextFuerMenschen(unittest.TestCase):
     def test_aktualisieren_nur_offene_ohne_eingabe(self):
         self.assertIn("P.refresh", klaerfaelle.SYNC_JS)
         self.assertIn("!String(cur['Zuordnung']", klaerfaelle.SYNC_JS)
+
+class Kompakt(unittest.TestCase):
+    def test_alte_zeile_wird_schlank(self):
+        alt = {"Datum": "2026-10-01", "Art": "Versand", "Was": "Container verladen", "Warum offen": "x", "Nummer": "PO-1", "Mögliche PO": "", "Aktion": "a",
+               "Zitat": "z", "Absender": "f@x.com", "Betreff": "Re: A", "Mail-ID": "m1", "Suche": "s", "Quelle": "Mail | ev:abcdef01", "Status": "offen", "Zuordnung": "PO26-057"}
+        n = klaerfaelle.kompakt(alt)
+        self.assertEqual(n["Was"], "Versand: Container verladen")
+        self.assertEqual(n["Zuordnung"], "PO26-057")
+        self.assertEqual(n["Details"], "Nr: PO-1 | Aktion: a | Von: f@x.com | Suche: s | Zitat: z")
+        for k in ("Art", "Nummer", "Aktion", "Zitat", "Absender", "Suche"):
+            self.assertNotIn(k, n)
+        self.assertEqual(klaerfaelle.kompakt(n), n)   # idempotent
 
 
 if __name__ == "__main__":

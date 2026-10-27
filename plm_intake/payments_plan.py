@@ -216,9 +216,9 @@ CONFLICT_RE = re.compile(r"Bedingungen weichen ab|Zahlungsbedingungen[^.\n]{0,80
 def klaer_row(order, vendor_name, code, was, warum, aktion, today, key=None):
     mk = hashlib.sha1(("pay|%s|%s" % (code, key or order.get("id"))).encode()).hexdigest()[:8]
     return {"marker": mk, "category": vendor_name or "Ohne Lieferant",
-            "values": {"Datum": today, "Art": "Zahlung", "Was": was[:300], "Warum offen": warum[:200], "Nummer": (order.get("title") or "")[:200],
+            "values": __import__("plm_intake.klaerfaelle", fromlist=["kompakt"]).kompakt({"Datum": today, "Art": "Zahlung", "Was": was[:300], "Warum offen": warum[:200], "Nummer": (order.get("title") or "")[:200],
                        "Mögliche PO": "", "Aktion": aktion[:300], "Zitat": "", "Absender": "", "Betreff": "", "Mail-ID": "", "Suche": "",
-                       "Quelle": "Zahlungsplan %s | %s | ev:%s" % (today, code, mk), "Status": "offen"}}
+                       "Quelle": "Zahlungsplan %s | %s | ev:%s" % (today, code, mk), "Status": "offen"})}
 
 
 # ---------------- Paid-Regel ----------------
@@ -472,7 +472,7 @@ def run(orders_light, apply=False, max_orders=MAX_ORDERS, runner=run_js, backup_
         L.append("  - %s [%s] %s" % (a["title"], {"placeholder": "Platzhalter entfernen", "plan": "Plan aufbauen", "paid": "Paid setzen"}[a["kind"]], a["why"]))
         for r in a.get("rows") or []:
             L.append("      %s | %.2f %s | %s | faellig %s" % (r["name"], r["amount"], r["status"], r["terms"][:50], dt.datetime.fromtimestamp(r["dueDate"] / 1000, dt.timezone.utc).date() if r.get("dueDate") else "unbekannt"))
-    L += ["  - KLAERFALL [%s] %s: %s" % (k["category"], k["values"]["Nummer"] or k["values"]["Warum offen"][:50], k["values"]["Was"][:110]) for k in pl["klaer"]]
+    L += ["  - KLAERFALL [%s] %s: %s" % (k["category"], k["values"]["Warum offen"][:50], k["values"]["Was"][:110]) for k in pl["klaer"]]
     if not apply:
         return ["- (Trockenlauf) nichts geschrieben"] + L, res
     if not pl["actions"] and not pl["klaer"]:

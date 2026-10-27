@@ -79,7 +79,7 @@ class Plan(unittest.TestCase):
         r = pp.plan(os_)
         self.assertEqual([a["kind"] for a in r["actions"]], ["placeholder", "placeholder"])
         self.assertEqual(len(r["klaer"]), 1); self.assertIn("2 Orders", r["klaer"][0]["values"]["Was"]); self.assertEqual(r["klaer"][0]["category"], "Alpha")
-        self.assertEqual(r["klaer"][0]["values"]["Art"], "Zahlung"); self.assertRegex(r["klaer"][0]["values"]["Quelle"], r"ev:[0-9a-f]{8}$")
+        self.assertTrue(r["klaer"][0]["values"]["Was"].startswith("Zahlung: ")); self.assertRegex(r["klaer"][0]["values"]["Quelle"], r"ev:[0-9a-f]{8}$")
 
     def test_nur_lieferantenrahmen_ist_klaerfall_keine_automatik(self):
         r = pp.plan([order(notes="Offen: Zahlungsbedingungen unbekannt.")], {"V1": "30% deposit 70% balance"})
