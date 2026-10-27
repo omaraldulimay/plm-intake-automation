@@ -72,6 +72,21 @@ def mail_domain_vendor(spec, vendors):
     return out
 
 
+FREE_MAIL = {"gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "yahoo.com", "qq.com", "163.com", "126.com", "icloud.com", "web.de", "gmx.de", "gmx.net", "live.com", "foxmail.com"}
+
+
+def domain_alias(spec, vendors, aliases=None):
+    """Belegname unbekannt, aber die Kontakt-Mail-Domain des Belegs ist EXAKT die Domain eines Kontakts von genau EINEM vorhandenen Lieferanten
+    (Rolle Lieferant/ohne Rolle, kein Freemail/Smilodox, Name ohne Namensaehnlichkeit zu irgendeinem Lieferanten): dann ist der Belegname ein Handels-/Firmenname desselben
+    Lieferanten (z. B. 'Lieferant AC FZCO' mit Mail @lieferant-b.example = Lieferant B). -> Vendor oder None. Nie bei Spediteur/Carrier."""
+    if (spec.get("role") or "SUPPLIER") != "SUPPLIER" or similar(spec["name"], vendors):
+        return None
+    doms = {str(c.get("email") or "").split("@")[-1].lower() for c in spec.get("contacts") or [] if "@" in str(c.get("email") or "")}
+    doms = {d for d in doms if d and "smilodox" not in d and d not in FREE_MAIL}
+    hit = [v for v in vendors if doms & {str(c.get("email") or "").split("@")[-1].lower() for c in v.get("contacts") or [] if "@" in str(c.get("email") or "")}]
+    return hit[0] if len(hit) == 1 else None
+
+
 def create(spec, vendors, apply=False):
     sim = similar(spec["name"], vendors) + mail_domain_vendor(spec, vendors)
     if sim:
@@ -114,7 +129,15 @@ def auto(inbox, vendors, apply=False, aliases=None):
     for e in propose(inbox, vendors, aliases):
         if not e["suggestion"].startswith("NEU_ANLEGEN"):
             results.append({"name": e["name"], "status": "MENSCH", "why": e["suggestion"]}); continue
-        r = create(spec_from_info(e["name"], e.get("vendor_info")), vendors, apply)
+        spec = spec_from_info(e["name"], e.get("vendor_info"))
+        spec["role"] = (e.get("vendor_info") or {}).get("role")
+        dv = domain_alias(spec, vendors, aliases)
+        if dv:   # gleiche Mail-Domain wie ein vorhandener Lieferant: Alias statt Neuanlage (aliases wird im Speicher ergaenzt, der Aufrufer speichert nur bei --apply)
+            results.append({"name": e["name"], "status": "ALIAS_AUTO", "vendor": dv["name"], "why": "Mail-Domain gehoert zu %s" % dv["name"]})
+            if aliases is not None:   # im Speicher immer (Trockenlauf zeigt die Wirkung), gespeichert wird nur bei --apply (auto_run)
+                aliases[e["name"]] = dv["name"]
+            continue
+        r = create(spec, vendors, apply)
         results.append({"name": e["name"], **r})
         if apply and r.get("status") == "ANGELEGT":
             import plm_client

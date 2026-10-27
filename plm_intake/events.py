@@ -147,12 +147,27 @@ def domain_vendors(vendors):
                     m.setdefault(d.lower(), set()).add(vid)
     except Exception:
         pass
+    try:   # gelernte Absender-Domains (plm_intake.vendor_domains): nur benutzbare (>= 2 Mails, kein Konflikt)
+        from plm_intake import vendor_domains
+        for d, ids in vendor_domains.usable(vendor_domains.load(Path(__file__).resolve().parents[1] / "output" / "intake" / "vendor_domains.json")).items():
+            m.setdefault(d, set()).update(ids)
+    except Exception:
+        pass
     return m
+
+
+CODE_LIKE_VENDOR = re.compile(r"(?=(?:\D*\d){4})[A-Za-z]{0,6}[-_]?\d[\d_\-./]*[A-Za-z0-9]{0,3}")
+
+
+def vendor_plausible(name):
+    """False, wenn der 'Lieferant' des Ereignisses wie Style/SKU/Rechnungsnummer aussieht (561874_2510, SNM26-005, TE-26-2003-A): ein Firmenname hat Woerter."""
+    s = str(name or "").strip()
+    return bool(s) and not CODE_LIKE_VENDOR.fullmatch(s)
 
 
 def vendor_of(e, vendors, vendor_aliases=None, dom=None):
     """Lieferant aus dem Ereignis (tuerkische Sonderzeichen tolerant), sonst aus der Absender-Domain der Mail (nicht smilodox)."""
-    if e.get("vendor"):
+    if e.get("vendor") and vendor_plausible(e["vendor"]):
         v, _ = core.match_vendor(str(e["vendor"]).translate(TR), vendors, vendor_aliases)
         if v:
             return v
@@ -373,6 +388,45 @@ def _general_info(e, why, vendors, vendor_aliases, dom):
     return None
 
 
+SAMPLE_WORT = re.compile(r"\bsamples?\b|\bmuster\w*|photo ?samples?|pre-?production|\bpps\b|\bsms\b", re.I)
+SAMPLE_NOT = re.compile(r"invoice|rechnung|proforma|b/l|bill of lading|container|payment|zahlung|\bpaid\b|\bprice[sd]?\b|preis|quot\w+|bulk|mass production|[$\u20ac]|\b(usd|eur)\b", re.I)
+SAMPLE_QTY = re.compile(r"(\d[\d.,]*)\s*(?:pcs|pieces|stk|st\u00fcck|units|cartons?|pairs)\b", re.I)
+SAMPLE_MAX_QTY = 50   # bis hierher sind Stueckzahlen Musterstuecke, keine Bestellmengen
+
+
+def _sample_info(e, why):
+    """Info-Grund (str) fuer Musterereignisse ohne Order-/Beleg-Kennung (Musterfotos, Musterversand, Musterstatus), sonst None. Greift nur, wenn die Order-Suche scheiterte
+    (mehrdeutig / abweichend / keine Order). Nie bei PO-Nr, Container, Beleg-Feldern (Rechnung/B/L), Betraegen, Preisen/Angeboten, Serienproduktion oder Stueckzahlen > 50.
+    Typ SAMPLE; Typ SHIPMENT nur, wenn der Text Muster nennt. Sendungsnummern (tracking/awb) eines Musterpakets sind keine Order-Kennung."""
+    if e.get("type") not in ("SAMPLE", "SHIPMENT") or not (str(why).startswith(("mehrdeutig:", "abweichend:")) or why == "keine Order gefunden"):
+        return None
+    ref = e.get("ref") or {}
+    d = e.get("details") or {}
+    if any(ref.get(k) for k in ("po_number", "container")):
+        return None
+    if any(d.get(k) not in (None, "", False) for k in ("amount", "total", "total_cost", "prices", "price", "invoice_number", "invoice_no", "invoice", "po_number", "po", "order", "container", "bl", "hbl", "mbl")):
+        return None
+    for k in ("qty", "quantity", "pieces", "sample_qty"):
+        try:
+            if d.get(k) not in (None, "", False) and float(d[k]) > SAMPLE_MAX_QTY:
+                return None
+        except (TypeError, ValueError):
+            return None
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
+    from plm_intake import po_ids
+    if po_ids.find_po_ids(txt) or SAMPLE_NOT.search(_DATE.sub(" ", txt)):
+        return None
+    for m in SAMPLE_QTY.finditer(txt):
+        try:
+            if float(m.group(1).replace(",", "")) > SAMPLE_MAX_QTY:
+                return None
+        except ValueError:
+            return None
+    if e.get("type") == "SHIPMENT" and not SAMPLE_WORT.search(txt):
+        return None
+    return "info: Muster ohne Order-/Beleg-Kennung (%s)" % e.get("type")
+
+
 def _content(e, cands, idx, vendor_only, v=None):
     """Inhaltsbasierte Zuordnung (plm_intake.content_match) NUR im Mehrdeutigkeitsfall, nur mit Schalter CONTENT_MATCH=1, nur bei bekanntem Lieferanten (v) und nur unter
     dessen laufenden Orders (vendor_only-Lauf). -> (Order, 'inhalt') oder None."""
@@ -588,7 +642,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             else:
                 fixed.append((e, (o, why)))
         results = fixed
-        results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or why))) for e, (o, why) in results]
+        results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or _sample_info(e, why) or why))) for e, (o, why) in results]
     for e, (o, why) in results:
         mk = marker(e)
         if not o:

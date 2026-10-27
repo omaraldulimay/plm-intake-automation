@@ -85,14 +85,18 @@ def main(argv=None):
     # (1) Lieferanten
     st, vl = plm_client.call("GET", "vendors"); vl = vl if isinstance(vl, list) else vl.get("data", vl)
     valias = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
+    n_alias0 = len(valias)
     vres = vendors_new.auto(inbox, vl, a.apply, valias)
+    auto_alias = {v["name"]: v["vendor"] for v in vres if v.get("status") == "ALIAS_AUTO"}
+    if a.apply and len(valias) > n_alias0:   # automatisch gesetzte Lieferanten-Aliase (Mail-Domain) speichern
+        (intake / "vendor_aliases.json").write_text(json.dumps(valias, ensure_ascii=False, indent=1))
     rep += ["## Lieferanten"] + (["- %s: %s %s" % (v["name"], v["status"], v.get("why") or v.get("hint") or "") for v in vres] or ["- keine neuen"]) + [""]
 
     # (2) PLM-Stand
     ctx = load_context()
     from plm_intake.context import add_po_numbers
     rep += ["PO-Nummern per Browser nachgeladen: %d" % add_po_numbers(ctx), ""]
-    ctx["aliases"] = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
+    ctx["aliases"] = dict(valias)   # Dateistand + im Lauf automatisch gesetzte Aliase (Mail-Domain; im Trockenlauf nur im Speicher)
     po_aliases = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
     stored_aliases = dict(po_aliases)   # nur Dateistand + Gelerntes wird gespeichert (nicht die Lauf-internen setdefault-Eintraege unten)
     ctx["po_aliases"] = po_aliases
@@ -137,6 +141,10 @@ def main(argv=None):
         from plm_intake.context import fetch_all
         ctx["products"] = fetch_all(plm_client.call, "products")
         results = run.process(items, ctx, force=force)   # jetzt mit Produkt-/Varianten-Links
+    for n, r in results:   # Lieferant per Mail-Domain zugeordnet (Alias automatisch): in der Order vermerken
+        vn_ = (docs_by_name.get(n) or {}).get("vendor")
+        if r.decision == "CREATE" and vn_ in auto_alias and isinstance(r.payload, dict):
+            r.payload["notes"] = str(r.payload.get("notes") or "") + " Lieferant automatisch zugeordnet: Belegname '%s' = %s (gleiche Mail-Domain)." % (vn_, auto_alias[vn_])
     payloads = {n: r.payload for n, r in results if r.decision == "CREATE"}
     forced_open = [(n, r) for n, r in results if n in force and r.decision != "CREATE"]   # Mensch wollte CREATE, aber die Pruefung laesst es nicht zu: nie stillschweigend
     over = list(payloads)[MAX_NEW_POS_PER_RUN:]   # Sicherheitsgrenze: mehr als N neue POs in einem Lauf wartet auf einen Menschen
@@ -333,6 +341,17 @@ def main(argv=None):
     except Exception as e:   # Lernen darf den Lauf nie abbrechen
         rep += ["", "## Gelernte Aliase", "- FEHLER: %s" % str(e)[:200]]
         facts["warnungen"].append("Alias-Lernen fehlgeschlagen: %s" % str(e)[:120])
+    # Absender-Domain -> Lieferant lernen (nur aus starken Zuordnungen; nur --apply speichert)
+    try:
+        from plm_intake import vendor_domains
+        vd_path = intake / "vendor_domains.json"
+        vd = vendor_domains.load(vd_path)
+        vd_new = vendor_domains.learn(vd, pl.get("assigned") or [], ctx["orders"])
+        if a.apply and vd_new:
+            vd_path.write_text(json.dumps(vd, ensure_ascii=False, indent=1, sort_keys=True))
+        rep += ["", "## Gelernte Absender-Domains"] + (["- %s -> %s (%s)" % x for x in vd_new] or ["- keine neuen"])
+    except Exception as e:   # Lernen darf den Lauf nie abbrechen
+        rep += ["", "## Gelernte Absender-Domains", "- FEHLER: %s" % str(e)[:200]]
     # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
     try:
         from plm_intake import klaerfaelle
