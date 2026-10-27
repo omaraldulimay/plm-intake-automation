@@ -1,8 +1,8 @@
 # Status Einpflege-Automatik
 
-**OK** (2026-10-27 07:24:49, apply)
+**ALARM** (2026-10-27 12:22:50, apply)
 
-18 neue Dokumente, 334 Ereignis-Dateien | neue POs 0, Sendungen 1 | Mensch entscheidet: 71
+ABBRUCH bei Produktanlage: CSV-Import gescheitert: cator.setInputFiles: Timeout 30000ms exceeded. | 14 neue Dokumente, 338 Ereignis-Dateien | neue POs 0, Sendungen 0 | Mensch entscheidet: 0
 
 Letzter erfolgreicher Lauf: 2026-10-27 07:24:49
 
