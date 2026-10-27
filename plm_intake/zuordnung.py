@@ -45,6 +45,26 @@ COLS_JS = '''(async () => {
   return out;
 })()'''
 
+# Reihenfolge der Spalten: zuerst das, was der Mensch zum Zuordnen braucht, ganz hinten die Technik
+REIHENFOLGE = ("Status", "Zuordnung", "Datum", "Art", "Was", "Warum offen", "Mögliche PO", "Nummer", "Aktion", "Absender", "Betreff", "Rückmeldung", "Zitat", "Suche", "Mail-ID", "Quelle")
+
+ORDER_JS = '''(async () => {
+  const P = __PAYLOAD__;
+  ''' + _HEAD + r'''
+  const before = await readFields(); const rowsBefore = await readRows();
+  const rank = k => { const i = P.order.indexOf(k); return i < 0 ? 999 : i; };
+  const fields = before.slice().sort((a, b) => rank(a.key) - rank(b.key));
+  const out = { before: before.map(f => f.key), after_plan: fields.map(f => f.key), errors: [] };
+  if (P.apply) {
+    const r = await c.mutate({ mutation: op('mutation', 'updateCustomTable', [['id', 'ID'], ['input', 'UpdateCustomTableInput']], [F('id')]), variables: { id: P.tableId, input: { fields } }, errorPolicy: 'all' });
+    if (!r.data || !r.data.updateCustomTable) out.errors.push((r.errors || []).map(e => e.message).join('; ').slice(0, 200));
+  }
+  const after = await readFields(); const rowsAfter = await readRows();
+  out.after = after.map(f => f.key); out.rows_unchanged = JSON.stringify(rowsBefore.map(r => [r.id, r.values])) === JSON.stringify(rowsAfter.map(r => [r.id, r.values]));
+  out.fields_same_defs = JSON.stringify(before.slice().sort((a, b) => a.key.localeCompare(b.key))) === JSON.stringify(after.slice().sort((a, b) => a.key.localeCompare(b.key)));
+  return out;
+})()'''
+
 READ_JS = '''(async () => {
   const P = __PAYLOAD__;
   ''' + _HEAD + r'''
@@ -219,10 +239,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--spalten", action="store_true")
+    ap.add_argument("--reihenfolge", action="store_true", help="Spalten in die Reihenfolge fuer den Menschen bringen (Trockenlauf ohne --apply)")
     ap.add_argument("--nur-marker")
     a = ap.parse_args(argv)
     cfg = json.loads(klaerfaelle.CFG.read_text())
     from plm_intake.barcodes import run_js
+    if a.reihenfolge:
+        r = run_js(ORDER_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "order": list(REIHENFOLGE), "apply": a.apply})))
+        print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
     if a.spalten:
         r = run_js(COLS_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "cols": list(NEW_COLS), "apply": a.apply})))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1

@@ -49,7 +49,7 @@ class Auswahl(unittest.TestCase):
         self.assertEqual(len(r), 1)
         self.assertEqual(r[0]["category"], "Lieferant C")
         self.assertEqual(r[0]["values"]["Art"], "Versand")
-        self.assertTrue(r[0]["values"]["Warum offen"].startswith("passt zu mehreren"))
+        self.assertTrue(r[0]["values"]["Warum offen"].startswith("Passt zu mehreren"))
         self.assertIn("ev:" + r[0]["marker"], r[0]["values"]["Quelle"])
         self.assertEqual(r[0]["values"]["Status"], "offen")
 
@@ -66,6 +66,36 @@ class Auswahl(unittest.TestCase):
 
     def test_keine_doppelten_marker(self):
         self.assertEqual(len(klaerfaelle.select([u(vendor="Lieferant C"), u(vendor="Lieferant C")], V)), 1)
+
+class KlartextFuerMenschen(unittest.TestCase):
+    O = [{"id": "o1", "title": "PO-ALPHA-1", "orderNumber": 57, "createdAt": "2026-07-02T10:00:00Z", "totalNumberOfPieces": 76000, "manufacturer": {"id": "v1"}, "status": "In Production"},
+         {"id": "o2", "title": "PO-ALPHA-2", "orderNumber": 60, "createdAt": "2026-08-02T10:00:00Z", "totalNumberOfPieces": 500, "manufacturer": {"id": "v1"}, "status": "Complete"},
+         {"id": "o3", "title": "PO-ALPHA-3", "orderNumber": 61, "createdAt": "2026-08-03T10:00:00Z", "totalNumberOfPieces": 500, "manufacturer": {"id": "v1"}, "status": "Draft"},
+         {"id": "o9", "title": "FREMD", "orderNumber": 9, "createdAt": "2026-08-03T10:00:00Z", "manufacturer": {"id": "v9"}, "status": "Draft"}]
+
+    def test_laufende_orders_als_po_ids(self):
+        x = u(vendor="Lieferant C", reason="mehrdeutig: 2 laufende Orders von X")
+        r = klaerfaelle.select([x], V, None, None, {}, self.O)[0]["values"]
+        self.assertIn("PO26-057 (PO-ALPHA-1, 76.000 Stk)", r["Mögliche PO"])
+        self.assertIn("PO26-061", r["Mögliche PO"])
+        self.assertNotIn("PO26-060", r["Mögliche PO"])   # abgeschlossen
+        self.assertNotIn("FREMD", r["Mögliche PO"])
+        self.assertIn("PO-ID wählen", r["Warum offen"])
+
+    def test_kurze_texte(self):
+        x = u(vendor="Lieferant C", reason="mehrdeutig: PO-ALPHA-1, PO-ALPHA-3", summary="S " * 200)
+        r = klaerfaelle.select([x], V, None, None, {}, self.O)[0]["values"]
+        self.assertTrue(r["Mögliche PO"].startswith("PO26-057 (PO-ALPHA-1"))
+        self.assertLessEqual(len(r["Was"]), 140)
+        self.assertLessEqual(len(r["Warum offen"]), 80)
+
+    def test_ohne_orders_unveraendert(self):
+        x = u(vendor="Lieferant C", reason="mehrdeutig: PO-A, PO-B")
+        self.assertEqual(klaerfaelle.select([x], V)[0]["values"]["Mögliche PO"], "PO-A, PO-B")
+
+    def test_aktualisieren_nur_offene_ohne_eingabe(self):
+        self.assertIn("P.refresh", klaerfaelle.SYNC_JS)
+        self.assertIn("!String(cur['Zuordnung']", klaerfaelle.SYNC_JS)
 
 
 if __name__ == "__main__":

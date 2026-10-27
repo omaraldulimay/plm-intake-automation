@@ -20,15 +20,48 @@ OHNE = "Ohne Lieferant"
 
 
 def warum(reason):
+    """Kurzer Klartext (passt in die Zelle) statt interner Grund."""
     r = str(reason or "")
+    if r.startswith("mehrdeutig:") and "laufende Orders" in r:
+        return "Lieferant hat mehrere laufende Bestellungen: bitte PO-ID wählen"
     if r.startswith("mehrdeutig:"):
-        return "passt zu mehreren: " + r.split(":", 1)[1].strip()
+        return "Passt zu mehreren Bestellungen: bitte PO-ID wählen"
     if "keine Order" in r:
-        return "keine passende PO im PLM"
+        return "Keine passende Bestellung im PLM gefunden"
     return r
 
 
+def po_label(o):
+    """'PO26-057 (Titel, 76.000 Stk)' fuer die Spalte 'Mögliche PO' (PO-ID zum Hineinkopieren in 'Zuordnung')."""
+    from plm_intake import po_ids
+    try:
+        pid = po_ids.po_id(o) or "#%s" % o.get("orderNumber")
+    except Exception:
+        pid = "#%s" % o.get("orderNumber")
+    pcs = o.get("totalNumberOfPieces")
+    tail = ", %s Stk" % format(int(pcs), ",").replace(",", ".") if isinstance(pcs, (int, float)) and pcs else ""
+    return "%s (%s%s)" % (pid, str(o.get("title") or "")[:40], tail)
+
+
+def laufende(orders, v):
+    return [o for o in (orders or []) if v and (o.get("manufacturer") or {}).get("id") == v["id"] and events._status(o) not in events.ACTIVE_NOT]
+
+
+def moegliche(reason, v, orders):
+    """Kandidaten als PO-IDs: aus dem Grund (Order-Titel) oder bei 'N laufende Orders' alle laufenden Orders des Lieferanten."""
+    if not orders:
+        return reason.split(":", 1)[1].strip()[:300] if reason.startswith("mehrdeutig:") and "laufende Orders" not in reason else ""
+    if reason.startswith("mehrdeutig:") and "laufende Orders" not in reason:
+        titles = [t.strip() for t in reason.split(":", 1)[1].split(",")]
+        hit = [o for o in orders if o.get("title") in titles]
+        return " | ".join(po_label(o) for o in hit)[:300] if hit else ", ".join(titles)[:300]
+    if reason.startswith("mehrdeutig:") and "laufende Orders" in reason:
+        return " | ".join(po_label(o) for o in laufende(orders, v)[:8])[:300]
+    return ""
+
+
 MAILS = Path.home() / "Library/CloudStorage/kontakt@firma.example/Meine Ablage/PLM-Mails"   # je Mail ein Ordner "<Datum>_<Zeit>_<Absender>_<Betreff>_<Gmail-ID>" mit mail.txt ("Message-ID: <id>")
+AKTUELL = ("Was", "Warum offen", "Mögliche PO")   # Texte offener Zeilen ohne Eingabe des Menschen werden auf den neuen Klartext gebracht
 NEU = ("Nummer", "Mögliche PO", "Aktion", "Zitat", "Absender", "Betreff", "Mail-ID", "Suche")
 
 
@@ -75,7 +108,7 @@ def suche(mail_id, frm, date, dirs=None):
     return " | ".join(parts)[:400]
 
 
-def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None):
+def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None, orders=None):
     """Nicht zugeordnete Ereignisse -> Zeilen (dict mit marker, category, values). Rein, testbar."""
     rows, seen = [], set()
     for u in unmatched:
@@ -98,10 +131,10 @@ def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None):
         if ident and core.norm(ident) not in core.norm(was):
             was = "%s (%s)" % (was, ident)
         rows.append({"marker": mk, "category": v["name"] if v else OHNE,
-                     "values": {"Datum": datum if re.fullmatch(r"\d{4}-\d{2}-\d{2}", datum) else None, "Art": ART[e["type"]], "Was": was[:300],
-                                "Warum offen": warum(reason)[:200],
+                     "values": {"Datum": datum if re.fullmatch(r"\d{4}-\d{2}-\d{2}", datum) else None, "Art": ART[e["type"]], "Was": was[:140],
+                                "Warum offen": warum(reason)[:80],
                                 "Nummer": ident[:200],
-                                "Mögliche PO": reason.split(":", 1)[1].strip()[:300] if reason.startswith("mehrdeutig:") and "laufende Orders" not in reason else "",
+                                "Mögliche PO": moegliche(reason, v, orders),
                                 "Aktion": scrub(e.get("action_needed"))[:300],
                                 "Zitat": scrub(e.get("source_quote"))[:300],
                                 "Absender": scrub(m.get("from"))[:200],
@@ -147,6 +180,7 @@ SYNC_JS = r'''(async () => {
     if (!w) continue;
     const cur = r.values || {}; const add = {};
     for (const k of P.fill) { const v = w[k]; if ((cur[k] === undefined || cur[k] === null || cur[k] === '') && v !== undefined && v !== null && v !== '') add[k] = v; }
+    if (cur.Status === 'offen' && !String(cur['Zuordnung'] || '').trim()) for (const k of (P.refresh || [])) { const v = w[k]; if (v !== undefined && v !== null && v !== '' && cur[k] !== v) add[k] = v; }
     if (!Object.keys(add).length) continue;
     try {
       const ur = await c.mutate({ mutation: op('mutation', 'updateCustomRow', [['id', 'ID'], ['input', 'UpdateCustomRowInput']], [F('id')]), variables: { id: r.id, input: { values: { ...cur, ...add } } }, errorPolicy: 'all' });
@@ -240,9 +274,9 @@ def sync(pl, ctx, vendor_aliases=None, runner=None, lauf=""):
     """Neue Klaerfaelle eintragen, zugeordnete abhaken. pl = events.plan(...); runner(js) -> Ergebnis (Browser)."""
     cfg = json.loads(CFG.read_text())
     dom = events.domain_vendors(ctx["vendors"])
-    rows = select(pl["unmatched"], ctx["vendors"], vendor_aliases, dom, mail_dirs())
+    rows = select(pl["unmatched"], ctx["vendors"], vendor_aliases, dom, mail_dirs(), ctx.get("orders"))
     resolved = sorted({l["marker"] for o in pl["orders"] for l in o["lines"]})
-    js = SYNC_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "brandId": cfg["brandId"], "rows": rows, "resolved": resolved, "fill": list(NEU)}, ensure_ascii=False))
+    js = SYNC_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "brandId": cfg["brandId"], "rows": rows, "resolved": resolved, "fill": list(NEU), "refresh": list(AKTUELL)}, ensure_ascii=False))
     if runner is None:
         from plm_intake.barcodes import run_js as runner
     res = runner(js) or {}
