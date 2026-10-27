@@ -128,6 +128,7 @@ def main(argv=None):
     rep += ["## Neue Produkte (Stylenummer des Lieferanten als vorlaeufige SKU, Tag SKU-OFFEN)"]
     rep += (["- %s | %s | Groessen %s | Farben %s" % (x["sku"], x["name"], ",".join(x["sizes"]), ",".join(x["colors"]) or "-") for x in specs_all.values()] or ["- keine"])
     rep += ["- nicht angelegt (%s): %s" % (n, "%s: %s" % (a, b)) for n, a, b in skipped_all] + [""]
+    product_import_failed = False
     if a.apply and specs_all:
         def find_product(sku):
             st, d = plm_client.call("GET", "products", search=sku)
@@ -136,8 +137,9 @@ def main(argv=None):
         try:
             new_products.create_products(list(specs_all.values()), find_product, log=lambda m: rep.append("- " + m))
         except Exception as e:
-            rep += ["", "ABBRUCH bei Produktanlage: %s. Nichts wiederholen, Stand im PLM pruefen." % e]
-            (intake / "auto_report.md").write_text("\n".join(rep)); print("\n".join(rep)); return 1
+            # kein Abbruch des ganzen Laufs: neue POs warten (brauchen die Produkte), Belege/Ereignisse/Sendungen laufen weiter
+            rep += ["", "WARNUNG Produktanlage fehlgeschlagen: %s. Neue Bestellungen warten auf den naechsten Lauf, Rest laeuft weiter. Stand im PLM pruefen." % e]
+            product_import_failed = True
         from plm_intake.context import fetch_all
         ctx["products"] = fetch_all(plm_client.call, "products")
         results = run.process(items, ctx, force=force)   # jetzt mit Produkt-/Varianten-Links
@@ -145,7 +147,7 @@ def main(argv=None):
         vn_ = (docs_by_name.get(n) or {}).get("vendor")
         if r.decision == "CREATE" and vn_ in auto_alias and isinstance(r.payload, dict):
             r.payload["notes"] = str(r.payload.get("notes") or "") + " Lieferant automatisch zugeordnet: Belegname '%s' = %s (gleiche Mail-Domain)." % (vn_, auto_alias[vn_])
-    payloads = {n: r.payload for n, r in results if r.decision == "CREATE"}
+    payloads = {n: r.payload for n, r in results if r.decision == "CREATE"} if not product_import_failed else {}
     forced_open = [(n, r) for n, r in results if n in force and r.decision != "CREATE"]   # Mensch wollte CREATE, aber die Pruefung laesst es nicht zu: nie stillschweigend
     over = list(payloads)[MAX_NEW_POS_PER_RUN:]   # Sicherheitsgrenze: mehr als N neue POs in einem Lauf wartet auf einen Menschen
     for n in over:

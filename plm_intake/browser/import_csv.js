@@ -12,9 +12,11 @@ const { chromium } = require('playwright-core'); const os = require('os'), path 
   await page.waitForFunction(() => !!window.__APOLLO_CLIENT__, null, { timeout: 45000 });
   await page.goto('https://app.lifecycleplm.com/collections', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(5000); await shot(page, '0-liste');
-  await page.mouse.click(1273, 70);   // Upload-Symbol = Import CSV (Viewport 1600x1000)
+  const importBtn = page.locator('button[aria-label="Import CSV"]');   // Seite laedt manchmal >5 s; Knopf per Beschriftung statt Pixelposition
+  await importBtn.waitFor({ state: 'visible', timeout: 60000 });
+  await importBtn.click();
   await page.waitForTimeout(1500); await shot(page, '1-dialog');
-  await page.locator('input[type=file]').first().setInputFiles(path.resolve(file));
+  await page.locator('input[type=file]').first().setInputFiles(path.resolve(file), { timeout: 60000 });
   await page.waitForTimeout(2500); await shot(page, '1b-nach-upload');
   if (update) { const cb = page.getByText(/Update existing products/i).first(); if (await cb.count()) await cb.click({ force: true }); }
   await page.getByRole('button', { name: /^review$/i }).click({ timeout: 15000 });
