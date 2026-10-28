@@ -59,6 +59,11 @@ def no_price_ages(orders, now=None):
     return sorted(out, key=lambda x: -1 if x[1] is None else -x[1])
 
 
+def _env_on(name):
+    import os
+    return os.environ.get(name, "1").strip() != "0"
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
@@ -169,7 +174,7 @@ def main(argv=None):
         if r.get("pid") and r.get("po") and r["pid"] in by_id:
             po_aliases.setdefault(str(r["po"]), by_id[r["pid"]])
     evt = events.load_events(evs) + events.load_events(doc_event_paths)
-    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases, event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake))
+    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases, event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake), programme_cfg=events.load_programme(intake))
     rep += ["## Notizen/Ereignisse", events.report(pl)]
 
     # (5b) Sendungen: Packlisten/Rechnungen -> Sendung je Beleg (pending), Versand-Meilensteine -> in_transit/delivered + Tracking
@@ -326,7 +331,11 @@ def main(argv=None):
             f = inbox / (stem + ".json")
             if f.exists() and applied["event_orders"]: ledger.mark(led, f, "applied")
         done_titles = set(applied["event_orders"])   # nur wirklich geschriebene Orders (Lauf kann vorher abbrechen)
-        matched = {l["marker"] for o in pl["orders"] if o.get("title") in done_titles for l in o["lines"]}
+        _by_mk = {}   # Programm-Ereignisse stehen in mehreren Orders: erst erledigt, wenn ALLE ihre Orders geschrieben sind
+        for o in pl["orders"]:
+            for l in o["lines"]:
+                _by_mk.setdefault(l["marker"], set()).add(o.get("title"))
+        matched = {m_ for m_, ts_ in _by_mk.items() if ts_ <= done_titles}
         for f in evs:
             ids = [events.marker(e) for e in events.load_events([f])]
             if ids and all(m in matched for m in ids) and applied["event_orders"]: ledger.mark(led, f, "applied")
@@ -367,6 +376,15 @@ def main(argv=None):
         facts["verlauf_zugeordnet"] = n_verlauf
     except Exception as e:   # Lernen darf den Lauf nie abbrechen
         rep += ["", "## Mail-Verlauf (Thread)", "- FEHLER: %s" % str(e)[:200]]
+    # Programm-Gruppen / Nummern-Kette / Info-Regel (Schalter PROGRAMM_MATCH, NUMMER_MATCH, INFO_REGEL; nur Notizen, nie Termin/Status/Zahlung)
+    try:
+        st_ = pl.get("stats") or {}
+        n_pl = sum(1 for u in pl["orders"] for l in u["lines"] if "ueber Programm" in l["text"])
+        rep += ["", "## Programme, Nummern, Info-Regel", "- ueber Programm zugeordnet: %d Ereignisse (%d Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: %d | als Info (Muster/Streichung ohne Order): %d | PROGRAMM_MATCH %s, NUMMER_MATCH %s, INFO_REGEL %s" % (
+            st_.get("programm", 0), n_pl, st_.get("nummer", 0), st_.get("info_regel", 0), "an" if _env_on("PROGRAMM_MATCH") else "aus", "an" if _env_on("NUMMER_MATCH") else "aus", "an" if _env_on("INFO_REGEL") else "aus")]
+        facts["zahlen"]["programm"] = st_.get("programm", 0); facts["zahlen"]["nummer"] = st_.get("nummer", 0); facts["zahlen"]["info_regel"] = st_.get("info_regel", 0)
+    except Exception as e:
+        rep += ["", "## Programme, Nummern, Info-Regel", "- FEHLER: %s" % str(e)[:200]]
     # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
     try:
         from plm_intake import klaerfaelle

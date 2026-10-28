@@ -26,7 +26,7 @@ STATE_FILES = [
     "intake/ledger.json", "intake/status.json", "intake/STATUS.md", "intake/auto_report.md", "intake/alerts.log",
     "intake/po_aliases.json", "intake/vendor_aliases.json", "intake/style_aliases.json", "intake/overrides.json", "intake/event_overrides.json",
     "intake/klaerfaelle.json", "intake/last_run.json", "intake/lokaler_lauf_heartbeat.json",
-    "phase2/lieferanten.json", "intake/techpack_daily.json", "intake/po_ids.json", "intake/tagesbericht.md", "intake/tagesbericht_verlauf.json", "intake/lieferanten_ids.json", "intake/klaerfaelle_erledigt.json", "intake/order_attachments_ledger.json", "intake/vendor_domains.json", "intake/mail_threads.json",
+    "phase2/lieferanten.json", "intake/techpack_daily.json", "intake/po_ids.json", "intake/tagesbericht.md", "intake/tagesbericht_verlauf.json", "intake/lieferanten_ids.json", "intake/klaerfaelle_erledigt.json", "intake/order_attachments_ledger.json", "intake/vendor_domains.json", "intake/mail_threads.json", "intake/programme.json",
 ]
 
 

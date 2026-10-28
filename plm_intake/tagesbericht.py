@@ -137,6 +137,8 @@ def build(facts, exit_code, mode, state_text="", now=None, verlauf=None, dauer_s
         "geschrieben" if apply else "nur geplant", z.get("orders", 0), z.get("notes", 0), z.get("ship_new", 0), z.get("ship_upd", 0), z.get("techpacks", 0), len(facts.get("aliase") or [])))
     if z.get("inhalt_aktiv"):   # Inhaltsbasierte Zuordnung (content_match, Schalter CONTENT_MATCH): nur Notiz, belegter Treffer steht in der Notizzeile
         L.append("   inhaltlich zugeordnet %s (nur Notiz, nie Termin/Status/Zahlung)" % z.get("inhalt", 0))
+    if z.get("programm") or z.get("nummer") or z.get("info_regel"):   # Programm-Gruppen / Betreffnummer / Info-Regel (nur Notizen bzw. Info)
+        L.append("   ueber Programm zugeordnet %s | ueber Betreffnummer/Positionswort %s | als Info (Muster/Streichung ohne Order) %s (nur Notiz, nie Termin/Status/Zahlung)" % (z.get("programm", 0), z.get("nummer", 0), z.get("info_regel", 0)))
     if facts.get("zuordnung") is not None:   # Eingaben des Menschen in der Klaerfaelle-Tabelle (Spalte 'Zuordnung')
         L.append("   Zuordnungen aus der Tabelle: angewendet %s, abgelehnt %s" % (facts["zuordnung"].get("angewendet", 0), facts["zuordnung"].get("abgelehnt", 0)))
     # 3. Klaerfaelle

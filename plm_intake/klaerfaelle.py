@@ -81,6 +81,24 @@ def kompakt(v):
     return {k: x for k, x in out.items() if x not in (None, "")}
 
 
+DATENPFLEGE = "Datenpflege: "   # Zeilen, die keine Mail-Zuordnung sind (Zahlungsplan-Widerspruch, doppelte Produktnummer): Mensch pflegt Daten, kein Mail-Klaerfall
+
+
+def ist_datenpflege(values):
+    """True fuer eine Zeile, die kein Mail-Klaerfall ist: Quelle beginnt nicht mit 'Mail ' (Mail-Zeilen: 'Mail <Datum> | <Betreff> | ev:..'; Zahlungsplan: 'Zahlungsplan ...', Datenabgleich: 'Datenabgleich ...')."""
+    q = str((values or {}).get("Quelle") or "").strip()
+    return bool(q) and not q.startswith("Mail ")
+
+
+def datenpflege(values):
+    """Zeile mit 'Datenpflege: ' vor 'Warum offen' (nur Datenpflege-Zeilen, nie doppelt). Unveraenderte Kopie sonst."""
+    v = dict(values or {})
+    w = str(v.get("Warum offen") or "")
+    if ist_datenpflege(v) and not w.startswith(DATENPFLEGE):
+        v["Warum offen"] = (DATENPFLEGE + w)[:300]
+    return v
+
+
 def mail_dirs(root=None):
     """Gmail-ID -> Fundort im Drive-Export: Sammeldatei mails_*.txt (aktuell) oder Ordnername (aeltere Mails). Leer, wenn nicht gemountet."""
     root = Path(root) if root else MAILS
@@ -343,7 +361,7 @@ def main(argv=None):
     ctx = load_context(); add_po_numbers(ctx)
     al = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
     poal = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
-    pl = events.plan(events.load_events(evs), ctx["orders"], ctx["vendors"], poal, al, vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"), event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake))
+    pl = events.plan(events.load_events(evs), ctx["orders"], ctx["vendors"], poal, al, vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"), event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake), programme_cfg=events.load_programme(intake))
     if a.apply:
         rows, res = sync(pl, ctx, al)
         print(json.dumps(res, ensure_ascii=False, indent=1))

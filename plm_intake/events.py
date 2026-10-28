@@ -10,6 +10,7 @@ Alles andere (Menge/Preis-Aenderungen, Qualitaet, Muster, Versand ohne Order) bl
 """
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -115,6 +116,16 @@ def title_words(o, vendor_name=""):
 TEST_ORDER = re.compile(r"ZZ|(?:^|-)T1(?:-|$)", re.I)   # Testobjekte (ZZ-*, *-T1, *-KH-T1-EXTRA) nie als Ziel: sonst Scheinmehrdeutigkeit (LIEFERANT_D-T1 vs. LIEFERANT_D-ALI...)
 TR = str.maketrans("İıŞşĞğÜüÖöÇç", "IiSsGgUuOoCc")
 CODE = re.compile(r"[A-Za-z]{0,6}[-_ ]?\d{3,}[A-Za-z0-9_\-]*")
+
+
+AKTE_RE = re.compile(r"(?<![A-Za-z0-9])IM\.\d{6}(?:\.\d{2})?(?![A-Za-z0-9])", re.I)   # Speditions-Aktenzeichen (SPEDITION_B)
+CONTAINER_RE = re.compile(r"(?<![A-Za-z0-9])[A-Z]{4}[ -]?\d{3}[ -]?\d{3}[ -]?\d(?![A-Za-z0-9])|(?<![A-Za-z0-9])[A-Z]{4}\d{7}(?![A-Za-z0-9])")
+
+
+def subject_idents(e):
+    """Aktenzeichen und Container aus dem Mail-Betreff (normalisiert). Dienen nie als Treffer fuer sich, nur als Schluessel fuer Aliase."""
+    subj = str((e.get("_mail") or {}).get("subject") or "") + " " + str(e.get("subject") or "")
+    return {core.norm(t) for t in AKTE_RE.findall(subj) + CONTAINER_RE.findall(subj.upper())}
 
 
 def codes(*vals):
@@ -458,7 +469,8 @@ def find_order(e, orders, vendors, aliases=None, vendor_aliases=None, vendor_onl
     if hit:
         return hit, "po_id"
     keys = [(po, True)] if po else []
-    keys += [(core.norm(x), False) for x in [ref.get("container")] + [d_.get(k) for k in ("invoice_number", "bl", "awb", "hbl", "mbl", "container")] if x not in (None, "", False) and len(core.norm(x)) >= 5]
+    keys += [(core.norm(x), False) for x in [ref.get("container")] + [d_.get(k) for k in ("invoice_number", "invoice_no", "invoice", "bl", "awb", "hbl", "mbl", "container")] if x not in (None, "", False) and len(core.norm(x)) >= 5]
+    keys += [(k, False) for k in subject_idents(e)]   # Spedition-Akte (IM.001003.26) / Container im Mail-Betreff: nur exakt gegen Aliase (z. B. aus plm_intake/aliases_aus_archiv.py)
     src = e.get("source")
     if isinstance(src, dict) and src.get("doc") and len(core.norm(src["doc"])) >= 5:   # Dokumentnummer (source.doc) zaehlt wie eine Beleg-Nr (nur exakt)
         keys.append((core.norm(src["doc"]), False))
@@ -580,7 +592,9 @@ WEAK = {"vendor_only": " [Zuordnung: einzige laufende Order des Lieferanten, nic
         "verlauf": " [Zuordnung: ueber Mail-Verlauf zugeordnet (alle zugeordneten Ereignisse des Gmail-Verlaufs gehoeren zu dieser Order), nicht per PO-Nr belegt]",
         "text": " [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]",
         "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]",
-        "inhalt": " [Zuordnung: inhaltlich zugeordnet, nicht per PO-Nr belegt]"}
+        "inhalt": " [Zuordnung: inhaltlich zugeordnet, nicht per PO-Nr belegt]",
+        "programm": " [Zuordnung: ueber Programm zugeordnet, nicht per PO-Nr belegt]",
+        "nummer": " [Zuordnung: ueber Betreffnummer/Positionswort zugeordnet, nicht per PO-Nr belegt]"}
 
 
 INFO_OVERRIDE = "__info__"
@@ -600,6 +614,12 @@ def load_thread_orders(intake):
     """output/intake/mail_threads.json {Thread-ID: [Order-ID, ...]} (gelernt, plm_intake.mail_threads)."""
     from plm_intake import mail_threads
     return mail_threads.load(Path(intake) / "mail_threads.json")
+
+
+def load_programme(intake):
+    """output/intake/programme.json (Zustand), sonst plm_intake/programme_start.json (plm_intake.programme)."""
+    from plm_intake import programme
+    return programme.load(Path(intake) / "programme.json")
 
 
 def _by_mail_thread(results, assigned, by_oid, thread_orders, vendors, vendor_aliases, dom):
@@ -625,7 +645,254 @@ def _by_mail_thread(results, assigned, by_oid, thread_orders, vendors, vendor_al
     return out
 
 
-def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None, event_overrides=None, thread_orders=None):
+def _consistent(cand, why):
+    """Passt die gefundene Order zum Grund der offenen Zuordnung? (keine Order / mehrere laufende Orders / sie steht unter den genannten Kandidaten)"""
+    return why == "keine Order gefunden" or cand["title"] in why or (why.startswith("mehrdeutig:") and "laufende Orders" in why)
+
+
+def _open(o, why):
+    return not o and not why.startswith("info:") and not why.startswith("abweichend")
+
+
+# ---------------- Programm-Zuordnung (plm_intake.programme) ----------------
+PROGRAMM_TYPES = ("SHIPMENT", "SCHEDULE", "DELAY", "QUALITY", "ORDER_CHANGE", "PAYMENT")   # Zahlung nur als Notiz (schwache Zuordnung setzt nie Paid)
+WEAK_PROGRAMM = "ueber Programm %s zugeordnet (%s; Notiz in allen %d Orders des Programms: %s), nicht per PO-Nr belegt"
+
+
+def _by_programm(results, orders, vendors, vendor_aliases, dom, cfg):
+    """Ereignis ohne Order, dessen Text (oder Mail-Betreff) genau EIN Programm nennt (Programmwort/IAN/Kennung), gehoert zur GRUPPE der Orders dieses Programms (plm_intake.programme):
+    e['_group'] = alle Orders der Gruppe, Rueckgabe-Order = erste. Nur wenn der Lieferant zum Programm passt; schwach (nur Notiz). Schalter PROGRAMM_MATCH."""
+    from plm_intake import programme
+    if not programme.enabled() or not (cfg or {}).get("programme"):
+        return results
+    out = []
+    for e, (o, why) in results:
+        got = None
+        if _open(o, why) and e.get("type") in PROGRAMM_TYPES:
+            v = vendor_of(e, vendors, vendor_aliases, dom)
+            got = programme.find(e, v, vendors, orders, cfg) if v else None
+            if got and not (why == "keine Order gefunden" or (why.startswith("mehrdeutig:") and ("laufende Orders" in why or any(g["title"] in why for g in got["orders"])))):
+                got = None   # ein anderer, konkreter Hinweis (Kandidaten ohne die Gruppe) geht vor
+        if got:
+            e["_group"] = got["orders"]; e["_programm"] = got
+            out.append((e, (got["orders"][0], "programm")))
+        else:
+            out.append((e, (o, why)))
+    return out
+
+
+def _programm_verlauf(results, orders, vendors, vendor_aliases, dom, cfg):
+    """Ereignis ohne eigenes Programmwort im Gmail-Verlauf, dessen uebrige Ereignisse EIN Programm nennen (>= 2 Treffer, nie ein anderes Programm/eine andere Order, kein Fremdwort):
+    erbt die Gruppe (gleiche Notiz-Regeln wie _by_programm)."""
+    from plm_intake import programme
+    if not programme.enabled() or not (cfg or {}).get("programme"):
+        return results
+    by_t = {}
+    for e, (o, why) in results:
+        t = (e.get("_mail") or {}).get("thread")
+        if t:
+            by_t.setdefault(t, []).append((e, (o, why)))
+    out = []
+    for e, (o, why) in results:
+        t = (e.get("_mail") or {}).get("thread")
+        grp = by_t.get(t) or []
+        if not (t and _open(o, why) and e.get("type") in PROGRAMM_TYPES and len(grp) > 1):
+            out.append((e, (o, why))); continue
+        v = vendor_of(e, vendors, vendor_aliases, dom)
+        names = {x[0]["_programm"]["name"] for x in grp if x[1][1] == "programm"}
+        gids = {g["id"] for x in grp if x[1][1] == "programm" for g in x[0]["_group"]}
+        other = {x[1][0]["id"] for x in grp if x[1][0] and x[1][1] != "programm" and x[1][0]["id"] not in gids}   # konkrete Orders ausserhalb der Gruppe im Verlauf
+        n_hits = sum(1 for x in grp if x[1][1] == "programm")
+        if not v or len(names) != 1 or n_hits < 2 or other or any(programme._has_other(cfg, programme.event_text(x[0])) for x in grp):
+            out.append((e, (o, why))); continue
+        src = next(x[0]["_programm"] for x in grp if x[1][1] == "programm")
+        if not _programm_vendor_ok(cfg, src["name"], v, vendors) or not (why == "keine Order gefunden" or (why.startswith("mehrdeutig:") and "laufende Orders" in why)):
+            out.append((e, (o, why))); continue
+        e["_group"] = src["orders"]; e["_programm"] = dict(src, hit="Gmail-Verlauf (%d Ereignisse nennen das Programm)" % n_hits, quelle="verlauf")
+        out.append((e, (src["orders"][0], "programm")))
+    return out
+
+
+def _programm_vendor_ok(cfg, name, v, vendors):
+    from plm_intake import programme
+    return programme._vendor_ok((cfg.get("programme") or {}).get(name) or {}, v, vendors)
+
+
+# ---------------- Nummern-Kette: Betreffnummer / Positionswort (nur Daten, die in der Cloud vorhanden sind) ----------------
+def _nummer_on():
+    return os.environ.get("NUMMER_MATCH", "1").strip() != "0"
+
+
+NUM_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/\-]{4,}")
+WORD_STOP = set("""black white blue navy green grey gray olive brown red pink beige cream orange yellow purple khaki
+jacket jackets shirt shirts tshirt pants pant hoodie hoodies sweat sweater sweatshirt sweatpant sweatpants socks sock leggings legging shorts trousers
+women woman womens mens unisex ladies men kids print prints order orders styles style sample samples shipment production delivery container packing invoice quantity pieces
+monday tuesday wednesday thursday friday saturday sunday january february march april june july august september october november december
+which would could should there their about after before status update confirmed confirmation planned planning please regarding""".split())
+
+
+def _subject_texts(e):
+    d = e.get("details") or {}
+    return [str((e.get("_mail") or {}).get("subject") or ""), str(e.get("subject") or ""), str(d.get("subject") or "")]
+
+
+def _nummer_subject(e, pidx, v):
+    """Eine Nummer im Betreff (z. B. 'inv. no.: F260526SF') ist GENAU die poNumber einer Order (exakt, >= 6 Zeichen mit Buchstaben und Ziffern). -> (Order, Hinweis) oder None."""
+    toks = set()
+    for s in _subject_texts(e):
+        for t in NUM_TOKEN.findall(s):
+            n = core.norm(t)
+            if len(n) >= 6 and re.search(r"[a-z]", n) and re.search(r"\d", n):
+                toks.add((n, t.strip(".,;:")))
+    hits = {}
+    for n, raw in toks:
+        for o in pidx.get(n, []):
+            hits[o["id"]] = (o, raw)
+    if len(hits) != 1:
+        return None
+    o, raw = next(iter(hits.values()))
+    if v and (o.get("manufacturer") or {}).get("id") != v["id"]:
+        return None
+    return o, "Betreffnummer %s = PO-Nr der Order" % raw
+
+
+def _item_text(o):
+    return " ".join(str(i.get("name") or "") for i in o.get("items") or [])
+
+
+def _ev_signal_words(e):
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or ""), _subject_texts(e)[0], str((e.get("ref") or {}).get("style") or "")])
+    return re.findall(r"[a-z]+", txt.lower())
+
+
+def _fuzzy(w, words):
+    import difflib
+    return w in words or (len(w) >= 6 and any(x[0] == w[0] and abs(len(x) - len(w)) <= 2 and difflib.SequenceMatcher(None, w, x).ratio() >= 0.85 for x in words if len(x) >= 5))
+
+
+def _nummer_wort(e, why, orders, v):
+    """Positionswort: ein Wort-Paar ('black friday') oder ein unterscheidendes Wort (>= 6 Buchstaben, kein Farb-/Kleidungs-/Fuellwort; Tippfehler-tolerant) des Ereignisses steht in den
+    Positionsnamen von GENAU EINER laufenden Order des Lieferanten (alle Treffer zusammen = eine Order, sonst nichts). -> (Order, Hinweis) oder None."""
+    if not v:
+        return None
+    pool = [o for o in orders if (o.get("manufacturer") or {}).get("id") == v["id"] and _status(o) not in ACTIVE_NOT]
+    if why.startswith("mehrdeutig:") and "laufende Orders" not in why:
+        named = [t.strip() for t in why.split(":", 1)[1].split(",")]
+        pool = [o for o in pool if o["title"] in named]
+    if len(pool) < 2:
+        return None
+    ws = _ev_signal_words(e)
+    bigrams = {"%s %s" % (a, b) for a, b in zip(ws, ws[1:]) if len(a) >= 4 and len(b) >= 4}
+    singles = {w for w in ws if len(w) >= 6 and w not in WORD_STOP} - set(re.findall(r"[a-z]+", str(v.get("name") or "").lower()))
+    if not bigrams and not singles:
+        return None
+    hit, why_hit = {}, {}
+    for o in pool:
+        txt = " ".join(re.findall(r"[a-z]+", _item_text(o).lower()))
+        iw = set(txt.split())
+        tb = {"%s %s" % (a, b) for a, b in zip(txt.split(), txt.split()[1:])}
+        for sig in (bigrams & tb) | {w for w in singles if _fuzzy(w, iw)}:
+            if o["id"] not in hit:
+                hit[o["id"]] = o
+            why_hit.setdefault(o["id"], sig)
+    if len(hit) != 1:
+        return None
+    oid = next(iter(hit))
+    return hit[oid], "Positionswort '%s' steht nur in den Positionen dieser Order" % why_hit[oid]
+
+
+def _by_nummer(results, orders, vendors, vendor_aliases, dom):
+    """Betreffnummer = poNumber einer Order, sonst eindeutiges Positionswort -> Order (schwach: nur Notiz). Schalter NUMMER_MATCH."""
+    if not _nummer_on():
+        return results
+    pidx = {}
+    for o in orders:
+        n = core.norm(o.get("poNumber"))
+        if len(n) >= 6 and re.search(r"[a-z]", n) and re.search(r"\d", n):
+            pidx.setdefault(n, []).append(o)
+    out = []
+    for e, (o, why) in results:
+        if not _open(o, why) or e.get("type") not in ORDER_TYPES or not (why == "keine Order gefunden" or why.startswith("mehrdeutig:")):
+            out.append((e, (o, why))); continue
+        v = vendor_of(e, vendors, vendor_aliases, dom)
+        got = _nummer_subject(e, pidx, v)
+        if got and not _consistent(got[0], why):
+            got = None
+        got = got or _nummer_wort(e, why, orders, v)
+        if got:
+            e["_nummer_hit"] = got[1]
+            out.append((e, (got[0], "nummer")))
+        else:
+            out.append((e, (o, why)))
+    return out
+
+
+# ---------------- Info-Regel: Muster / Entwicklung / gestrichene Styles ohne Bestellbezug ----------------
+INFO_TAG = "info: Regel Muster/Streichung ohne Bestellbezug"
+INFO_TYPES = ("ORDER_CHANGE", "SAMPLE", "OTHER", "QUALITY")
+INFO_TOPIC = re.compile(r"cancel\w*|storn\w*|gestrichen\w*|samples?|muster\w*|development|entwicklung\w*|prototype\w*|fitting|\bpps\b|\bsms\b", re.I)
+INFO_NOT = re.compile(r"invoice|rechnung|proforma|b/l|bill of lading|\bhbl\b|\bawb\b|container|vessel|payment|zahlung|\bpaid\b|bezahlt|\bprice[sd]?\b|preis|deposit|balance|purchase order|bestellung|\bpo\b|[$€]|\b(usd|eur)\b", re.I)
+INFO_KEYS = ("po_number", "po", "order", "invoice", "invoice_number", "invoice_no", "bl", "hbl", "mbl", "awb", "container", "amount", "total", "total_cost", "price", "prices")
+
+
+def _info_on():
+    return os.environ.get("INFO_REGEL", "1").strip() != "0"
+
+
+STRICT_STYLE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]{2,6}[-_]?\d{2,}[A-Za-z0-9_]{0,3}(?![A-Za-z0-9])|(?<![A-Za-z0-9.,])\d{5,6}(?![A-Za-z0-9.,])")
+
+
+def _info_styles(e):
+    """Styles des Ereignisses, nur strenge Codes (ref.style, details.style(s), Codes wie 'FAB-001'/'HDFL05'/'01955' im Text); Datumsreste und Wortfetzen zaehlen nicht."""
+    d = e.get("details") or {}
+    parts = [str((e.get("ref") or {}).get("style") or ""), str(d.get("style") or "")] + [str(x) for x in (d.get("styles") if isinstance(d.get("styles"), list) else [])]
+    toks = set(_ev_styles(e))
+    for x in parts + [str(e.get("summary") or ""), str(e.get("source_quote") or "")]:
+        toks |= {core.norm(t) for t in STRICT_STYLE.findall(_DATE.sub(" ", x))}
+    return {t for t in toks if len(t) >= 4 and re.search(r"\d", t)}
+
+
+def _style_in_orders(tok, orders, idx):
+    for o in orders:
+        if tok in core.norm(o.get("title")) or tok in core.norm(o.get("poNumber")) or any(tok in core.norm(i.get("name")) for i in o.get("items") or []):
+            return True
+        if any(k == tok or k.startswith(tok) for k in (idx or {}).get(o["id"], {}).get("skus", ())):
+            return True
+    return False
+
+
+def _info_regel(e, why, orders, idx, vendors, vendor_aliases, dom):
+    """Info-Grund (str) oder None. Ein Ereignis OHNE PO-/Rechnungs-/Containernummer, Betrag und Beleg-Wort (Muster, Entwicklung, Streichung) wird Info, wenn es nirgends andocken kann:
+    (a) es nennt Styles und KEINER davon steht in irgendeiner Order des PLM (gestrichene Styles wie FAB-001, Lieferant O HDFL..), oder (b) es nennt keinen Style und der Lieferant hat gar keine Order im PLM.
+    Nur wenn die Order-Suche 'keine Order gefunden' ergab; nie Zahlungen; Versand/Termin/Verzoegerung nur mit Muster-/Entwicklungs-/Streichungs-Thema. Schalter INFO_REGEL."""
+    if not _info_on() or why != "keine Order gefunden":
+        return None
+    t = e.get("type")
+    ref, d = e.get("ref") or {}, e.get("details") or {}
+    txt = " ".join([str(e.get("summary") or ""), str(e.get("source_quote") or "")])
+    subj = str((e.get("_mail") or {}).get("subject") or "")
+    if t not in INFO_TYPES + ("SHIPMENT", "SCHEDULE", "DELAY"):
+        return None
+    if t not in INFO_TYPES and not INFO_TOPIC.search(txt + " " + subj):
+        return None
+    if ref.get("po_number") or ref.get("container") or any(d.get(k) not in (None, "", False) for k in INFO_KEYS):
+        return None
+    from plm_intake import po_ids
+    if po_ids.find_po_ids(txt, subj) or INFO_NOT.search(_DATE.sub(" ", txt)):
+        return None
+    styles = _info_styles(e)
+    live = [o for o in orders if not TEST_ORDER.search(str(o.get("title") or ""))]
+    v = vendor_of(e, vendors, vendor_aliases, dom)
+    if styles:
+        if any(_style_in_orders(s, live, idx) for s in styles):
+            return None
+        return INFO_TAG + ": Style %s steht in keiner Order, keine PO-/Rechnungsnummer (%s)" % (", ".join(sorted(styles))[:60], t)
+    if v and not any((o.get("manufacturer") or {}).get("id") == v["id"] for o in live):
+        return INFO_TAG + ": Lieferant %s hat keine Order im PLM, keine PO-/Rechnungsnummer (%s)" % (v["name"], t)
+    return None
+
+
+def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None, event_overrides=None, thread_orders=None, programme_cfg=None):
     per = {}
     invalid_overrides = []
     unmatched = []
@@ -656,11 +923,19 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
         results.append((e, find_order(e, orders, vendors, aliases, vendor_aliases, vendor_only, idx, dom, style_aliases)))
     assigned = [(e, o["id"], why) for e, (o, why) in results if o]   # vor der Verlaufs-Zuordnung: nur eigene Treffer (fuer plm_intake.alias_learn)
     if vendor_only:   # Verlaufs-Zuordnung: Ereignisse ohne eigenen Bezug erben die Order, auf die BELEGTE Ereignisse desselben Mail-Verlaufs eindeutig zeigen (nur Notiz, nie Termin/Status/Zahlung)
+        from plm_intake import programme
+        pcfg = programme_cfg if programme_cfg is not None else programme.load()
+        results = _by_nummer(results, orders, vendors, vendor_aliases, dom)   # Betreffnummer = poNumber / Positionswort (nur Notiz)
+        results = _by_programm(results, orders, vendors, vendor_aliases, dom, pcfg)   # Programmwort/IAN im Text -> Gruppe von Orders (nur Notiz); VOR dem Verlauf, sonst erbt es eine einzelne fremde Order
+        results = _programm_verlauf(results, orders, vendors, vendor_aliases, dom, pcfg)
         by_thread = {}
         for e, (o, why) in results:
             tk = thread_key(e)
             if o and why not in WEAK and tk:
                 by_thread.setdefault(tk, {})[o["id"]] = o
+            elif why == "programm" and tk:   # ein Programm-Ereignis zeigt auf ALLE Orders seiner Gruppe: der Verlauf ist dann nie eindeutig (kein Erben einer einzelnen Order)
+                for g in e.get("_group") or []:
+                    by_thread.setdefault(tk, {})[g["id"]] = g
         fixed = []
         for e, (o, why) in results:
             tk = thread_key(e)
@@ -672,16 +947,27 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             else:
                 fixed.append((e, (o, why)))
         results = fixed
-        results = _by_mail_thread(results, assigned, by_oid, thread_orders, vendors, vendor_aliases, dom)
-        results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or _sample_info(e, why) or why))) for e, (o, why) in results]
+        assigned_t = assigned + [(e, g["id"], "programm") for e, (o, why) in results if why == "programm" for g in e.get("_group") or []]   # nur fuer den Verlauf dieses Laufs (nichts wird gelernt)
+        results = _by_mail_thread(results, assigned_t, by_oid, thread_orders, vendors, vendor_aliases, dom)
+        results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or _sample_info(e, why) or _info_regel(e, why, orders, idx, vendors, vendor_aliases, dom) or why))) for e, (o, why) in results]
     for e, (o, why) in results:
         mk = marker(e)
         if not o:
             unmatched.append({"event": e, "reason": why})
             continue
+        if why == "programm" and e.get("_group"):   # Programm: dieselbe Notiz in ALLE Orders der Gruppe (je Order eigener Marker-Check beim Schreiben), nie Termin/Status/Zahlung/Sendung
+            pg = e.get("_programm") or {}
+            titles = ", ".join(g["title"] for g in e["_group"])[:220]
+            for g in e["_group"]:
+                pp = per.setdefault(g["id"], {"id": g["id"], "title": g["title"], "orderNumber": g.get("orderNumber"), "lines": [], "date_patch": {}, "date_mail": "", "pay": []})
+                pp["lines"].append({"marker": mk, "text": line(e) + " [Zuordnung: " + WEAK_PROGRAMM % (pg.get("name"), pg.get("hit"), len(e["_group"]), titles) + "]", "type": e.get("type"),
+                                    "mail_date": str(e["_mail"].get("date") or ""), "weak": True})
+            continue
         p = per.setdefault(o["id"], {"id": o["id"], "title": o["title"], "orderNumber": o.get("orderNumber"), "lines": [], "date_patch": {}, "date_mail": "", "pay": []})
         weak = why in WEAK   # nur ueber den Lieferanten/Verlauf zugeordnet: Notizzeile ja, Termin-/Zahlungs-/Statusaenderung nein
         txt = line(e) + WEAK.get(why, "")
+        if why == "nummer" and e.get("_nummer_hit"):
+            txt = line(e) + " [Zuordnung: %s; nicht per PO-Nr belegt]" % str(e["_nummer_hit"])[:160]
         if why == "inhalt" and e.get("_content_hit"):
             txt = line(e) + " [Zuordnung: inhaltlich zugeordnet: %s; nicht per PO-Nr belegt]" % str(e["_content_hit"])[:160]
         p["lines"].append({"marker": mk, "text": txt, "type": e.get("type"), "mail_date": str(e["_mail"].get("date") or ""), "weak": weak})
@@ -714,7 +1000,9 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
                 p["pay"].append({"amount": core.r2(d["amount"]), "marker": mk})
             except (TypeError, ValueError):
                 pass
-    return {"orders": list(per.values()), "unmatched": unmatched, "assigned": assigned, "invalid_overrides": invalid_overrides}
+    stats = {"programm": sum(1 for e, (o, why) in results if why == "programm"), "nummer": sum(1 for e, (o, why) in results if why == "nummer"),
+             "info_regel": sum(1 for e, (o, why) in results if not o and str(why).startswith(INFO_TAG))}
+    return {"orders": list(per.values()), "unmatched": unmatched, "assigned": assigned, "invalid_overrides": invalid_overrides, "stats": stats}
 
 
 def make_js(plan_):

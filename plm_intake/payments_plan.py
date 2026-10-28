@@ -216,7 +216,7 @@ CONFLICT_RE = re.compile(r"Bedingungen weichen ab|Zahlungsbedingungen[^.\n]{0,80
 def klaer_row(order, vendor_name, code, was, warum, aktion, today, key=None):
     mk = hashlib.sha1(("pay|%s|%s" % (code, key or order.get("id"))).encode()).hexdigest()[:8]
     return {"marker": mk, "category": vendor_name or "Ohne Lieferant",
-            "values": __import__("plm_intake.klaerfaelle", fromlist=["kompakt"]).kompakt({"Datum": today, "Art": "Zahlung", "Was": was[:300], "Warum offen": warum[:200], "Nummer": (order.get("title") or "")[:200],
+            "values": __import__("plm_intake.klaerfaelle", fromlist=["kompakt"]).kompakt({"Datum": today, "Art": "Zahlung", "Was": was[:300], "Warum offen": "Datenpflege: " + warum[:190], "Nummer": (order.get("title") or "")[:200],
                        "Mögliche PO": "", "Aktion": aktion[:300], "Zitat": "", "Absender": "", "Betreff": "", "Mail-ID": "", "Suche": "",
                        "Quelle": "Zahlungsplan %s | %s | ev:%s" % (today, code, mk), "Status": "offen"})}
 

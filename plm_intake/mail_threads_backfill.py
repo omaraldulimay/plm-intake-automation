@@ -67,7 +67,7 @@ def run(inbox, intake, ctx, th, apply=False, dirs=None):
     intake = Path(intake)
     al = json.load(open(intake / "vendor_aliases.json")) if (intake / "vendor_aliases.json").exists() else {}
     poal = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
-    kw = dict(vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"), event_overrides=events.load_event_overrides(intake))
+    kw = dict(vendor_only=True, products=ctx["products"], style_aliases=ctx.get("style_aliases"), event_overrides=events.load_event_overrides(intake), programme_cfg=events.load_programme(intake))
     pl_all = events.plan(evt, ctx["orders"], ctx["vendors"], poal, al, thread_orders={}, **kw)
     state = mail_threads.load(intake / "mail_threads.json")
     n_new = mail_threads.learn(state, pl_all["assigned"])

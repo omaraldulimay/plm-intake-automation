@@ -65,7 +65,27 @@ ORDER_JS = '''(async () => {
   return out;
 })()'''
 
-KOMPAKT_READ_JS = '''(async () => {
+KOMPAKT_DATENPFLEGE_JS = '''(async () => {
+  const P = __PAYLOAD__;
+  ''' + _HEAD + r'''
+  const out = { updated: 0, errors: [] };
+  const before = await readRows(); const byId = {}; before.forEach(r => { byId[r.id] = r; });
+  for (const u of P.updates) {
+    const r = byId[u.id];
+    if (!r || String((r.values || {}).Quelle || '') !== u.quelle) { out.errors.push('uebersprungen ' + u.id); continue; }
+    try {
+      const ur = await c.mutate({ mutation: op('mutation', 'updateCustomRow', [['id', 'ID'], ['input', 'UpdateCustomRowInput']], [F('id')]), variables: { id: u.id, input: { values: { ...(r.values || {}), 'Warum offen': u.warum } } }, errorPolicy: 'all' });
+      if (ur.data && ur.data.updateCustomRow) out.updated++; else out.errors.push(u.id + ': ' + (ur.errors || []).map(e => e.message).join('; ').slice(0, 160));
+    } catch (e) { out.errors.push(String(e.message).slice(0, 160)); }
+  }
+  const after = await readRows(); const back = {}; after.forEach(r => { back[r.id] = r.values || {}; });
+  out.verified = P.updates.filter(u => (back[u.id] || {})['Warum offen'] === u.warum).length;
+  out.rows_before = before.length; out.rows_after = after.length;
+  out.other_unchanged = before.filter(r => !P.updates.some(u => u.id === r.id)).every(r => JSON.stringify(back[r.id]) === JSON.stringify(r.values || {}));
+  return out;
+})()'''
+
+READ_JS = '''(async () => {
   const P = __PAYLOAD__;
   ''' + _HEAD + r'''
   return { fields: await readFields(), rows: await readRows() };
@@ -288,6 +308,7 @@ def main(argv=None):
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--spalten", action="store_true")
     ap.add_argument("--kompakt", action="store_true", help="Tabelle auf die wichtigsten Spalten kuerzen (Rest in 'Details'); Trockenlauf ohne --apply, mit Sicherung aller Zeilen")
+    ap.add_argument("--datenpflege", action="store_true", help="Zeilen ohne Mail-Bezug (Zahlungsplan, Datenabgleich) mit 'Datenpflege:' vor 'Warum offen' markieren; Trockenlauf ohne --apply, Sicherung aller Zeilen")
     ap.add_argument("--reihenfolge", action="store_true", help="Spalten in die Reihenfolge fuer den Menschen bringen (Trockenlauf ohne --apply)")
     ap.add_argument("--nur-marker")
     a = ap.parse_args(argv)
@@ -304,6 +325,20 @@ def main(argv=None):
             return 0
         r = run_js(KOMPAKT_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "rows": rows, "keep": list(REIHENFOLGE)}, ensure_ascii=False)))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
+    if a.datenpflege:   # Zeilen, die keine Mail-Faelle sind, erkennbar markieren ('Datenpflege: ' vor 'Warum offen'); keine Zeile wird entfernt
+        import datetime
+        cur = run_js(KOMPAKT_READ_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"]})))
+        ups = [{"id": r["id"], "quelle": str((r.get("values") or {}).get("Quelle") or ""), "warum": klaerfaelle.datenpflege(r.get("values") or {})["Warum offen"]}
+               for r in cur["rows"] if klaerfaelle.ist_datenpflege(r.get("values")) and not str((r.get("values") or {}).get("Warum offen") or "").startswith(klaerfaelle.DATENPFLEGE)]
+        bk = ROOT / "output" / "backup" / ("klaerfaelle_vor_datenpflege_%s.json" % datetime.date.today().isoformat())
+        print("Zeilen gesamt: %d | davon neu als Datenpflege zu markieren: %d | Sicherung: %s" % (len(cur["rows"]), len(ups), bk if a.apply else "(erst mit --apply)"))
+        for u in ups[:20]:
+            print("  -", u["quelle"][:60], "->", u["warum"][:80])
+        if not a.apply or not ups:
+            return 0
+        bk.parent.mkdir(parents=True, exist_ok=True); bk.write_text(json.dumps(cur, ensure_ascii=False, indent=1))
+        r = run_js(DATENPFLEGE_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "updates": ups}, ensure_ascii=False)))
+        print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") and r.get("verified") == len(ups) and r.get("other_unchanged") else 1
     if a.reihenfolge:
         r = run_js(ORDER_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "order": list(REIHENFOLGE), "apply": a.apply})))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1

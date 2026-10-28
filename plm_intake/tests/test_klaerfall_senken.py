@@ -126,10 +126,15 @@ class DomainAlias(unittest.TestCase):
 
 
 class BridgeFall(unittest.TestCase):
-    def test_stornierung_unbekannter_styles_bleibt_klaerfall(self):   # beabsichtigt: genannter Style passt zu keiner Position der einzigen Order -> nicht raten
+    def test_stornierung_unbekannter_styles_ist_info(self):   # Info-Regel (28.10., Omar freigegeben): gestrichene Styles, die in KEINER Order stehen, ohne PO-/Rechnungsnummer = Info; Schalter INFO_REGEL=0 stellt den alten Klaerfall her
         e = {"type": "ORDER_CHANGE", "vendor": "Lieferant AD", "ref": {"po_number": None, "style": "ORA-T-526, 01955, FAB-001", "container": None},
              "summary": "Cancellation of multiple styles/items", "details": {"action": "cancel"}, "confidence": 0.9, "_mail": {"id": "m", "date": "2026-10-26 08:49", "from": "kontakt@firma.example", "subject": "LIEFERANT_AD Comments"}}
         why, _ = unmatched(e)
+        self.assertTrue(why.startswith("info: Regel Muster/Streichung"), why)
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"INFO_REGEL": "0"}):
+            why, _ = unmatched(e)
         self.assertEqual(why, "keine Order gefunden")
 
 
