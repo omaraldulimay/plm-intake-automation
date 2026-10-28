@@ -159,9 +159,9 @@ DROPDOWN_JS = '''(async () => {
   const have = []; rowsBefore.forEach(r => { const v = String((r.values || {}).Zuordnung || '').trim(); if (v && !P.options.includes(v) && !have.includes(v)) have.push(v); });
   const options = P.options.concat(have);   // schon eingetragene Texte bleiben gueltig
   out.options = options.length; out.type_before = f.type;
-  const same = f.type === 'dropdown' && JSON.stringify(f.enumValues || []) === JSON.stringify(options);
+  const same = f.type === 'dropdown' && JSON.stringify(f.enumValues || []) === JSON.stringify(options) && !before.some(x => x.key === 'Auswahl');
   if (same || !P.apply) { out.would_change = !same; return out; }
-  const fields = before.map(x => x.key === 'Zuordnung' ? { key: x.key, type: 'dropdown', required: false, enumValues: options, multipleSelection: false } : x);
+  const fields = before.filter(x => x.key !== 'Auswahl').map(x => x.key === 'Zuordnung' ? { key: x.key, type: 'dropdown', required: false, enumValues: options, multipleSelection: false } : x);
   const r = await c.mutate({ mutation: op('mutation', 'updateCustomTable', [['id', 'ID'], ['input', 'UpdateCustomTableInput']], [F('id')]), variables: { id: P.tableId, input: { fields } }, errorPolicy: 'all' });
   if (!r.data || !r.data.updateCustomTable) { out.errors.push((r.errors || []).map(e => e.message).join('; ').slice(0, 200)); return out; }
   const after = await readFields(); const rowsAfter = await readRows(); const fa = after.find(x => x.key === 'Zuordnung');
