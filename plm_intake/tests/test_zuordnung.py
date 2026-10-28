@@ -64,26 +64,27 @@ class JsKonstanten(unittest.TestCase):
             self.assertTrue(hasattr(zuordnung, name), name)
 
 class Auswahlliste(unittest.TestCase):
-    O = [{"id": "o1", "title": "PO-ALPHA-1", "orderNumber": 57, "createdAt": "2026-07-02T10:00:00Z", "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "In Production"}]
+    O = [{"id": "o1", "title": "PO-ALPHA-1", "orderNumber": 57, "createdAt": "2026-07-02T10:00:00Z", "totalNumberOfPieces": 76000, "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "In Production"},
+         {"id": "o2", "title": "PO-ALPHA-2", "orderNumber": 60, "createdAt": "2026-08-02T10:00:00Z", "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "Complete"},
+         {"id": "o3", "title": "ZZ-FULLCASE-1", "orderNumber": 61, "createdAt": "2026-08-03T10:00:00Z", "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "Draft"}]
 
-    def test_kandidat_n_wird_zur_po_id_der_zeile(self):
+    def test_optionen_nur_laufende_ohne_test_und_info_zuerst(self):
         from plm_intake import zuordnung
-        rows = [{"id": "r1", "values": {"Auswahl": "Kandidat 2", "Mögliche PO": "1) PO26-057 (A, 5 Stk) | 2) PO26-060 (B, 7 Stk)"}},
-                {"id": "r2", "values": {"Auswahl": "Info"}},
-                {"id": "r3", "values": {"Auswahl": "Kandidat 3", "Mögliche PO": "1) PO26-057 (A)"}},
-                {"id": "r4", "values": {"Auswahl": "Kandidat 1", "Zuordnung": "PO26-099", "Mögliche PO": "1) PO26-057 (A)"}}]
-        zuordnung.auswahl_zu_zuordnung(rows)
-        self.assertEqual([r["values"]["Zuordnung"] for r in rows], ["PO26-060", "Info", "Kandidat 3", "PO26-099"])
+        o = zuordnung.dropdown_options(self.O)
+        self.assertEqual(o[0], "Info")
+        self.assertEqual(o[1:], ["Lieferant A · PO26-057 · PO-ALPHA-1 · 76.000 Stk"])
 
-    def test_auswahloptionen(self):
+    def test_gewaehlte_option_wird_wie_eine_po_id_aufgeloest(self):
         from plm_intake import zuordnung
-        self.assertEqual(zuordnung.AUSWAHL_OPTS[:2], ["Info", "Kandidat 1"]); self.assertEqual(len(zuordnung.AUSWAHL_OPTS), 9)
+        order, err = zuordnung.resolve_order("Lieferant A · PO26-057 · PO-ALPHA-1 · 76.000 Stk", self.O)
+        self.assertIsNone(err); self.assertEqual(order["id"], "o1")
+        self.assertEqual(zuordnung.parse("Info")[0], "info")
 
-    def test_sync_sendet_optionen_und_zuordnung_bleibt_text(self):
+    def test_sync_ruft_den_browser_mit_den_optionen(self):
         from plm_intake import zuordnung
         seen = []
-        zuordnung.sync_dropdown(None, runner=lambda js: seen.append(js) or {}, apply=False, cfg={"tableId": "t1"})
-        self.assertIn("Kandidat 8", seen[0]); self.assertIn('"apply": false', seen[0]); self.assertIn("type: 'string'", seen[0])
+        zuordnung.sync_dropdown(self.O, runner=lambda js: seen.append(js) or {}, apply=False, cfg={"tableId": "t1"})
+        self.assertIn("Lieferant A", seen[0]); self.assertIn('"apply": false', seen[0])
 
 
 if __name__ == "__main__":

@@ -46,7 +46,7 @@ COLS_JS = '''(async () => {
 })()'''
 
 # Reihenfolge der Spalten: zuerst das, was der Mensch zum Zuordnen braucht, ganz hinten die Technik
-REIHENFOLGE = ("Status", "Auswahl", "Zuordnung", "Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Rückmeldung", "Details", "Mail-ID", "Quelle")
+REIHENFOLGE = ("Status", "Zuordnung", "Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Rückmeldung", "Details", "Mail-ID", "Quelle")
 
 ORDER_JS = '''(async () => {
   const P = __PAYLOAD__;
@@ -146,53 +146,49 @@ WRITE_JS = '''(async () => {
 })()'''
 
 
-# Auswahl je Zeile: 'Kandidat 1..8' (= Nummer in der Spalte 'Mögliche PO' DIESER Zeile, wahrscheinlichste zuerst) oder 'Info'. 'Zuordnung' bleibt freier Text (z. B. PO-ID, wenn die Bestellung nicht unter den Kandidaten ist).
+# Zuordnung als Auswahlliste (Dropdown): 'Info' + alle laufenden Orders als 'Lieferant · PO-ID · Titel · Stueck'. Die Liste wird bei jedem Lauf nachgezogen.
 INFO_OPT = "Info"
-AUSWAHL_OPTS = [INFO_OPT] + ["Kandidat %d" % i for i in range(1, 9)]
 
 DROPDOWN_JS = '''(async () => {
   const P = __PAYLOAD__;
   ''' + _HEAD + r'''
   const out = { errors: [], changed: false };
   const before = await readFields(); const rowsBefore = await readRows();
-  const a = before.find(x => x.key === 'Auswahl'), z = before.find(x => x.key === 'Zuordnung');
-  if (!z) { out.errors.push('Spalte Zuordnung fehlt'); return out; }
-  const okA = a && a.type === 'dropdown' && JSON.stringify(a.enumValues || []) === JSON.stringify(P.options);
-  const okZ = z.type === 'string';
-  out.auswahl_vorhanden = !!a; out.zuordnung_typ = z.type;
-  if ((okA && okZ) || !P.apply) { out.would_change = !(okA && okZ); return out; }
-  let fields = before.map(x => x.key === 'Zuordnung' ? { key: x.key, type: 'string', required: false, enumValues: null, multipleSelection: false } : x);
-  const def = { key: 'Auswahl', type: 'dropdown', required: false, enumValues: P.options, multipleSelection: false };
-  fields = fields.some(x => x.key === 'Auswahl') ? fields.map(x => x.key === 'Auswahl' ? def : x) : fields.concat([def]);
+  const f = before.find(x => x.key === 'Zuordnung');
+  if (!f) { out.errors.push('Spalte Zuordnung fehlt'); return out; }
+  const have = []; rowsBefore.forEach(r => { const v = String((r.values || {}).Zuordnung || '').trim(); if (v && !P.options.includes(v) && !have.includes(v)) have.push(v); });
+  const options = P.options.concat(have);   // schon eingetragene Texte bleiben gueltig
+  out.options = options.length; out.type_before = f.type;
+  const same = f.type === 'dropdown' && JSON.stringify(f.enumValues || []) === JSON.stringify(options);
+  if (same || !P.apply) { out.would_change = !same; return out; }
+  const fields = before.map(x => x.key === 'Zuordnung' ? { key: x.key, type: 'dropdown', required: false, enumValues: options, multipleSelection: false } : x);
   const r = await c.mutate({ mutation: op('mutation', 'updateCustomTable', [['id', 'ID'], ['input', 'UpdateCustomTableInput']], [F('id')]), variables: { id: P.tableId, input: { fields } }, errorPolicy: 'all' });
   if (!r.data || !r.data.updateCustomTable) { out.errors.push((r.errors || []).map(e => e.message).join('; ').slice(0, 200)); return out; }
-  const after = await readFields(); const rowsAfter = await readRows();
-  out.changed = true; out.keys_after = after.map(x => x.key);
+  const after = await readFields(); const rowsAfter = await readRows(); const fa = after.find(x => x.key === 'Zuordnung');
+  out.changed = true; out.type_after = fa && fa.type; out.options_after = fa && (fa.enumValues || []).length;
   out.rows_unchanged = JSON.stringify(rowsBefore.map(r => [r.id, r.values])) === JSON.stringify(rowsAfter.map(r => [r.id, r.values]));
+  out.others_unchanged = JSON.stringify(before.filter(x => x.key !== 'Zuordnung')) === JSON.stringify(after.filter(x => x.key !== 'Zuordnung'));
   return out;
 })()'''
 
 
-def auswahl_zu_zuordnung(rows):
-    """Zeilen mit 'Auswahl' (und leerer 'Zuordnung') -> 'Zuordnung' = PO-ID des n-ten Kandidaten aus 'Mögliche PO' derselben Zeile bzw. 'Info'. Aendert nur die Kopie im Speicher."""
-    for r in rows:
-        v = r.get("values") or {}
-        a = str(v.get("Auswahl") or "").strip()
-        if not a or str(v.get("Zuordnung") or "").strip():
-            continue
-        if a.lower() == "info":
-            v["Zuordnung"] = "Info"; continue
-        m = re.fullmatch(r"Kandidat (\d+)", a)
-        cands = re.findall(r"\d+\) (PO\d{2}-\d{3})", str(v.get("Mögliche PO") or ""))
-        v["Zuordnung"] = cands[int(m.group(1)) - 1] if m and 0 < int(m.group(1)) <= len(cands) else a
-    return rows
+def option_label(o):
+    vend = str((o.get("manufacturer") or {}).get("name") or "?")[:24]
+    pcs = o.get("totalNumberOfPieces")
+    tail = " · %s Stk" % format(int(pcs), ",").replace(",", ".") if isinstance(pcs, (int, float)) and pcs else ""
+    return ("%s · %s · %s%s" % (vend, po_ids.po_id(o) or "#%s" % o.get("orderNumber"), str(o.get("title") or "")[:40], tail))[:110]
 
 
-def sync_dropdown(orders=None, runner=None, apply=True, cfg=None):
+def dropdown_options(orders):
+    live = [o for o in orders if not events.TEST_ORDER.search(str(o.get("title") or "")) and events._status(o) not in events.ACTIVE_NOT]
+    return [INFO_OPT] + sorted({option_label(o) for o in live}, key=str.lower)
+
+
+def sync_dropdown(orders, runner=None, apply=True, cfg=None):
     cfg = cfg or json.loads(klaerfaelle.CFG.read_text())
     if runner is None:
         from plm_intake.barcodes import run_js as runner
-    pay = json.dumps({"tableId": cfg["tableId"], "options": AUSWAHL_OPTS, "apply": bool(apply)}, ensure_ascii=False)
+    pay = json.dumps({"tableId": cfg["tableId"], "options": dropdown_options(orders), "apply": bool(apply)}, ensure_ascii=False)
     return runner(DROPDOWN_JS.replace("__PAYLOAD__", pay)) or {}
 
 
@@ -326,7 +322,7 @@ def run(ctx_orders, intake, evt=(), runner=None, apply=False, only_marker=None, 
             dd = sync_dropdown(ctx_orders, runner, True, cfg)   # Auswahlliste aktuell halten; Fehler brechen nichts ab
         except Exception as e:
             dd = {"errors": [str(e)[:160]]}
-    rows = auswahl_zu_zuordnung(runner(READ_JS.replace("__PAYLOAD__", pay())) or [])
+    rows = runner(READ_JS.replace("__PAYLOAD__", pay())) or []
     ev_ov = events.load_event_overrides(intake)
     try:
         aliases = json.load(open(intake / "po_aliases.json"))
@@ -397,8 +393,10 @@ def main(argv=None):
         r = run_js(DATENPFLEGE_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "updates": ups}, ensure_ascii=False)))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") and r.get("verified") == len(ups) and r.get("other_unchanged") else 1
     if a.dropdown:
-        print("Optionen Auswahl:", AUSWAHL_OPTS)
-        r = sync_dropdown(None, None, a.apply)
+        from plm_intake.context import load_context, add_po_numbers
+        ctx = load_context(); add_po_numbers(ctx)
+        print("Optionen:", len(dropdown_options(ctx["orders"])), "| Beispiel:", dropdown_options(ctx["orders"])[:4])
+        r = sync_dropdown(ctx["orders"], None, a.apply)
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
     if a.reihenfolge:
         r = run_js(ORDER_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "order": list(REIHENFOLGE), "apply": a.apply})))

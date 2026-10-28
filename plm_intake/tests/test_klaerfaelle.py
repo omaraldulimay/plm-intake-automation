@@ -76,7 +76,7 @@ class KlartextFuerMenschen(unittest.TestCase):
     def test_laufende_orders_als_po_ids(self):
         x = u(vendor="Lieferant C", reason="mehrdeutig: 2 laufende Orders von X")
         r = klaerfaelle.select([x], V, None, None, {}, self.O)[0]["values"]
-        self.assertIn("1) PO26-057 (PO-ALPHA-1, 76.000 Stk)", r["Mögliche PO"])
+        self.assertIn("PO26-057 (PO-ALPHA-1, 76.000 Stk)", r["Mögliche PO"])
         self.assertIn("PO26-061", r["Mögliche PO"])
         self.assertNotIn("PO26-060", r["Mögliche PO"])   # abgeschlossen
         self.assertNotIn("FREMD", r["Mögliche PO"])
@@ -85,7 +85,7 @@ class KlartextFuerMenschen(unittest.TestCase):
     def test_kurze_texte(self):
         x = u(vendor="Lieferant C", reason="mehrdeutig: PO-ALPHA-1, PO-ALPHA-3", summary="S " * 200)
         r = klaerfaelle.select([x], V, None, None, {}, self.O)[0]["values"]
-        self.assertTrue(r["Mögliche PO"].startswith("1) PO26-057 (PO-ALPHA-1"))
+        self.assertTrue(r["Mögliche PO"].startswith("PO26-057 (PO-ALPHA-1"))
         self.assertLessEqual(len(r["Was"]), 150)
         self.assertLessEqual(len(r["Warum offen"]), 80)
 
@@ -108,17 +108,6 @@ class Kompakt(unittest.TestCase):
         for k in ("Art", "Nummer", "Aktion", "Zitat", "Absender", "Suche"):
             self.assertNotIn(k, n)
         self.assertEqual(klaerfaelle.kompakt(n), n)   # idempotent
-
-
-
-
-class Rangfolge(unittest.TestCase):
-    def test_wahrscheinlichste_zuerst(self):
-        O = [{"id": "a", "title": "PO-ALPHA-SOCKS-KUNDE_X", "orderNumber": 10, "createdAt": "2026-05-01T10:00:00Z", "manufacturer": {"id": "v1"}, "status": "Draft"},
-             {"id": "b", "title": "PO-ALPHA-HOODIE-PROGRAM", "orderNumber": 11, "createdAt": "2026-05-02T10:00:00Z", "manufacturer": {"id": "v1"}, "status": "In Production"}]
-        x = u(vendor="Lieferant C", reason="mehrdeutig: 2 laufende Orders von X", summary="Hoodie program ETD")
-        r = klaerfaelle.select([x], V, None, None, {}, O)[0]["values"]["Mögliche PO"]
-        self.assertTrue(r.startswith("1) PO26-011"), r)
 
 
 if __name__ == "__main__":

@@ -47,32 +47,16 @@ def laufende(orders, v):
     return [o for o in (orders or []) if v and (o.get("manufacturer") or {}).get("id") == v["id"] and events._status(o) not in events.ACTIVE_NOT]
 
 
-STATUS_RANG = {"In Production": 0, "Confirmed": 1, "In Transit": 2, "Draft": 3}
-
-
-def rang(cands, text, v):
-    """Wahrscheinlichste zuerst: Treffer von Titelwoertern im Ereignistext, dann laufender Status, dann neuere Order."""
-    words = str(text or "").lower()
-    def key(o):
-        hits = sum(1 for w in events.title_words(o, (v or {}).get("name", "")) if re.search(r"\b%s\b" % re.escape(w), words))
-        return (-hits, STATUS_RANG.get(events._status(o), 4), -int(o.get("orderNumber") or 0))
-    return sorted(cands, key=key)
-
-
-def nummeriert(labels, maxn=8):
-    return " | ".join("%d) %s" % (i, l) for i, l in enumerate(labels[:maxn], 1))[:400]
-
-
-def moegliche(reason, v, orders, text=""):
-    """Kandidaten NUR dieser Zeile, nummeriert (Auswahl 'Kandidat n'): aus dem Grund (Order-Titel) oder bei 'N laufende Orders' die laufenden Orders des Lieferanten, wahrscheinlichste zuerst."""
+def moegliche(reason, v, orders):
+    """Kandidaten als PO-IDs: aus dem Grund (Order-Titel) oder bei 'N laufende Orders' alle laufenden Orders des Lieferanten."""
     if not orders:
         return reason.split(":", 1)[1].strip()[:300] if reason.startswith("mehrdeutig:") and "laufende Orders" not in reason else ""
     if reason.startswith("mehrdeutig:") and "laufende Orders" not in reason:
         titles = [t.strip() for t in reason.split(":", 1)[1].split(",")]
         hit = [o for o in orders if o.get("title") in titles]
-        return nummeriert([po_label(o) for o in rang(hit, text, v)]) if hit else ", ".join(titles)[:300]
+        return " | ".join(po_label(o) for o in hit)[:300] if hit else ", ".join(titles)[:300]
     if reason.startswith("mehrdeutig:") and "laufende Orders" in reason:
-        return nummeriert([po_label(o) for o in rang(laufende(orders, v), text, v)])
+        return " | ".join(po_label(o) for o in laufende(orders, v)[:8])[:300]
     return ""
 
 
@@ -80,7 +64,7 @@ MAILS = Path.home() / "Library/CloudStorage/kontakt@firma.example/Meine Ablage/P
 AKTUELL = ("Was", "Warum offen", "Mögliche PO")   # Texte offener Zeilen ohne Eingabe des Menschen werden auf den neuen Klartext gebracht
 NEU = ("Mögliche PO", "Betreff", "Details", "Mail-ID")
 DETAILS = (("Art", "Art"), ("Nummer", "Nr"), ("Aktion", "Aktion"), ("Absender", "Von"), ("Suche", "Suche"), ("Zitat", "Zitat"))   # (altes Feld, Beschriftung)
-SICHTBAR = ("Auswahl", "Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Details", "Mail-ID", "Quelle", "Status", "Zuordnung", "Rückmeldung")
+SICHTBAR = ("Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Details", "Mail-ID", "Quelle", "Status", "Zuordnung", "Rückmeldung")
 
 
 def kompakt(v):
@@ -184,7 +168,7 @@ def select(unmatched, vendors, vendor_aliases=None, dom=None, dirs=None, orders=
                      "values": kompakt({"Datum": datum if re.fullmatch(r"\d{4}-\d{2}-\d{2}", datum) else None, "Art": ART[e["type"]], "Was": was[:140],
                                 "Warum offen": warum(reason)[:80],
                                 "Nummer": ident[:200],
-                                "Mögliche PO": moegliche(reason, v, orders, " ".join(str(x or "") for x in (e.get("summary"), e.get("source_quote"), (e.get("_mail") or {}).get("subject")))),
+                                "Mögliche PO": moegliche(reason, v, orders),
                                 "Aktion": scrub(e.get("action_needed"))[:300],
                                 "Zitat": scrub(e.get("source_quote"))[:300],
                                 "Absender": scrub(m.get("from"))[:200],
@@ -230,7 +214,7 @@ SYNC_JS = r'''(async () => {
     if (!w) continue;
     const cur = r.values || {}; const add = {};
     for (const k of P.fill) { const v = w[k]; if ((cur[k] === undefined || cur[k] === null || cur[k] === '') && v !== undefined && v !== null && v !== '') add[k] = v; }
-    if (cur.Status === 'offen' && !String(cur['Zuordnung'] || '').trim() && !String(cur['Auswahl'] || '').trim()) for (const k of (P.refresh || [])) { const v = w[k]; if (v !== undefined && v !== null && v !== '' && cur[k] !== v) add[k] = v; }
+    if (cur.Status === 'offen' && !String(cur['Zuordnung'] || '').trim()) for (const k of (P.refresh || [])) { const v = w[k]; if (v !== undefined && v !== null && v !== '' && cur[k] !== v) add[k] = v; }
     if (!Object.keys(add).length) continue;
     try {
       const ur = await c.mutate({ mutation: op('mutation', 'updateCustomRow', [['id', 'ID'], ['input', 'UpdateCustomRowInput']], [F('id')]), variables: { id: r.id, input: { values: { ...cur, ...add } } }, errorPolicy: 'all' });
