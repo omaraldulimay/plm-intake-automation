@@ -1,6 +1,6 @@
 """Zuordnung aus der PLM-Tabelle 'Klärfälle Einpflege': Spalte 'Zuordnung' (Mensch) -> event_overrides / po_aliases, Spalte 'Rückmeldung' (Skript).
 
-Eingabe je Zeile: PO-ID (PO26-057) | #<Order-Nr> | Order-Titel | info (kein Bestellbezug). Gilt fuer ALLE offenen Zeilen derselben Mail-ID, ausser der Wert endet auf ' !nur'.
+Eingabe je Zeile: PO-ID (PO26-057) | #<Order-Nr> | Order-Titel | info (kein Bestellbezug). Gilt fuer ALLE offenen Zeilen derselben Mail-ID und (bei Order-Zuordnung) desselben Gmail-Verlaufs mit gleichem Lieferanten, ausser der Wert endet auf ' !nur'.
 Ungueltig/Konflikt -> nichts zugeordnet, Hinweis in 'Rückmeldung', 'Zuordnung' bleibt stehen. Bestehende event_overrides werden nie ueberschrieben.
 Die Zeile verschwindet ueber die bestehende Loeschlogik (klaerfaelle.delete_solved), sobald der Lauf das Ereignis der Order zugeordnet hat; info-Zeilen bekommen Status 'erledigt'.
 
@@ -159,6 +159,15 @@ def resolve_order(text, orders):
     return hit[0], None
 
 
+def _thread_vendor(e):
+    """(Thread-ID, normalisierter Lieferant) eines Ereignisses; (None, None), wenn eines von beiden fehlt."""
+    if not e:
+        return None, None
+    t = (e.get("_mail") or {}).get("thread")
+    v = core.norm(e.get("vendor") or "") if events.vendor_plausible(e.get("vendor")) else ""
+    return (t, v) if t and v else (None, None)
+
+
 def plan(rows, orders, ev_ov, aliases, evt_by_marker=None, only_marker=None, max_rows=MAX_ROWS):
     """rows = [{id, values}] der ganzen Tabelle. Rein rechnerisch.
     -> {ev_ov (neu), aliases, neu_alias, konflikte, updates [{id, marker, rueck, status}], angewendet, abgelehnt, uebersprungen, offen_ungelesen}"""
@@ -193,6 +202,12 @@ def plan(rows, orders, ev_ov, aliases, evt_by_marker=None, only_marker=None, max
         mid = str(v.get("Mail-ID") or "").strip()
         group = [r] if (nur or not mid) else [x for x in rows if str(x["values"].get("Mail-ID") or "").strip() == mid and marker_of(x["values"])
                                               and str(x["values"].get("Status") or "offen") == "offen" and (x["id"] == r["id"] or x["id"] not in has_input)]
+        if kind == "order" and not nur:   # Mail-Verlauf: Zeilen desselben Gmail-Threads mit gleichem Lieferanten gehen mit (nur bei Order-Zuordnung, nie bei info)
+            t0, v0 = _thread_vendor(evt_by_marker.get(mk))
+            if t0 and v0:
+                have = {x["id"] for x in group}
+                group += [x for x in rows if x["id"] not in have and marker_of(x["values"]) and str(x["values"].get("Status") or "offen") == "offen" and x["id"] not in has_input
+                          and _thread_vendor(evt_by_marker.get(marker_of(x["values"]))) == (t0, v0)]
         cur = ev_ov.get(mk)
         if cur is not None and cur != val:
             res["abgelehnt"] += 1; feedback(r, mk, "abgelehnt: Konflikt, Ereignis hat schon eine andere Entscheidung (%s)" % cur); continue

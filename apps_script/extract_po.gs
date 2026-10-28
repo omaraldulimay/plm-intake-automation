@@ -1058,6 +1058,20 @@ function exMarkReplaced_(ctx, key, sh, id, statusCol) {
   (idx[id] || []).forEach(function (e) { if (e.status !== 'Ersetzt') { sh.getRange(e.row, statusCol).setValue('Ersetzt'); e.status = 'Ersetzt'; } });
 }
 
+/* Gmail-Verlauf (Thread-ID) der Mail aus der Sammeldatei mails_*.txt (Zeile 'Thread-ID:' direkt nach 'Message-ID:' im Mail-Block). Altes Layout (eigener Mail-Ordner) oder nicht gefunden: null. */
+function exThreadOf_(ctx, r) {
+  try {
+    if (!r || r.folderId || !r.file) return null;
+    if (!ctx.bodyCache || ctx.bodyCache[r.file] === undefined) exMailBody_(ctx, r);   // laedt die Sammeldatei in den Cache (je Lauf nur einmal)
+    var parts = String(ctx.bodyCache[r.file] || '').split('===== MAIL =====');
+    var idRe = new RegExp('^Message-ID: ' + String(r.id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'm');
+    for (var i = 0; i < parts.length; i++) {
+      if (idRe.test(parts[i])) { var m = /^Thread-ID: (\S+)/m.exec(parts[i]); return m ? m[1] : null; }
+    }
+  } catch (e) { /* Thread-ID ist nur ein Zusatz: nie den Lauf stoerend */ }
+  return null;
+}
+
 /* Ereignisse einer Mail speichern. Gleiches Ereignis (Typ+Bezug+Datum+Text) aus einer anderen Mail (z. B. zitierter Verlauf) wird nicht doppelt aufgenommen. */
 function exSaveEvents_(ctx, r, events) {
   var fresh = [];
@@ -1070,7 +1084,7 @@ function exSaveEvents_(ctx, r, events) {
   });
   if (!fresh.length) return 0;
   var fname = r.id + '_events.json';
-  ctx.inbox.createFile(fname, JSON.stringify({ mail_id: r.id, mail_date: r.date, from: r.from, subject: r.subject, events: fresh }, null, 1), MimeType.PLAIN_TEXT);
+  ctx.inbox.createFile(fname, JSON.stringify({ mail_id: r.id, mail_date: r.date, from: r.from, subject: r.subject, thread_id: exThreadOf_(ctx, r), events: fresh }, null, 1), MimeType.PLAIN_TEXT);
   fresh.forEach(function (e) {
     ctx.eventBuf.push([r.id, r.date, e.type, e.vendor || '', e.ref.po_number || '', e.ref.style || e.ref.container || '', e.date || '', e.summary, JSON.stringify(e.details),
                        e.action_needed || '', e.confidence === null ? '' : e.confidence, 'Neu', fname, e.key]);

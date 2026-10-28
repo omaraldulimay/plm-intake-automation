@@ -82,7 +82,7 @@ def collect(intake, inbox, ctx, tmp):
             po_aliases.setdefault(str(r["po"]), by_id[r["pid"]])
     evt = events.load_events(evs) + events.load_events(sorted((Path(tmp) / "doc_events").glob("*_events.json")))
     pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases,
-                     event_overrides=events.load_event_overrides(intake))
+                     event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake))
     return {"plan": pl, "events": evt, "rows": rows, "docs": docs, "inbox": Path(inbox), "style_aliases": style_aliases}
 
 

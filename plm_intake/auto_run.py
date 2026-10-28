@@ -169,7 +169,7 @@ def main(argv=None):
         if r.get("pid") and r.get("po") and r["pid"] in by_id:
             po_aliases.setdefault(str(r["po"]), by_id[r["pid"]])
     evt = events.load_events(evs) + events.load_events(doc_event_paths)
-    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases, event_overrides=events.load_event_overrides(intake))
+    pl = events.plan(evt, ctx["orders"], ctx["vendors"], po_aliases, ctx["aliases"], vendor_only=True, products=ctx["products"], style_aliases=style_aliases, event_overrides=events.load_event_overrides(intake), thread_orders=events.load_thread_orders(intake))
     rep += ["## Notizen/Ereignisse", events.report(pl)]
 
     # (5b) Sendungen: Packlisten/Rechnungen -> Sendung je Beleg (pending), Versand-Meilensteine -> in_transit/delivered + Tracking
@@ -354,6 +354,19 @@ def main(argv=None):
         rep += ["", "## Gelernte Absender-Domains"] + (["- %s -> %s (%s)" % x for x in vd_new] or ["- keine neuen"])
     except Exception as e:   # Lernen darf den Lauf nie abbrechen
         rep += ["", "## Gelernte Absender-Domains", "- FEHLER: %s" % str(e)[:200]]
+    # Mail-Verlauf (Gmail-Thread) -> Order lernen (nur aus starken eigenen Zuordnungen; nur --apply speichert)
+    try:
+        from plm_intake import mail_threads
+        mt_path = intake / "mail_threads.json"
+        mt = mail_threads.load(mt_path)
+        mt_new = mail_threads.learn(mt, pl.get("assigned") or [])
+        if a.apply and mt_new:
+            mail_threads.save(mt_path, mt)
+        n_verlauf = sum(1 for u in pl["orders"] for l in u["lines"] if "ueber Mail-Verlauf zugeordnet" in l["text"])
+        rep += ["", "## Mail-Verlauf (Thread)", "- neu gelernt: %d Verlauf-Order-Paare (gesamt %d Verlaeufe) | ueber Verlauf zugeordnet: %d Ereignisse | THREAD_MATCH %s" % (mt_new, len(mt), n_verlauf, "an" if mail_threads.enabled() else "aus")]
+        facts["verlauf_zugeordnet"] = n_verlauf
+    except Exception as e:   # Lernen darf den Lauf nie abbrechen
+        rep += ["", "## Mail-Verlauf (Thread)", "- FEHLER: %s" % str(e)[:200]]
     # Klaerfaelle -> PLM-Tabelle "Klärfälle Einpflege" (nur echte, bestellbezogene Faelle; zugeordnete werden abgehakt)
     try:
         from plm_intake import klaerfaelle

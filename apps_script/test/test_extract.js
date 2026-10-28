@@ -44,7 +44,7 @@ function fresh(opts = {}) {
   else { ctx.EX_CONFIG.MODEL = 'gemini-2.5-pro'; ctx.EX_CONFIG.MODEL_LIGHT = 'gemini-2.5-flash'; ctx.EX_CONFIG.GEMINI_THINKING_BUDGET_LIGHT = 0; }   // Tests: feste Modellnamen, unabhaengig vom Produktivwert
   st.addMail = (id, o = {}) => { const date = o.date || '2026-10-12 10:00'; const file = o.file || 'mails_1.txt';
     ss.getSheetByName('Exportiert').appendRow([id, o.asDate ? new Date(date.replace(' ', 'T') + ':00Z') : date, o.from || 'kontakt@lieferant-c.example', o.subject || 'PI XW-SM260513 shipping documents', (o.atts || []).length, (o.atts || []).join(' | '), file]);
-    let f = root.files.find(x => x.name === file); if (!f) f = root.createFile(file, ''); f.content += '===== MAIL =====\nMessage-ID: ' + id + '\nBetreff: x\n----- TEXT -----\n' + (o.body || 'Please find PI.') + '\n';
+    let f = root.files.find(x => x.name === file); if (!f) f = root.createFile(file, ''); f.content += '===== MAIL =====\nMessage-ID: ' + id + '\n' + (o.thread ? 'Thread-ID: ' + o.thread + '\n' : '') + 'Betreff: x\n----- TEXT -----\n' + (o.body || 'Please find PI.') + '\n';
     (o.atts || []).forEach(a => { if (!att.files.find(x => x.name === a)) att.createFile(a, (o.contents && o.contents[a]) || o.attContent || 'X'); }); };
   st.addImage = (mailId, name, bytes, type = 'image/jpeg') => { (st.images[mailId] = st.images[mailId] || []).push({ getName: () => name, getContentType: () => type, getSize: () => bytes.length, getBytes: () => bytes }); };
   st.mkFolder = mkFolder; st.mkFile = mkFile;
@@ -318,6 +318,12 @@ t('Ereignisse: werden gespeichert (Datei + Blatt Ereignisse) und zaehlen als Aus
   assert.equal(s.inbox().length, 1); assert.equal(s.inbox()[0].name, 'm1_events.json'); assert.equal(JSON.parse(s.inbox()[0].content).events.length, 2);
   const ev = s.rows('Ereignisse'); assert.equal(ev.length, 2); assert.equal(ev[0][2], 'SCHEDULE'); assert.equal(ev[0][4], 'XW-SM260513'); assert.equal(ev[0][11], 'Neu');
   assert.equal(s.rows('Ausgelesen')[0][1], 'Ausgelesen'); assert.equal(s.rows('Ausgelesen')[0][2], 2);
+});
+t('Ereignisse: Datei enthaelt thread_id aus der Sammeldatei (sonst null)', () => {
+  const s = fresh({ api: [() => resp([], null, null, [EV()])] }); s.addMail('m1', { subject: 'Update ETD', atts: [], thread: 'T123' }); s.run();
+  assert.strictEqual(JSON.parse(s.inbox().find(f => f.name === 'm1_events.json').content).thread_id, 'T123');
+  const s2 = fresh({ api: [() => resp([], null, null, [EV()])] }); s2.addMail('m1', { subject: 'Update ETD', atts: [] }); s2.run();
+  assert.strictEqual(JSON.parse(s2.inbox()[0].content).thread_id, null);
 });
 t('Ereignisse: Dokument und Ereignis aus derselben Mail werden beide gespeichert', () => {
   const s = fresh({ api: [() => resp([okDoc()], null, null, [EV()])] }); s.addMail('m1', { atts: ['PI.pdf'] }); s.run();

@@ -27,7 +27,7 @@ def load_events(paths):
         d = json.load(open(f))
         for e in d.get("events") or []:
             e = dict(e)
-            e["_mail"] = {"id": d.get("mail_id"), "date": d.get("mail_date"), "from": d.get("from"), "subject": d.get("subject")}
+            e["_mail"] = {"id": d.get("mail_id"), "date": d.get("mail_date"), "from": d.get("from"), "subject": d.get("subject"), "thread": d.get("thread_id")}
             out.append(e)
     return out
 
@@ -577,6 +577,7 @@ def status_objects(orders):
 WEAK = {"vendor_only": " [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]",
         "vendor_title": " [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]",
         "thread": " [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]",
+        "verlauf": " [Zuordnung: ueber Mail-Verlauf zugeordnet (alle zugeordneten Ereignisse des Gmail-Verlaufs gehoeren zu dieser Order), nicht per PO-Nr belegt]",
         "text": " [Zuordnung: Stylecode im Ereignistext, nicht per PO-Nr belegt]",
         "menge": " [Zuordnung: genannte Stueckzahl passt zu genau einer Order, nicht per PO-Nr belegt]",
         "inhalt": " [Zuordnung: inhaltlich zugeordnet, nicht per PO-Nr belegt]"}
@@ -595,7 +596,36 @@ def load_event_overrides(intake):
     return d if isinstance(d, dict) else {}
 
 
-def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None, event_overrides=None):
+def load_thread_orders(intake):
+    """output/intake/mail_threads.json {Thread-ID: [Order-ID, ...]} (gelernt, plm_intake.mail_threads)."""
+    from plm_intake import mail_threads
+    return mail_threads.load(Path(intake) / "mail_threads.json")
+
+
+def _by_mail_thread(results, assigned, by_oid, thread_orders, vendors, vendor_aliases, dom):
+    """Mail-Verlauf (Gmail-Thread, plm_intake.mail_threads): ein Ereignis ohne Order erbt die Order, auf die ALLE sicher zugeordneten Ereignisse seines Verlaufs zeigen
+    (genau EINE Order; gespeicherter Stand + dieser Lauf), nur wenn sein Lieferant (falls erkannt) zur Order passt. Mehrere Orders im Verlauf = nicht zuordnen. Grund 'verlauf' (schwach: nur Notiz)."""
+    from plm_intake import mail_threads
+    if not mail_threads.enabled():
+        return results
+    tmap = {t: list(v) for t, v in (thread_orders or {}).items()}
+    mail_threads.learn(tmap, assigned)
+    out = []
+    for e, (o, why) in results:
+        t = (e.get("_mail") or {}).get("thread")
+        ids = set(tmap.get(t) or ()) if t else set()
+        cand = by_oid.get(next(iter(ids))) if len(ids) == 1 else None
+        if (o or not cand or why.startswith("info:") or why.startswith("abweichend") or _status(cand) in ACTIVE_NOT
+                or not (why == "keine Order gefunden" or cand["title"] in why or (why.startswith("mehrdeutig:") and "laufende Orders" in why))):
+            out.append((e, (o, why))); continue
+        v = vendor_of(e, vendors, vendor_aliases, dom)
+        if v and (cand.get("manufacturer") or {}).get("id") != v["id"]:
+            out.append((e, (o, why))); continue
+        out.append((e, (cand, "verlauf")))
+    return out
+
+
+def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only=False, products=None, style_aliases=None, event_overrides=None, thread_orders=None):
     per = {}
     invalid_overrides = []
     unmatched = []
@@ -642,6 +672,7 @@ def plan(events, orders, vendors, aliases=None, vendor_aliases=None, vendor_only
             else:
                 fixed.append((e, (o, why)))
         results = fixed
+        results = _by_mail_thread(results, assigned, by_oid, thread_orders, vendors, vendor_aliases, dom)
         results = [(e, (o, why if o else (_general_info(e, why, vendors, vendor_aliases, dom) or _sample_info(e, why) or why))) for e, (o, why) in results]
     for e, (o, why) in results:
         mk = marker(e)
