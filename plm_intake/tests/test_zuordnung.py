@@ -63,6 +63,29 @@ class JsKonstanten(unittest.TestCase):
         for name in set(re.findall(r"\b([A-Z_]+_JS)\b", src)):
             self.assertTrue(hasattr(zuordnung, name), name)
 
+class Auswahlliste(unittest.TestCase):
+    O = [{"id": "o1", "title": "PO-ALPHA-1", "orderNumber": 57, "createdAt": "2026-07-02T10:00:00Z", "totalNumberOfPieces": 76000, "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "In Production"},
+         {"id": "o2", "title": "PO-ALPHA-2", "orderNumber": 60, "createdAt": "2026-08-02T10:00:00Z", "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "Complete"},
+         {"id": "o3", "title": "ZZ-FULLCASE-1", "orderNumber": 61, "createdAt": "2026-08-03T10:00:00Z", "manufacturer": {"id": "v1", "name": "Lieferant A"}, "status": "Draft"}]
+
+    def test_optionen_nur_laufende_ohne_test_und_info_zuerst(self):
+        from plm_intake import zuordnung
+        o = zuordnung.dropdown_options(self.O)
+        self.assertEqual(o[0], "Info")
+        self.assertEqual(o[1:], ["Lieferant A · PO26-057 · PO-ALPHA-1 · 76.000 Stk"])
+
+    def test_gewaehlte_option_wird_wie_eine_po_id_aufgeloest(self):
+        from plm_intake import zuordnung
+        order, err = zuordnung.resolve_order("Lieferant A · PO26-057 · PO-ALPHA-1 · 76.000 Stk", self.O)
+        self.assertIsNone(err); self.assertEqual(order["id"], "o1")
+        self.assertEqual(zuordnung.parse("Info")[0], "info")
+
+    def test_sync_ruft_den_browser_mit_den_optionen(self):
+        from plm_intake import zuordnung
+        seen = []
+        zuordnung.sync_dropdown(self.O, runner=lambda js: seen.append(js) or {}, apply=False, cfg={"tableId": "t1"})
+        self.assertIn("Lieferant A", seen[0]); self.assertIn('"apply": false', seen[0])
+
 
 if __name__ == "__main__":
     unittest.main()
