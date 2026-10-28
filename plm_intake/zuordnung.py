@@ -65,7 +65,7 @@ ORDER_JS = '''(async () => {
   return out;
 })()'''
 
-KOMPAKT_DATENPFLEGE_JS = '''(async () => {
+DATENPFLEGE_JS = '''(async () => {
   const P = __PAYLOAD__;
   ''' + _HEAD + r'''
   const out = { updated: 0, errors: [] };
@@ -85,7 +85,7 @@ KOMPAKT_DATENPFLEGE_JS = '''(async () => {
   return out;
 })()'''
 
-READ_JS = '''(async () => {
+KOMPAKT_READ_JS = '''(async () => {
   const P = __PAYLOAD__;
   ''' + _HEAD + r'''
   return { fields: await readFields(), rows: await readRows() };

@@ -55,6 +55,14 @@ class Z(unittest.TestCase):
         r = zuordnung.run(O, d, (), runner=lambda js: [row("r1", "aaaaaaaa", "info")] if "READ" in js or "updateCustomRow" not in js else {"written": 1, "verified": 1, "zuordnung_erhalten": 1}, apply=True, backup_dir=d / "bk", cfg={"tableId": "t"})
         self.assertEqual(zuordnung.events.load_event_overrides(d), {"aaaaaaaa": "__info__"}); self.assertEqual(r["fehler"], [])
 
+class JsKonstanten(unittest.TestCase):
+    def test_alle_in_main_genutzten_js_texte_existieren(self):
+        import re
+        from plm_intake import zuordnung
+        src = Path(zuordnung.__file__).read_text()
+        for name in set(re.findall(r"\b([A-Z_]+_JS)\b", src)):
+            self.assertTrue(hasattr(zuordnung, name), name)
+
 
 if __name__ == "__main__":
     unittest.main()
