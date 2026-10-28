@@ -68,22 +68,22 @@ class Auswahlliste(unittest.TestCase):
 
     def test_kandidat_n_wird_zur_po_id_der_zeile(self):
         from plm_intake import zuordnung
-        rows = [{"id": "r1", "values": {"Auswahl": "2. Vorschlag übernehmen", "Mögliche PO": "1) PO26-057 (A, 5 Stk) | 2) PO26-060 (B, 7 Stk)"}},
-                {"id": "r2", "values": {"Auswahl": "Keine Bestellung (Info)"}},
-                {"id": "r3", "values": {"Auswahl": "3. Vorschlag übernehmen", "Mögliche PO": "1) PO26-057 (A)"}},
+        rows = [{"id": "r1", "values": {"Auswahl": "Kandidat 2", "Mögliche PO": "1) PO26-057 (A, 5 Stk) | 2) PO26-060 (B, 7 Stk)"}},
+                {"id": "r2", "values": {"Auswahl": "Info"}},
+                {"id": "r3", "values": {"Auswahl": "Kandidat 3", "Mögliche PO": "1) PO26-057 (A)"}},
                 {"id": "r4", "values": {"Auswahl": "Kandidat 1", "Zuordnung": "PO26-099", "Mögliche PO": "1) PO26-057 (A)"}}]
         zuordnung.auswahl_zu_zuordnung(rows)
-        self.assertEqual([r["values"]["Zuordnung"] for r in rows], ["PO26-060", "Info", "3. Vorschlag übernehmen", "PO26-099"])
+        self.assertEqual([r["values"]["Zuordnung"] for r in rows], ["PO26-060", "Info", "Kandidat 3", "PO26-099"])
 
     def test_auswahloptionen(self):
         from plm_intake import zuordnung
-        self.assertEqual(zuordnung.AUSWAHL_OPTS, ["1. Vorschlag übernehmen", "2. Vorschlag übernehmen", "3. Vorschlag übernehmen", "Keine Bestellung (Info)"])
+        self.assertEqual(zuordnung.AUSWAHL_OPTS[:2], ["Info", "Kandidat 1"]); self.assertEqual(len(zuordnung.AUSWAHL_OPTS), 9)
 
     def test_sync_sendet_optionen_und_zuordnung_bleibt_text(self):
         from plm_intake import zuordnung
         seen = []
         zuordnung.sync_dropdown(None, runner=lambda js: seen.append(js) or {}, apply=False, cfg={"tableId": "t1"})
-        self.assertIn("3. Vorschlag", seen[0]); self.assertIn('"apply": false', seen[0]); self.assertIn("type: 'string'", seen[0])
+        self.assertIn("Kandidat 8", seen[0]); self.assertIn('"apply": false', seen[0]); self.assertIn("type: 'string'", seen[0])
 
 
 if __name__ == "__main__":

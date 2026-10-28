@@ -59,7 +59,7 @@ def rang(cands, text, v):
     return sorted(cands, key=key)
 
 
-def nummeriert(labels, maxn=3):
+def nummeriert(labels, maxn=8):
     return " | ".join("%d) %s" % (i, l) for i, l in enumerate(labels[:maxn], 1))[:400]
 
 

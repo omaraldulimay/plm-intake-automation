@@ -46,7 +46,7 @@ COLS_JS = '''(async () => {
 })()'''
 
 # Reihenfolge der Spalten: zuerst das, was der Mensch zum Zuordnen braucht, ganz hinten die Technik
-REIHENFOLGE = ("Status", "Datum", "Was", "Warum offen", "Mögliche PO", "Auswahl", "Zuordnung", "Betreff", "Rückmeldung", "Details", "Mail-ID", "Quelle")
+REIHENFOLGE = ("Status", "Auswahl", "Zuordnung", "Datum", "Was", "Warum offen", "Mögliche PO", "Betreff", "Rückmeldung", "Details", "Mail-ID", "Quelle")
 
 ORDER_JS = '''(async () => {
   const P = __PAYLOAD__;
@@ -147,8 +147,8 @@ WRITE_JS = '''(async () => {
 
 
 # Auswahl je Zeile: 'Kandidat 1..8' (= Nummer in der Spalte 'Mögliche PO' DIESER Zeile, wahrscheinlichste zuerst) oder 'Info'. 'Zuordnung' bleibt freier Text (z. B. PO-ID, wenn die Bestellung nicht unter den Kandidaten ist).
-INFO_OPT = "Keine Bestellung (Info)"
-AUSWAHL_OPTS = ["%d. Vorschlag übernehmen" % i for i in range(1, 4)] + [INFO_OPT]
+INFO_OPT = "Info"
+AUSWAHL_OPTS = [INFO_OPT] + ["Kandidat %d" % i for i in range(1, 9)]
 
 DROPDOWN_JS = '''(async () => {
   const P = __PAYLOAD__;
@@ -180,12 +180,11 @@ def auswahl_zu_zuordnung(rows):
         a = str(v.get("Auswahl") or "").strip()
         if not a or str(v.get("Zuordnung") or "").strip():
             continue
-        if a.lower() == "info" or a == INFO_OPT:
+        if a.lower() == "info":
             v["Zuordnung"] = "Info"; continue
-        m = re.match(r"(?:(\d+)\. Vorschlag|Kandidat (\d+))", a)
+        m = re.fullmatch(r"Kandidat (\d+)", a)
         cands = re.findall(r"\d+\) (PO\d{2}-\d{3})", str(v.get("Mögliche PO") or ""))
-        k = int((m.group(1) or m.group(2))) if m else 0
-        v["Zuordnung"] = cands[k - 1] if 0 < k <= len(cands) else a
+        v["Zuordnung"] = cands[int(m.group(1)) - 1] if m and 0 < int(m.group(1)) <= len(cands) else a
     return rows
 
 
