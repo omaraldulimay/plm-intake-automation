@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-28 10:35 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-28 13:55 (AUSGEFUEHRT)
 
-Neu: 15 Dokument-Dateien, 329 Ereignis-Dateien
+Neu: 16 Dokument-Dateien, 334 Ereignis-Dateien
 
 ## Lieferanten
 - LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ.: MENSCH ALIAS_PRUEFEN [('Lieferant J', 1.0)]
@@ -44,10 +44,12 @@ Call log:
 | 1a177ba249af249a_1.json | AMBIGUOUS_DOC | 561874_2510 | passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08 |
 | 1a17c5576c0d951e_1.json | REORDER_QUESTION | JM1020-JM260704 | #4 PO-LIEFERANT_X-JM260704 |
 | 1a17dcd1b307e869_1.json | AMBIGUOUS_DOC | SPR2026000000445 | passt zu mehreren Orders: PO-LIEFERANT_I-SPR2026000000438, PO-LIEFERANT_I-SPR2026000000422, PO-LIEFERANT_I-SPR2026000000409 |
+| 1a182294ba4bcdf9_1.json | ORPHAN_DOC | AK/631/26 | - |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a13103fd472a81b_1.json (62092211)
 - 1a1682ab9dcc2d5a_1.json (None)
+- 1a182294ba4bcdf9_1.json (AK/631/26)
 
 ## Dienstleister-Belege ohne Warenpositionen (Spedition, Zoll): kein PO-Bezug, nur zur Info
 - 1a0a957bca78ab0b_1.json (SI_2026_06_0047)
@@ -88,12 +90,13 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-12 18:49 ev:825e091b] OTHER: Request to push the webbing supplier to complete the revised binding webbing for GT0304 as soon as possible. (Mail 1a1310554e320fa0)
 ## #25 PO-LIEFERANT_D-ALI20260821
 - [2026-10-12 18:51 ev:18930b64] ORDER_CHANGE: Discussion about changing two details for F-1 rise size (rise length 4cm shorter after stretching and width same as AN-43). Two versions will be shown tomorrow. (Mail 1a131067d7fcdc7d) [Zuordnung: ueber Mail-Verlauf zugeordnet (alle zugeordneten Ereignisse des Gmail-Verlaufs gehoeren zu dieser Order), nicht per PO-Nr belegt]
-## #34 PO-WONDERS-XW-SM260811
-- [2026-10-12 22:00 ev:08697469] DELAY: Forwarder holiday from Oct 01-07 due to National Day, waiting for SPEDITION_B contact. (Mail 1a131b426129d4d5) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-12 22:01 ev:908355af] SCHEDULE: Lieferant bittet um Zusendung der Barcode-Informationen bis spätestens 15. Oktober. (Mail 1a131b450e314121) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
-- [2026-10-14 05:51 ev:55678539] OTHER: Der Lieferant meldet, dass XW26-008 (Long Sleeve) und XW26-009 (Tank Top) die Farbe light grey nicht haben, daher entfaellt die E-Serie fuer diese Styles. Er fragt, ob die anderen Farbgruppen die E-Serie ueberspringen oder ersetzen sollen. (Mail 1a138891a17b99d9)
+## #33 PO-WONDERS-XW-SM260730
+- [2026-10-12 22:00 ev:3b241327] SCHEDULE: Inquiry regarding production and logistics status for orders XW-042 Croco/Cheetah Print, SNM26-006_A, and XW-042 Croco (1st Order), requesting confirmation of EXW, ETD, and ETA dates. (Mail 1a131b3e02ca99e8) [Zuordnung: Positionswort 'cheetah' steht nur in den Positionen dieser Order; nicht per PO-Nr belegt]
+- [2026-10-14 14:14 ev:c1ad14ff] ORDER_CHANGE: Clarification on style numbers to be used for the prints: XW-042 for Crocodile Print and XW-042_A for Cheetah Print. (Mail 1a13a55be2d18d88) [Zuordnung: ueber Programm Wonders XW-042 zugeordnet (Kennung 'XW-042'; Notiz in allen 2 Orders des Programms: PO-WONDERS-XW042-20260709, PO-WONDERS-XW-SM260730), nicht per PO-Nr belegt]
 ## #37 PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER
 - [2026-10-12 22:02 ev:b26b8665] SHIPMENT: Sendung per Seefracht (4*40HQ) mit MBL XIA1965473 und HBL XIME26070257, ETD Xiamen 7. August, Spediteur fragt nach Palettierungs- und Sortieranweisungen. (Mail 1a131b5dbbcc7e59)
+## #34 PO-WONDERS-XW-SM260811
+- [2026-10-14 05:51 ev:55678539] OTHER: Der Lieferant meldet, dass XW26-008 (Long Sleeve) und XW26-009 (Tank Top) die Farbe light grey nicht haben, daher entfaellt die E-Serie fuer diese Styles. Er fragt, ob die anderen Farbgruppen die E-Serie ueberspringen oder ersetzen sollen. (Mail 1a138891a17b99d9)
 ## #96 PO-LIEFERANT_I-SPR2026000000409
 - [2026-10-14 09:29 ev:c300c053] QUALITY: White printing defects noticed on the snake print; suggested switching to a black base fabric. (Mail 1a13951c52d8cf78) [Zuordnung: gleicher Mail-Verlauf wie ein belegtes Ereignis dieser Order, nicht per PO-Nr belegt]
 - [2026-10-14 09:29 ev:91118219] ORDER_CHANGE: Request to add regular leggings with leo pattern (same as leggings 26803) to the production list. (Mail 1a13951c52d8cf78)
@@ -101,13 +104,15 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
 - [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
+## #24 PO-WONDERS-XW042-20260709
+- [2026-10-14 14:14 ev:c1ad14ff] ORDER_CHANGE: Clarification on style numbers to be used for the prints: XW-042 for Crocodile Print and XW-042_A for Cheetah Print. (Mail 1a13a55be2d18d88) [Zuordnung: ueber Programm Wonders XW-042 zugeordnet (Kennung 'XW-042'; Notiz in allen 2 Orders des Programms: PO-WONDERS-XW042-20260709, PO-WONDERS-XW-SM260730), nicht per PO-Nr belegt]
 ## #53 PO-ALPHA-NOOS-STOCK-INCREASE-2025-12-16
 - [2026-10-27 11:15 ev:fc4bd063] SAMPLE: Sample/Prototype Vergleich für Style SNM26-009 durchgeführt. (Mail 1a17cdb6398a2259)
 - [2026-10-27 11:18 ev:b4fc4423] SAMPLE: Sample/Prototyp Vergleich für Style SNM26-009 mit Maße- und Materialabweichungen. (Mail 1a17cdebff5e1cbb)
 - [2026-10-27 14:41 ev:55bbffd2] SAMPLE: Maßvergleich und Materialprüfung für Sample SNM26-009 durchgeführt (Status: Offen). (Mail 1a17d988636a057a)
 - [2026-10-27 14:50 ev:d3672520] SAMPLE: Sample-Vergleich und Maßtabelle für Style SNM26-009 durchgeführt, Status offen. (Mail 1a17da0dcf0831f6)
-## #24 PO-WONDERS-XW042-20260709
-- [2026-10-28 10:07 ev:86c3c823] PAYMENT: Smilodox confirmed that the balance payment of US$50,050 for order XW-SM260710 will be arranged by the end of this week. (Mail 1a181c3961bb2f5c)
+## #26 PO-LIEFERANT_AH-SMI-SOHO-0526
+- [2026-10-28 13:50 ev:7a1c4350] PAYMENT: The vendor requested to check documents and arrange the balance payment. (Mail 1a1828fab02a1b3f) [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] SCHEDULE: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (Umar) -> mehrdeutig: 26 laufende Orders von Lieferant A
@@ -125,20 +130,21 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-12 18:48] OTHER: Vendor sent barcode stickers layout and carton marking for style XW-042 for review and confirmation. (LIEFERANT_C CO.,LTD.) -> mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709
 - [2026-10-12 18:53] SHIPMENT: Container HMMU6963097 arrived in Hamburg via vessel ONE RELIABILITY V#0020W, delivery order issued. (LIEFERANT_B ENTERPRISES) -> mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd
 - [2026-10-12 18:54] SHIPMENT: Inbound vessel arrived with container HMMU6963097 containing knitted socks from Karachi, Pakistan. (LIEFERANT_B ENTERPRISES) -> mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd
-- [2026-10-12 22:00] SCHEDULE: Inquiry regarding production and logistics status for orders XW-042 Croco/Cheetah Print, SNM26-006_A, and XW-042 Croco (1st Order), requesting confirmation of EXW, ETD, and ETA dates. (XW-042) -> mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709
 - [2026-10-12 22:01] OTHER: Discussion regarding barcodes for style XW-042 which have already been applied to bulk production and cannot be changed. (None) -> mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709
 - [2026-10-14 05:51] OTHER: Der Lieferant teilt mit, dass die Barcodes fuer XW-042 (Rain Jacket Crocodile, black/white/olive) bereits auf die Bulk-Produktion aufgebracht sind und nicht mehr auf XW-042_A geaendert werden koennen. XW-042B wird nur fuer die zweite Bestellung verwendet. (LIEFERANT_C CO.,LTD.) -> mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709
 - [2026-10-14 12:22] SCHEDULE: Shipment date for newly added styles will be delayed compared to committed date and confirmed later. (Lieferant A) -> mehrdeutig: 26 laufende Orders von Lieferant A
-- [2026-10-14 14:14] ORDER_CHANGE: Clarification on style numbers to be used for the prints: XW-042 for Crocodile Print and XW-042_A for Cheetah Print. (None) -> mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709
 - [2026-10-14 14:29] SHIPMENT: Commercial invoice updated to delete sample charges. (26071) -> mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2EXTRA, PO-LIEFERANT_W-26071-DE-EA-2
 - [2026-10-19 12:00] SAMPLE: Physical samples received and forwarded to factory to check exact costs. (Profit Cultural & Creative Group Corporation) -> mehrdeutig: PO-LIEFERANT_AK-2025-10-18-B1EF, PO-LIEFERANT_Y-WS26245, PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER, PO-KUNDE_Y-Q2-2027-LIEFERANT_Y, PO-KUNDE_Y-Q2-2027-LIEFERANT_B
 - [2026-10-22 09:28] ORDER_CHANGE: Embroidery size adjustment in physical production due to fabric behavior and stitches. (Lieferant A) -> mehrdeutig: 26 laufende Orders von Lieferant A
 - [2026-10-26 12:47] SHIPMENT: Shipment of 39 cartons containing 373 pcs of knitted dyed garments (Invoice TE-26-2003-A) via air freight from Lahore, Pakistan to Hamburg, Germany. (LIEFERANT_B ENTERPRISES (PVT) LTD.) -> keine Order gefunden
 - [2026-10-26 14:32] SCHEDULE: Request for written confirmation of ex-factory dates and sample status for B2B orders (Sports Club, Easy Fitness, XtraFit, Peaks, Kunde Y). (None) -> keine Order gefunden
 - [2026-10-27 15:39] SHIPMENT: Shipment documents for invoice SPR2026000000445 sent with 17007 pieces in 1056 boxes. (SPR2026000000445) -> mehrdeutig: PO-LIEFERANT_I-SPR2026000000438, PO-LIEFERANT_I-SPR2026000000422, PO-LIEFERANT_I-SPR2026000000409
+- [2026-10-28 11:31] SAMPLE: Fadel Abdullah informs Wendy regarding the Sport bags R4R samples that the embroidery color does not match the request. (SP1028U) -> keine Order gefunden
+- [2026-10-28 11:58] SHIPMENT: Commercial invoice and packing list sent for shipment AK/631/26 by air, MAWB 155-0543 6524, ETD 29.10.2026. (AK/631/26) -> keine Order gefunden
+- [2026-10-28 12:15] SHIPMENT: Airway Bill issued for shipment of 4,207 pieces (HOODIE/SWEATSHIRT & PANTS) with ETD 29-10-2026. (BOP OPEN ACCOUNT) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 393 Ereignisse
+- 397 Ereignisse
 
 ## Sendungen (Bereich Shipments)
 - keine
@@ -167,11 +173,23 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "unchanged": true
  },
  {
-  "title": "PO-WONDERS-XW-SM260811",
-  "unchanged": true
+  "title": "PO-WONDERS-XW-SM260730",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 2
  },
  {
   "title": "PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER",
+  "unchanged": true
+ },
+ {
+  "title": "PO-WONDERS-XW-SM260811",
   "unchanged": true
  },
  {
@@ -183,11 +201,23 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "unchanged": true
  },
  {
+  "title": "PO-WONDERS-XW042-20260709",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 1,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 1
+ },
+ {
   "title": "PO-ALPHA-NOOS-STOCK-INCREASE-2025-12-16",
   "unchanged": true
  },
  {
-  "title": "PO-WONDERS-XW042-20260709",
+  "title": "PO-LIEFERANT_AH-SMI-SOHO-0526",
   "statusSet": null,
   "statusOk": true,
   "notesAdded": 1,
@@ -236,16 +266,16 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - neu gelernt: 0 Verlauf-Order-Paare (gesamt 84 Verlaeufe) | ueber Verlauf zugeordnet: 1 Ereignisse | THREAD_MATCH an
 
 ## Programme, Nummern, Info-Regel
-- ueber Programm zugeordnet: 5 Ereignisse (14 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 0 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
+- ueber Programm zugeordnet: 6 Ereignisse (16 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 1 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 13, neu eingetragen 0, geloescht 2 (Rest naechster Lauf: 0), offen gesamt 43
+- Kandidaten 13, neu eingetragen 2, geloescht 2 (Rest naechster Lauf: 0), offen gesamt 43 | Fehler: ['Nachfuellen 9c65f80a: Bad Request Exception']
 
 ## Zuordnungen aus der Tabelle
 - geschrieben: angewendet 0, abgelehnt 0, schon angewendet 0, nicht gelesen (Limit 30) 0
 
 ## Anhaenge
-- Anhaenge: neu 0, uebersprungen 28, Fehler 0, ausgeschlossen 49
+- Anhaenge: neu 0, uebersprungen 28, Fehler 0, ausgeschlossen 50
 - uebersprungen (Name im PLM vorhanden): 0917 PACKING INFORMATION.pdf -> PO-LIEFERANT_G-MC-26SM002
 - uebersprungen (Name im PLM vorhanden): PL--SMI2612.pdf -> PO-LIEFERANT_AA-WINTER-2026-04-29
 - uebersprungen (Name im PLM vorhanden): LIEFERANT_AA26104 -invoice.pdf -> PO-LIEFERANT_AA-WINTER-2026-04-29
@@ -275,9 +305,9 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - uebersprungen (Name im PLM vorhanden): XW-SM260710 balance payment PI.xlsx -> PO-WONDERS-XW042-20260709
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-28T10:40: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-28T13:59: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-## Mensch entscheidet (35)
+## Mensch entscheidet (37)
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
@@ -287,6 +317,7 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - 1a177ba249af249a_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a17c5576c0d951e_1.json: REORDER_QUESTION #4 PO-LIEFERANT_X-JM260704
 - 1a17dcd1b307e869_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-LIEFERANT_I-SPR2026000000438, PO-LIEFERANT_I-SPR2026000000422, PO-LIEFERANT_I-SPR2026000000409
+- 1a182294ba4bcdf9_1.json: ORPHAN_DOC AK/631/26
 - Ereignis nicht zuordenbar: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Lieferant A confirmed ex-goods date by 30th September. (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Container wurde in der Nacht zum 05.09. gelöscht, Transportkapazität ist aufgrund von Stre (keine Order gefunden)
@@ -302,14 +333,15 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - Ereignis nicht zuordenbar: Vendor sent barcode stickers layout and carton marking for style XW-042 for review and con (mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709)
 - Ereignis nicht zuordenbar: Container HMMU6963097 arrived in Hamburg via vessel ONE RELIABILITY V#0020W, delivery orde (mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd)
 - Ereignis nicht zuordenbar: Inbound vessel arrived with container HMMU6963097 containing knitted socks from Karachi, P (mehrdeutig: 7 laufende Orders von Lieferant B Enterprises (Pvt) Ltd)
-- Ereignis nicht zuordenbar: Inquiry regarding production and logistics status for orders XW-042 Croco/Cheetah Print, S (mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709)
 - Ereignis nicht zuordenbar: Discussion regarding barcodes for style XW-042 which have already been applied to bulk pro (mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709)
 - Ereignis nicht zuordenbar: Der Lieferant teilt mit, dass die Barcodes fuer XW-042 (Rain Jacket Crocodile, black/white (mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709)
 - Ereignis nicht zuordenbar: Shipment date for newly added styles will be delayed compared to committed date and confir (mehrdeutig: 26 laufende Orders von Lieferant A)
-- Ereignis nicht zuordenbar: Clarification on style numbers to be used for the prints: XW-042 for Crocodile Print and X (mehrdeutig: PO-WONDERS-XW-SM260730, PO-WONDERS-XW042-20260709)
 - Ereignis nicht zuordenbar: Commercial invoice updated to delete sample charges. (mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2EXTRA, PO-LIEFERANT_W-26071-DE-EA-2)
 - Ereignis nicht zuordenbar: Physical samples received and forwarded to factory to check exact costs. (mehrdeutig: PO-LIEFERANT_AK-2025-10-18-B1EF, PO-LIEFERANT_Y-WS26245, PO-LIEFERANT_Y-WS26175-KUNDE_X-SNEAKER, PO-KUNDE_Y-Q2-2027-LIEFERANT_Y, PO-KUNDE_Y-Q2-2027-LIEFERANT_B)
 - Ereignis nicht zuordenbar: Embroidery size adjustment in physical production due to fabric behavior and stitches. (mehrdeutig: 26 laufende Orders von Lieferant A)
 - Ereignis nicht zuordenbar: Shipment of 39 cartons containing 373 pcs of knitted dyed garments (Invoice TE-26-2003-A)  (keine Order gefunden)
 - Ereignis nicht zuordenbar: Request for written confirmation of ex-factory dates and sample status for B2B orders (Spo (keine Order gefunden)
 - Ereignis nicht zuordenbar: Shipment documents for invoice SPR2026000000445 sent with 17007 pieces in 1056 boxes. (mehrdeutig: PO-LIEFERANT_I-SPR2026000000438, PO-LIEFERANT_I-SPR2026000000422, PO-LIEFERANT_I-SPR2026000000409)
+- Ereignis nicht zuordenbar: Fadel Abdullah informs Wendy regarding the Sport bags R4R samples that the embroidery colo (keine Order gefunden)
+- Ereignis nicht zuordenbar: Commercial invoice and packing list sent for shipment AK/631/26 by air, MAWB 155-0543 6524 (keine Order gefunden)
+- Ereignis nicht zuordenbar: Airway Bill issued for shipment of 4,207 pieces (HOODIE/SWEATSHIRT & PANTS) with ETD 29-10 (keine Order gefunden)
