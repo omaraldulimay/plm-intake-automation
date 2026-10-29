@@ -31,6 +31,16 @@ def bogen(evs, rows=None):
     return klaerbogen.build(col, CTX, Path("/nonexistent"))
 
 
+
+def setUpModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)   # Registry ist global: Tests laufen im alten Format
+
+
+def tearDownModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)
+
 class Kandidaten(unittest.TestCase):
     def test_nichts_spricht_keine_empfehlung_bei_vielen(self):
         b = bogen([ev("Etwas ist passiert")])

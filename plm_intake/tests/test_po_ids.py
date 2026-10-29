@@ -13,6 +13,16 @@ OT = {"id": "OT", "orderNumber": 90, "createdAt": "2026-10-01T10:00:00.000Z", "t
 ORDERS = [O36, O37, OT]
 
 
+
+def setUpModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)   # Registry ist global: Tests laufen im alten Format
+
+
+def tearDownModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)
+
 class PoIds(unittest.TestCase):
     def test_format_and_year(self):
         self.assertEqual(po_ids.po_id(O36), "PO26-036")
@@ -68,6 +78,32 @@ class PoIds(unittest.TestCase):
         self.assertEqual(p["id"], "O36")
         p, amb = docs_existing.parent_for({"id": "V_CM"}, {"po_number": "PO26-036"}, ORDERS, {})   # Lieferant passt nicht -> nicht direkt zuordnen
         self.assertNotEqual((p or {}).get("id"), "O36")
+
+    def test_new_format_registry(self):
+        codes = {"V_XW": "LFC", "V_CM": "LFD"}
+        a = {"id": "A", "orderNumber": 1, "title": "a", "manufacturer": {"id": "V_XW"}, "createdAt": "2026-07-01T10:00:00Z"}
+        b = {"id": "B", "orderNumber": 2, "title": "b", "manufacturer": {"id": "V_XW"}, "createdAt": "2026-07-02T10:00:00Z"}
+        c = {"id": "C", "orderNumber": 3, "title": "c", "manufacturer": {"id": "V_CM"}, "createdAt": "2026-07-03T10:00:00Z"}
+        n = {"id": "N", "orderNumber": 4, "title": "n", "manufacturer": {"id": "V_NO"}, "createdAt": "2026-07-04T10:00:00Z"}
+        reg, miss = po_ids.assign([a, b, c, n, OT], codes, {})
+        self.assertEqual((reg["A"], reg["B"], reg["C"]), ("PO-LFC-01", "PO-LFC-02", "PO-LFD-01"))
+        self.assertEqual(miss, ["n"]); self.assertNotIn("OT", reg)
+        d = {"id": "D", "orderNumber": 5, "title": "d", "manufacturer": {"id": "V_XW"}, "createdAt": "2026-07-05T10:00:00Z"}
+        reg2, _ = po_ids.assign([a, c, d], codes, reg)   # B geloescht: Nummern bleiben, D bekommt 03
+        self.assertEqual((reg2["A"], reg2["D"]), ("PO-LFC-01", "PO-LFC-03"))
+        po_ids.set_registry(reg2)
+        try:
+            self.assertEqual(po_ids.po_id(a), "PO-LFC-01")
+            self.assertEqual(po_ids.find_po_ids("Re: po-lfc-1 / PO-LFC-02x PO-LFC-03 und PO26-036"), ["PO-LFC-01", "PO-LFC-03", "PO26-036"])   # PO-LFC-1 wird zu 01; -02x zaehlt nicht
+            self.assertEqual(po_ids.norm_po("PO-lfc-3"), "PO-LFC-03")
+            self.assertIs(po_ids.order_for_text([a, c, d], "Rechnung PO-LFD-01")["id"], "C")
+            self.assertEqual(po_ids.order_for_text([a, c, d], "alt PO26-005")["id"], "D")   # altes Format fuehrt weiter zur Bestellung
+            cur = {"A": {"v": "PO26-001"}, "C": {"v": "PO-LFD-01"}, "D": {"v": None}}
+            todo, ok, wrong, _ = po_ids.plan([a, c, d], cur)
+            self.assertEqual(sorted(o["id"] for o, _p in todo), ["A", "D"])   # alter Wert wird migriert, richtiger bleibt
+            self.assertEqual([o["id"] for o in ok], ["C"])
+        finally:
+            po_ids.set_registry(None)
 
     def test_supplier_md(self):
         md = po_ids.supplier_md(ORDERS, {"O36": "SM260730"}, today="2026-10-22")

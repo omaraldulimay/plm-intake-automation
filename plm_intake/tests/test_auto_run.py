@@ -10,6 +10,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from plm_intake import auto_run  # noqa: E402
 
 
+
+def setUpModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)   # Registry ist global: Tests laufen im alten Format
+
+
+def tearDownModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)
+
 class Bericht(unittest.TestCase):
     """Rauchtest des Alltagslaufs im Trockenlauf mit gefaelschtem PLM: alle Berichtsabschnitte muessen vorhanden sein (Regression: ein Edit hat einmal 'Neue Bestellungen' geloescht)."""
 

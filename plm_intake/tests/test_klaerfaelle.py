@@ -14,6 +14,16 @@ def u(type_="SHIPMENT", vendor=None, po=None, style=None, reason="keine Order ge
                       "_mail": {"id": "m1", "date": "2026-10-12 10:00", "from": frm, "subject": "Re: XW-042"}}, "reason": reason}
 
 
+
+def setUpModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)   # Registry ist global: Tests laufen im alten Format
+
+
+def tearDownModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)
+
 class NeueSpalten(unittest.TestCase):
     def test_werte(self):
         x = u(vendor="Lieferant C", po="PO-1", style="XW-042", reason="mehrdeutig: PO-A, PO-B", frm='"Nicole" <kontakt@lieferant-c.example>')

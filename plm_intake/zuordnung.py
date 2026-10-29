@@ -211,7 +211,7 @@ def resolve_order(text, orders):
     live = [o for o in orders if not events.TEST_ORDER.search(str(o.get("title") or ""))]
     po = po_ids.norm_po(t)
     if po:
-        hit, what = [o for o in live if (po_ids.po_id(o) or "").upper() == po.upper()], "PO-ID " + po
+        hit, what = [o for o in live if (po_ids.po_id(o) or "").upper() == po.upper() or (po_ids.REGISTRY is not None and po_ids.legacy_id(o) == po)], "PO-ID " + po
     elif re.fullmatch(r"#\s*\d+", t):
         n = re.sub(r"\D", "", t); hit, what = [o for o in live if str(o.get("orderNumber")) == n], t
     else:
@@ -394,7 +394,7 @@ def main(argv=None):
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") and r.get("verified") == len(ups) and r.get("other_unchanged") else 1
     if a.dropdown:
         from plm_intake.context import load_context, add_po_numbers
-        ctx = load_context(); add_po_numbers(ctx)
+        ctx = load_context(); add_po_numbers(ctx); po_ids.activate(ROOT / "output" / "intake", ctx["orders"], save=False)
         print("Optionen:", len(dropdown_options(ctx["orders"])), "| Beispiel:", dropdown_options(ctx["orders"])[:4])
         r = sync_dropdown(ctx["orders"], None, a.apply)
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
@@ -405,7 +405,7 @@ def main(argv=None):
         r = run_js(COLS_JS.replace("__PAYLOAD__", json.dumps({"tableId": cfg["tableId"], "cols": list(NEW_COLS), "apply": a.apply})))
         print(json.dumps(r, ensure_ascii=False, indent=1)); return 0 if not r.get("errors") else 1
     from plm_intake.context import load_context, add_po_numbers
-    ctx = load_context(); add_po_numbers(ctx)
+    ctx = load_context(); add_po_numbers(ctx); po_ids.activate(ROOT / "output" / "intake", ctx["orders"], save=False)
     r = run(ctx["orders"], ROOT / "output" / "intake", (), apply=a.apply, only_marker=re.sub(r"^ev:", "", a.nur_marker or "") or None)
     print(json.dumps(r, ensure_ascii=False, indent=1)); return 1 if r["fehler"] else 0
 

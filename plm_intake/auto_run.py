@@ -101,6 +101,9 @@ def main(argv=None):
     ctx = load_context()
     from plm_intake.context import add_po_numbers
     rep += ["PO-Nummern per Browser nachgeladen: %d" % add_po_numbers(ctx), ""]
+    from plm_intake import po_ids as _po_ids   # PO-ID-Registry (PO-LIEFERANT_AA-05) fuer die ganze Laufzeit aktiv; speichern nur im Schreiblauf
+    _reg, _miss, _new = _po_ids.activate(intake, ctx["orders"], save=bool(a.apply))
+    rep += ["PO-IDs: %d vergeben (neu %d), ohne Lieferanten-Kuerzel %d" % (len(_reg), _new, len(_miss)), ""]
     ctx["aliases"] = dict(valias)   # Dateistand + im Lauf automatisch gesetzte Aliase (Mail-Domain; im Trockenlauf nur im Speicher)
     po_aliases = json.load(open(intake / "po_aliases.json")) if (intake / "po_aliases.json").exists() else {}
     stored_aliases = dict(po_aliases)   # nur Dateistand + Gelerntes wird gespeichert (nicht die Lauf-internen setdefault-Eintraege unten)

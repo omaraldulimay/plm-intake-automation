@@ -13,6 +13,16 @@ def row(i, mk, zu="", mail="m1", status="offen", rueck=""):
     return {"id": i, "values": {"Quelle": "x | ev:" + mk, "Zuordnung": zu, "Mail-ID": mail, "Status": status, "Rückmeldung": rueck}}
 
 
+
+def setUpModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)   # Registry ist global: Tests laufen im alten Format
+
+
+def tearDownModule():
+    from plm_intake import po_ids
+    po_ids.set_registry(None)
+
 class Z(unittest.TestCase):
     def test_gruppe_und_nur(self):
         rows = [row("r1", "aaaaaaaa", "PO26-057"), row("r2", "bbbbbbbb"), row("r3", "cccccccc", mail="m2")]
