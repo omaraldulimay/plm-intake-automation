@@ -1,11 +1,14 @@
-# Tagesbericht Einpflege 29.10.2026 07:26 (Donnerstag)
-1. Status: OK | Modus: schreibt ins PLM (apply) | Dauer: 16 Min
-2. Zahlen (geschrieben): neue Bestellungen 0 | ergaenzte Notizen 27 | Sendungen neu/aktualisiert 0/0 | neue Techpacks 0 | neu gelernte Aliase 0
-   ueber Programm zugeordnet 5 | ueber Betreffnummer/Positionswort 0 | als Info (Muster/Streichung ohne Order) 3 (nur Notiz, nie Termin/Status/Zahlung)
+# Tagesbericht Einpflege 29.10.2026 12:19 (Donnerstag)
+1. Status: OK | Modus: schreibt ins PLM (apply) | Dauer: 15 Min
+2. Zahlen (geschrieben): neue Bestellungen 0 | ergaenzte Notizen 35 | Sendungen neu/aktualisiert 0/0 | neue Techpacks 0 | neu gelernte Aliase 0
+   ueber Programm zugeordnet 8 | ueber Betreffnummer/Positionswort 1 | als Info (Muster/Streichung ohne Order) 3 (nur Notiz, nie Termin/Status/Zahlung)
    Zuordnungen aus der Tabelle: angewendet 0, abgelehnt 0
-3. Klaerfaelle: in Tabelle offen 43 (gesamt 43, geloescht heute 0; +0 zum Vortag), neu entstanden: 0
-   Mensch entscheidet 38 (wie Konsole): Belege 10 | Ereignisse 28 | Sendungen 0 | Limit/sonstige 0
-   Automatisierungsquote (ohne Mensch = geschrieben + Info): Lauf 92 % (geschrieben 18, Info 398, offen 38, zusammen 454) | seit Start 94 % (zusammen 666) | neu offen 1, neu Info 1
+3. Klaerfaelle: in Tabelle offen 46 (gesamt 46, geloescht heute 0; +3 zum Vortag), neu entstanden: 3
+   Mensch entscheidet 42 (wie Konsole): Belege 10 | Ereignisse 31 | Sendungen 1 | Limit/sonstige 0
+   Automatisierungsquote (ohne Mensch = geschrieben + Info): Lauf 91 % (geschrieben 24, Info 404, offen 41, zusammen 469) | seit Start 94 % (zusammen 681) | neu offen 4, neu Info 6
+   - LIEFERANT_W CO., LTD: Keine passende Bestellung im PLM gefunden
+   - LIEFERANT_W CO., LTD: Passt zu mehreren Bestellungen: bitte PO-ID wählen
+   - LIEFERANT_W CO., LTD: Passt zu mehreren Bestellungen: bitte PO-ID wählen
 4. Warnungen: 0 neu | 6 bekannte Warnungen seit frueheren Laeufen (aelteste besteht seit 3 Tagen)
    Projekte: neu 0, verknuepft 0, Fehler 0
    Status: Vorschlaege 1, gesetzt 0
