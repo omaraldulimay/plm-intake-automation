@@ -306,6 +306,9 @@ def find_existing(vendor_id, po_number, title, total_cost, pieces, orders):
 
 # ---------- Hauptfunktion ----------
 MIN_PIECES = 10
+# Muster-/Zollbeleg (z. B. DHL-Proforma "Reason for Export: Sample", 1 Box Trim Cards, 2 USD): kein Auftrag, nie als Bestellung anlegen (nur bei kleiner Menge, damit echte PIs mit Musterzeile nicht fallen)
+SAMPLE_MAX_PIECES = 50
+SAMPLE_DOC = re.compile(r"(?i)(reason|type)\s*(for|of)\s*export\s*:?\s*sample|zoll.{0,20}proforma.{0,60}muster|proforma.{0,60}f[uü]r\s+(ein|1)\s+muster|sample\s+(shipment|invoice|only)\s*[,.(]?\s*no\s+commercial|muster(sendung|rechnung)|customs\s+proforma.{0,40}sample")
 
 
 def build(po, ctx, today=None, force_create=False):
@@ -415,6 +418,8 @@ def build(po, ctx, today=None, force_create=False):
         open_items.append("PREIS AUSSTEHEND (Beleg ohne Preis, Stand %s)" % today)
     if total_pieces == 0 or (total_cost == 0 and not price_missing and (po.get("total_cost") or 0) > 0):
         add("ERROR", "empty_order", "Positionen ergeben %d Stk / %.2f (laut Beleg %s Stk / %s): leere Bestellung wird nicht angelegt" % (total_pieces, total_cost, po.get("total_pieces"), po.get("total_cost")))
+    elif total_pieces < SAMPLE_MAX_PIECES and SAMPLE_DOC.search("%s %s" % (po.get("notes") or "", (po.get("source") or {}).get("doc") if isinstance(po.get("source"), dict) else po.get("source"))):
+        add("ERROR", "sample_doc", "Muster-/Zollbeleg (%d Stk, laut Beleg Muster): keine Bestellung, wird nicht angelegt" % total_pieces)
     elif total_pieces < MIN_PIECES:
         add("ERROR", "too_small", "Nur %d Stk insgesamt (unter %d): Muster/Kleinstbeleg, keine Bestellung" % (total_pieces, MIN_PIECES))
     if po.get("total_cost") is not None and not (price_missing and total_cost == 0) and round(abs(r2(po["total_cost"]) - total_cost), 2) > TOL:

@@ -207,6 +207,15 @@ class Sperren(unittest.TestCase):
         self.blocked(po(items=[{"sku": "XW-041", "name": "n", "variants": [{"color": "Black", "price": 2.0, "sizes": {"S": 1}}]}],
                         total_cost=None, total_pieces=None, payments=[]), "too_small")
 
+    def test_muster_zollbeleg_gesperrt(self):
+        items = [{"sku": None, "name": "TRIM CARDS", "variants": [{"color": None, "price": 2.0, "sizes": {"ONE SIZE": 20}}]}]
+        r = core.build(po(items=items, total_cost=None, total_pieces=None, payments=[], notes="Zoll-Proforma-Rechnung fuer ein Muster (Reason/Type of Export: Sample), kein regulaerer Bestellvorgang."), CTX, TODAY)
+        self.assertEqual(r.decision, "BLOCK")
+        self.assertIn("sample_doc", codes(r))
+        big = [{"sku": None, "name": "Hose", "variants": [{"color": None, "price": 2.0, "sizes": {"S": 500}}]}]   # echte PI mit Musterzeile bleibt moeglich
+        r = core.build(po(items=big, total_cost=None, total_pieces=None, payments=[], notes="Reason for Export: Sample charge separate"), CTX, TODAY)
+        self.assertNotIn("sample_doc", codes(r))
+
     def test_summe_stimmt_nicht(self): self.unstimmig(po(total_cost=999.0), "sum_mismatch")
     def test_stueckzahl_stimmt_nicht(self): self.unstimmig(po(total_pieces=41), "pieces_mismatch")
     def test_zahlungssumme_stimmt_nicht(self):
