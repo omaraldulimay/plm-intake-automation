@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-29 12:14 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-30 07:22 (AUSGEFUEHRT)
 
-Neu: 17 Dokument-Dateien, 344 Ereignis-Dateien
+Neu: 16 Dokument-Dateien, 349 Ereignis-Dateien
 
 ## Lieferanten
 - LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ.: MENSCH ALIAS_PRUEFEN [('Lieferant J', 1.0)]
@@ -47,7 +47,6 @@ Call log:
 | 1a17c5576c0d951e_1.json | REORDER_QUESTION | JM1020-JM260704 | #4 PO-LIEFERANT_X-JM260704 |
 | 1a17dcd1b307e869_1.json | AMBIGUOUS_DOC | SPR2026000000445 | passt zu mehreren Orders: PO-LIEFERANT_I-SPR2026000000438, PO-LIEFERANT_I-SPR2026000000422, PO-LIEFERANT_I-SPR2026000000409 |
 | 1a182294ba4bcdf9_1.json | ORPHAN_DOC | AK/631/26 | - |
-| 1a186d846690607f_1.json | DELIVERY_DOC | 26071 | #51 PO-LIEFERANT_W-KH-T1-EXTRA |
 
 ## Beleg ohne Bestell-PO im PLM (erst PI/PO anlegen, dann Beleg zuordnen)
 - 1a13103fd472a81b_1.json (62092211)
@@ -78,20 +77,17 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-12 18:46 ev:57ebac9f] SHIPMENT: Container EGHU 914 348-0 wurde entladen. (Mail 1a131027b11eec6e) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Kennung '561876'; Notiz in allen 2 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:53bb666d] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:ba660989] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:54d1afb7] SCHEDULE: KUNDE_X Polyester container with 26,000-27,000 pcs scheduled to arrive in Hamburg on 02.12.2026. (Mail 1a18739b80492074) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 ## #22 PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11
 - [2026-10-12 18:46 ev:0ac8ea77] PAYMENT: Die lokalen FOB-Gebühren am Abgangshafen wurden noch nicht beglichen, weshalb die Freigabeerklärung noch nicht erteilt werden kann. (Mail 1a13101dad0031e3) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-12 18:46 ev:3be0b98e] SHIPMENT: Container GAOU 642 138-0 wurde entladen. (Mail 1a131027b11eec6e) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Kennung '561872'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-12 18:46 ev:57ebac9f] SHIPMENT: Container EGHU 914 348-0 wurde entladen. (Mail 1a131027b11eec6e) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Kennung '561876'; Notiz in allen 2 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:53bb666d] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:ba660989] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:54d1afb7] SCHEDULE: KUNDE_X Polyester container with 26,000-27,000 pcs scheduled to arrive in Hamburg on 02.12.2026. (Mail 1a18739b80492074) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 ## #23 PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11
 - [2026-10-12 18:46 ev:0ac8ea77] PAYMENT: Die lokalen FOB-Gebühren am Abgangshafen wurden noch nicht beglichen, weshalb die Freigabeerklärung noch nicht erteilt werden kann. (Mail 1a13101dad0031e3) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-12 18:46 ev:3be0b98e] SHIPMENT: Container GAOU 642 138-0 wurde entladen. (Mail 1a131027b11eec6e) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Kennung '561872'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:53bb666d] SCHEDULE: KUNDE_X Polyester: Ex-mill ~115 CBM planned for 30.10.2026, sailing from Karachi on 03.11.2026 and ETA Hamburg on 02.12.2026. (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 - [2026-10-22 11:48 ev:ba660989] SHIPMENT: KUNDE_X Polyester: 51 CBM dispatched yesterday (21.10.2026). (Mail 1a163038333c6ecb) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:54d1afb7] SCHEDULE: KUNDE_X Polyester container with 26,000-27,000 pcs scheduled to arrive in Hamburg on 02.12.2026. (Mail 1a18739b80492074) [Zuordnung: ueber Programm KUNDE_X Alpha zugeordnet (Wort 'kunde_x'; Notiz in allen 3 Orders des Programms: PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11), nicht per PO-Nr belegt]
 ## #30 PO-LIEFERANT_G-MC-26SM002
 - [2026-10-12 18:49 ev:825e091b] OTHER: Request to push the webbing supplier to complete the revised binding webbing for GT0304 as soon as possible. (Mail 1a1310554e320fa0)
 ## #25 PO-LIEFERANT_D-ALI20260821
@@ -107,18 +103,17 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
 - [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:56d27f28] SHIPMENT: Shipped 4,207 pcs via air under Invoice No. 631. (Mail 1a18739b80492074) [Zuordnung: ueber Programm Sweat Alpha zugeordnet (Wort 'sweat'; Notiz in allen 1 Orders des Programms: PO-ALPHA-SWEAT-PROGRAM-2026-06-03), nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:b7f965ac] SHIPMENT: Planned air shipment of 3,500 pcs today; air booking available. (Mail 1a18739b80492074) [Zuordnung: ueber Programm Sweat Alpha zugeordnet (Wort 'sweat'; Notiz in allen 1 Orders des Programms: PO-ALPHA-SWEAT-PROGRAM-2026-06-03), nicht per PO-Nr belegt]
-- [2026-10-29 11:34 ev:68708591] SCHEDULE: Expected total of approx. 35,000 pcs (incl. Sierra) by 05.11. against a commitment of 60,000 pcs. (Mail 1a18739b80492074) [Zuordnung: Positionswort 'sierra' steht nur in den Positionen dieser Order; nicht per PO-Nr belegt]
-## #91 PO-LIEFERANT_AL-GE-20260310
-- [2026-10-26 14:32 ev:02ed1558] SCHEDULE: Request for written confirmation of ex-factory dates and sample status for B2B orders (Sports Club, Easy Fitness, XtraFit, Peaks, Kunde Y). (Mail 1a17869e3006db02) [Zuordnung: einzige laufende Order des Lieferanten, nicht per PO-Nr belegt]
+- [2026-10-29 13:39 ev:fed43778] ORDER_CHANGE: The supplier reports that Dark Blue and Khaki colors were cancelled from the order, but fabric stock is in-house (2500 kg single jersey for Dark blue, 3000 kg fleece for Khaki) and asks whether to proceed with production based on the first order quantities. (Mail 1a187acab4176db2) [Zuordnung: ueber Programm Sweat Alpha zugeordnet (Wort 'sweat'; Notiz in allen 1 Orders des Programms: PO-ALPHA-SWEAT-PROGRAM-2026-06-03), nicht per PO-Nr belegt]
 ## #53 PO-ALPHA-NOOS-STOCK-INCREASE-2025-12-16
 - [2026-10-27 11:15 ev:fc4bd063] SAMPLE: Sample/Prototype Vergleich für Style SNM26-009 durchgeführt. (Mail 1a17cdb6398a2259)
 - [2026-10-27 11:18 ev:b4fc4423] SAMPLE: Sample/Prototyp Vergleich für Style SNM26-009 mit Maße- und Materialabweichungen. (Mail 1a17cdebff5e1cbb)
 - [2026-10-27 14:41 ev:55bbffd2] SAMPLE: Maßvergleich und Materialprüfung für Sample SNM26-009 durchgeführt (Status: Offen). (Mail 1a17d988636a057a)
 - [2026-10-27 14:50 ev:d3672520] SAMPLE: Sample-Vergleich und Maßtabelle für Style SNM26-009 durchgeführt, Status offen. (Mail 1a17da0dcf0831f6)
+## #83 PO-LIEFERANT_A-ALP-348-25
+- [2026-10-29 15:09 ev:e0133b55] SAMPLE: Vendor is requesting fabric approval, confirmation on stitching and styling, clarification on fabric composition for production, care label layouts, and the original samples for styles SNW26-002 and SNW26-007. (Mail 1a187feddec7a780)
 ## #35 PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER
-- [2026-10-29 10:52 ev:7479ef51] SHIPMENT: Devanning has finished for container ZIHWB260930LH137 regarding order 26WJD-107-SMILODOX. (Mail 1a18713ae567aa24)
+- [2026-10-29 15:26 ev:39ae6b04] SHIPMENT: Ankunftsavis per Bahn erhalten inklusive Lieferschein und ATB-Nummer. (Mail 1a1880ded491bdd2)
+- [2026-10-29 15:26 ev:4c4aa5f5] SHIPMENT: Ankunftsavis Bahn für Container 168861 zur Bestellung ZIHWB260930LH137 (Mail 1a1880e8b5c47fac)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] SCHEDULE: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (Umar) -> mehrdeutig: 26 laufende Orders von Lieferant A
@@ -148,55 +143,31 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-28 11:58] SHIPMENT: Commercial invoice and packing list sent for shipment AK/631/26 by air, MAWB 155-0543 6524, ETD 29.10.2026. (AK/631/26) -> keine Order gefunden
 - [2026-10-28 12:15] SHIPMENT: Airway Bill issued for shipment of 4,207 pieces (HOODIE/SWEATSHIRT & PANTS) with ETD 29-10-2026. (BOP OPEN ACCOUNT) -> keine Order gefunden
 - [2026-10-28 15:33] QUALITY: Color difference noticed in sweat styles between Lieferant B (lighter) and Alpha (Grey Melange). (Lieferant B / Alpha) -> keine Order gefunden
-- [2026-10-29 09:47] SHIPMENT: PACKING_LIST 26071 | 900 Stk: Estimate packing list received (KH-T1-EXTRA) -> keine Order gefunden
 - [2026-10-29 10:09] SHIPMENT: Anfrage bezüglich LCL-Versand für eine Zusatzlieferung von 3 CBM. (Lieferant W) -> mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29
 - [2026-10-29 10:44] SCHEDULE: Fadel Abdullah (Smilodox) asks Eason when the goods will be ready for pickup based on the estimated packing list. (None) -> mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29
 - [2026-10-29 11:05] PAYMENT: Balance payment will be arranged by the end of this week. (None) -> keine Order gefunden
+- [2026-10-29 12:30] SCHEDULE: Vendor clarified that photo samples will be dispatched by the end of next week, not this week. (Lieferant A) -> mehrdeutig: 26 laufende Orders von Lieferant A
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 404 Ereignisse
+- 407 Ereignisse
 
 ## Sendungen (Bereich Shipments)
-- Mensch: 1a186d846690607f_1.json: Beleg laesst sich der Order nicht vollstaendig zuordnen (HY29582, HY29582): keine Sendung angelegt
+- keine
 
 ## Ergebnis Notizen
 ```
 [
  {
   "title": "PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 1
+  "unchanged": true
  },
  {
   "title": "PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 1
+  "unchanged": true
  },
  {
   "title": "PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 1,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 1
+  "unchanged": true
  },
  {
   "title": "PO-LIEFERANT_G-MC-26SM002",
@@ -222,18 +193,6 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "title": "PO-ALPHA-SWEAT-PROGRAM-2026-06-03",
   "statusSet": null,
   "statusOk": true,
-  "notesAdded": 3,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 3
- },
- {
-  "title": "PO-LIEFERANT_AL-GE-20260310",
-  "statusSet": null,
-  "statusOk": true,
   "notesAdded": 1,
   "dates": [],
   "paymentsMarkedPaid": 0,
@@ -247,7 +206,7 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "unchanged": true
  },
  {
-  "title": "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER",
+  "title": "PO-LIEFERANT_A-ALP-348-25",
   "statusSet": null,
   "statusOk": true,
   "notesAdded": 1,
@@ -257,15 +216,28 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "notesOk": true,
   "datesOk": true,
   "chat": 1
+ },
+ {
+  "title": "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER",
+  "statusSet": null,
+  "statusOk": true,
+  "notesAdded": 2,
+  "dates": [],
+  "paymentsMarkedPaid": 0,
+  "dataUnchanged": true,
+  "notesOk": true,
+  "datesOk": true,
+  "chat": 2
  }
 ]
 ```
 
 ## PO-IDs
-- nichts zu tun (Nachtrag heute schon gelaufen)
+- geschrieben 0 (neu angelegt: 0), Fehler/Abweichungen nach Zuruecklesen: 0
+- ohne PO-ID (Lieferanten-Kuerzel fehlt): PO-ZZFULLCASE-ZZ-AUTO-002
 
 ## Projekte
-- Projekte im PLM: 33 | Lieferanten ohne Projekt: 0 | Orders ohne Projekt: 0 | geplant: 0 neue Projekte, 0 Verknuepfungen
+- Projekte im PLM: 34 | Lieferanten ohne Projekt: 0 | Orders ohne Projekt: 0 | geplant: 0 neue Projekte, 0 Verknuepfungen
 - nichts zu tun
 
 ## Projekt-Produkte
@@ -287,25 +259,26 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - Klaerfaelle neu eingetragen: 0 (Kandidaten 6, bekannte uebersprungen)
 
 ## Gelernte Aliase (gespeichert)
-- keine neuen
+- 168861 -> 6ace00055f317983615aba54 (Ereignis)
 
 ## Gelernte Absender-Domains
 - lieferant-extra.example -> 6a68634a9d02f84f90af9c88 (aktiv)
+- spedition_b.de -> 6a68634a9d02f84f90af9c88 (neu)
 
 ## Mail-Verlauf (Thread)
-- neu gelernt: 1 Verlauf-Order-Paare (gesamt 85 Verlaeufe) | ueber Verlauf zugeordnet: 1 Ereignisse | THREAD_MATCH an
+- neu gelernt: 0 Verlauf-Order-Paare (gesamt 85 Verlaeufe) | ueber Verlauf zugeordnet: 1 Ereignisse | THREAD_MATCH an
 
 ## Programme, Nummern, Info-Regel
-- ueber Programm zugeordnet: 8 Ereignisse (19 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 1 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
+- ueber Programm zugeordnet: 6 Ereignisse (15 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 0 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 16, neu eingetragen 3, geloescht 0 (Rest naechster Lauf: 0), offen gesamt 46 | Fehler: ['Nachfuellen 9c65f80a: Bad Request Exception']
+- Kandidaten 16, neu eingetragen 1, geloescht 0 (Rest naechster Lauf: 0), offen gesamt 47 | Fehler: ['Nachfuellen 9c65f80a: Bad Request Exception']
 
 ## Zuordnungen aus der Tabelle
 - geschrieben: angewendet 0, abgelehnt 0, schon angewendet 0, nicht gelesen (Limit 30) 0
 
 ## Anhaenge
-- Anhaenge: neu 0, uebersprungen 28, Fehler 0, ausgeschlossen 50
+- Anhaenge: neu 0, uebersprungen 28, Fehler 0, ausgeschlossen 51
 - uebersprungen (Name im PLM vorhanden): 0917 PACKING INFORMATION.pdf -> PO-LIEFERANT_G-MC-26SM002
 - uebersprungen (Name im PLM vorhanden): PL--SMI2612.pdf -> PO-LIEFERANT_AA-WINTER-2026-04-29
 - uebersprungen (Name im PLM vorhanden): LIEFERANT_AA26104 -invoice.pdf -> PO-LIEFERANT_AA-WINTER-2026-04-29
@@ -335,10 +308,9 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - uebersprungen (Name im PLM vorhanden): XW-SM260710 balance payment PI.xlsx -> PO-WONDERS-XW042-20260709
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-29T12:19: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-30T07:26: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-## Mensch entscheidet (42)
-- Sendung: 1a186d846690607f_1.json: Beleg laesst sich der Order nicht vollstaendig zuordnen (HY29582, HY29582): keine Sendung angelegt
+## Mensch entscheidet (41)
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
@@ -376,7 +348,7 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - Ereignis nicht zuordenbar: Commercial invoice and packing list sent for shipment AK/631/26 by air, MAWB 155-0543 6524 (keine Order gefunden)
 - Ereignis nicht zuordenbar: Airway Bill issued for shipment of 4,207 pieces (HOODIE/SWEATSHIRT & PANTS) with ETD 29-10 (keine Order gefunden)
 - Ereignis nicht zuordenbar: Color difference noticed in sweat styles between Lieferant B (lighter) and Alpha (Grey Melange (keine Order gefunden)
-- Ereignis nicht zuordenbar: PACKING_LIST 26071 | 900 Stk: Estimate packing list received (keine Order gefunden)
 - Ereignis nicht zuordenbar: Anfrage bezüglich LCL-Versand für eine Zusatzlieferung von 3 CBM. (mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29)
 - Ereignis nicht zuordenbar: Fadel Abdullah (Smilodox) asks Eason when the goods will be ready for pickup based on the  (mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29)
 - Ereignis nicht zuordenbar: Balance payment will be arranged by the end of this week. (keine Order gefunden)
+- Ereignis nicht zuordenbar: Vendor clarified that photo samples will be dispatched by the end of next week, not this w (mehrdeutig: 26 laufende Orders von Lieferant A)
