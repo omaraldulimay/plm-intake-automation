@@ -1,10 +1,10 @@
 # Status Einpflege-Automatik
 
-**OK** (2026-10-30 07:26:51, apply)
+**OK** (2026-10-30 12:20:29, apply)
 
-16 neue Dokumente, 349 Ereignis-Dateien | neue POs 0, Sendungen 0 | Mensch entscheidet: 41
+16 neue Dokumente, 354 Ereignis-Dateien | neue POs 0, Sendungen 0 | Mensch entscheidet: 42
 
-Letzter erfolgreicher Lauf: 2026-10-30 07:26:51
+Letzter erfolgreicher Lauf: 2026-10-30 12:20:29
 
 ## Letzte Warnungen
 - 2026-10-19T14:19:51 | Lauf mit Problem (apply) | "ABBRUCH": "Abweichung nach Update: Backup output/backup/ pruefen" | 20 neue Dokumente, 376 Ereignis-Dateien | neue POs 0, Sendungen 3 | Mensch entscheidet: 175

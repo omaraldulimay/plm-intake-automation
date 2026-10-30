@@ -1,6 +1,6 @@
-# Alltagslauf 2026-10-30 07:22 (AUSGEFUEHRT)
+# Alltagslauf 2026-10-30 12:16 (AUSGEFUEHRT)
 
-Neu: 16 Dokument-Dateien, 349 Ereignis-Dateien
+Neu: 16 Dokument-Dateien, 354 Ereignis-Dateien
 
 ## Lieferanten
 - LIEFERANT_J TEKSTİL SAN.VE TİC.LTD.ŞTİ.: MENSCH ALIAS_PRUEFEN [('Lieferant J', 1.0)]
@@ -103,17 +103,14 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-14 12:18 ev:91bfe96a] ORDER_CHANGE: Israr (Lieferant A) hat das Massblatt der Siera Pant nach Anweisung von Imran Saleem aktualisiert und einen WhatsApp-Screenshot als Referenz angehaengt. Auf Fadels Rueckfrage vom 12.10. antwortet er damit, dass die Aenderungen auf Imrans Angaben beruhen. (Mail 1a139eb8e8f30e55)
 - [2026-10-22 11:48 ev:3a6c9e52] SHIPMENT: Sweat Styles (Air): 4th air shipment of 5,000-6,000 pcs shipping today (22.10.2026), total shipped after today approx. 15,000 pcs. (Mail 1a163038333c6ecb)
 - [2026-10-22 11:48 ev:69e7e864] SCHEDULE: Sweat Styles (Air): Total air quantity of 60,000 pcs to be closed by 05.11.2026. (Mail 1a163038333c6ecb) [Zuordnung: Lieferant + Projektname im Text, nicht per PO-Nr belegt]
-- [2026-10-29 13:39 ev:fed43778] ORDER_CHANGE: The supplier reports that Dark Blue and Khaki colors were cancelled from the order, but fabric stock is in-house (2500 kg single jersey for Dark blue, 3000 kg fleece for Khaki) and asks whether to proceed with production based on the first order quantities. (Mail 1a187acab4176db2) [Zuordnung: ueber Programm Sweat Alpha zugeordnet (Wort 'sweat'; Notiz in allen 1 Orders des Programms: PO-ALPHA-SWEAT-PROGRAM-2026-06-03), nicht per PO-Nr belegt]
+- [2026-10-30 09:07 ev:4fa8732c] SAMPLE: Strike off samples for styles AL29024, AL29025, AL29026, AL29029, AL29032 & AL29033, and 26385 were approved on 22-Sep. (Mail 1a18bdaa8faed734)
 ## #53 PO-ALPHA-NOOS-STOCK-INCREASE-2025-12-16
 - [2026-10-27 11:15 ev:fc4bd063] SAMPLE: Sample/Prototype Vergleich für Style SNM26-009 durchgeführt. (Mail 1a17cdb6398a2259)
 - [2026-10-27 11:18 ev:b4fc4423] SAMPLE: Sample/Prototyp Vergleich für Style SNM26-009 mit Maße- und Materialabweichungen. (Mail 1a17cdebff5e1cbb)
 - [2026-10-27 14:41 ev:55bbffd2] SAMPLE: Maßvergleich und Materialprüfung für Sample SNM26-009 durchgeführt (Status: Offen). (Mail 1a17d988636a057a)
 - [2026-10-27 14:50 ev:d3672520] SAMPLE: Sample-Vergleich und Maßtabelle für Style SNM26-009 durchgeführt, Status offen. (Mail 1a17da0dcf0831f6)
 ## #83 PO-LIEFERANT_A-ALP-348-25
-- [2026-10-29 15:09 ev:e0133b55] SAMPLE: Vendor is requesting fabric approval, confirmation on stitching and styling, clarification on fabric composition for production, care label layouts, and the original samples for styles SNW26-002 and SNW26-007. (Mail 1a187feddec7a780)
-## #35 PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER
-- [2026-10-29 15:26 ev:39ae6b04] SHIPMENT: Ankunftsavis per Bahn erhalten inklusive Lieferschein und ATB-Nummer. (Mail 1a1880ded491bdd2)
-- [2026-10-29 15:26 ev:4c4aa5f5] SHIPMENT: Ankunftsavis Bahn für Container 168861 zur Bestellung ZIHWB260930LH137 (Mail 1a1880e8b5c47fac)
+- [2026-10-30 11:32 ev:3163040f] SAMPLE: Vendor is waiting for feedback on sample review, fabric approval, stitching/styling, fabric composition confirmation, care label layouts, and the original samples for styles SNW26-002 and SNW26-007. (Mail 1a18c5e2c556d4fd)
 
 ## Nicht zugeordnet (Mensch schaut)
 - [2026-10-12 18:34] SCHEDULE: Status inquiry regarding expected 10,000 T-Shirts with an ex-mill date of September 25. (Umar) -> mehrdeutig: 26 laufende Orders von Lieferant A
@@ -147,9 +144,10 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - [2026-10-29 10:44] SCHEDULE: Fadel Abdullah (Smilodox) asks Eason when the goods will be ready for pickup based on the estimated packing list. (None) -> mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29
 - [2026-10-29 11:05] PAYMENT: Balance payment will be arranged by the end of this week. (None) -> keine Order gefunden
 - [2026-10-29 12:30] SCHEDULE: Vendor clarified that photo samples will be dispatched by the end of next week, not this week. (Lieferant A) -> mehrdeutig: 26 laufende Orders von Lieferant A
+- [2026-10-30 08:15] SAMPLE: Wendy announced that she will send the embroidery swatch together with the riding vest bag sample next week. (SP1028U) -> keine Order gefunden
 
 ## Info ohne PO-Bezug (Muster/Artwork/Allgemeines): bleibt im Blatt 'Ereignisse', kein Handlungsbedarf im PLM
-- 407 Ereignisse
+- 413 Ereignisse
 
 ## Sendungen (Bereich Shipments)
 - keine
@@ -216,25 +214,12 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
   "notesOk": true,
   "datesOk": true,
   "chat": 1
- },
- {
-  "title": "PO-LIEFERANT_AA-26WJD-107-SS26-1ST-ORDER",
-  "statusSet": null,
-  "statusOk": true,
-  "notesAdded": 2,
-  "dates": [],
-  "paymentsMarkedPaid": 0,
-  "dataUnchanged": true,
-  "notesOk": true,
-  "datesOk": true,
-  "chat": 2
  }
 ]
 ```
 
 ## PO-IDs
-- geschrieben 0 (neu angelegt: 0), Fehler/Abweichungen nach Zuruecklesen: 0
-- ohne PO-ID (Lieferanten-Kuerzel fehlt): PO-ZZFULLCASE-ZZ-AUTO-002
+- nichts zu tun (Nachtrag heute schon gelaufen)
 
 ## Projekte
 - Projekte im PLM: 34 | Lieferanten ohne Projekt: 0 | Orders ohne Projekt: 0 | geplant: 0 neue Projekte, 0 Verknuepfungen
@@ -259,20 +244,20 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - Klaerfaelle neu eingetragen: 0 (Kandidaten 6, bekannte uebersprungen)
 
 ## Gelernte Aliase (gespeichert)
-- 168861 -> 6ace00055f317983615aba54 (Ereignis)
+- 4229141011 -> 6ace076f5f317983615c62b8 (Ereignis)
 
 ## Gelernte Absender-Domains
-- lieferant-extra.example -> 6a68634a9d02f84f90af9c88 (aktiv)
-- spedition_b.de -> 6a68634a9d02f84f90af9c88 (neu)
+- lieferant-f.example -> 6ac5ecfd28e7219816c2b710 (aktiv)
+- lieferant-b.example -> 6ac5ecfd28e7219816c2b710 (Konflikt)
 
 ## Mail-Verlauf (Thread)
 - neu gelernt: 0 Verlauf-Order-Paare (gesamt 85 Verlaeufe) | ueber Verlauf zugeordnet: 1 Ereignisse | THREAD_MATCH an
 
 ## Programme, Nummern, Info-Regel
-- ueber Programm zugeordnet: 6 Ereignisse (15 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 0 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
+- ueber Programm zugeordnet: 5 Ereignisse (14 Notizzeilen in den Orders der Gruppen) | ueber Betreffnummer/Positionswort: 0 | als Info (Muster/Streichung ohne Order): 3 | PROGRAMM_MATCH an, NUMMER_MATCH an, INFO_REGEL an
 
 ## Klärfälle (PLM-Tabelle)
-- Kandidaten 16, neu eingetragen 1, geloescht 0 (Rest naechster Lauf: 0), offen gesamt 47 | Fehler: ['Nachfuellen 9c65f80a: Bad Request Exception']
+- Kandidaten 16, neu eingetragen 0, geloescht 0 (Rest naechster Lauf: 0), offen gesamt 47 | Fehler: ['Nachfuellen 9c65f80a: Bad Request Exception']
 
 ## Zuordnungen aus der Tabelle
 - geschrieben: angewendet 0, abgelehnt 0, schon angewendet 0, nicht gelesen (Limit 30) 0
@@ -308,9 +293,9 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - uebersprungen (Name im PLM vorhanden): XW-SM260710 balance payment PI.xlsx -> PO-WONDERS-XW042-20260709
 
 ## Techpacks
-- neue Techpack/Spec-Dateien seit 2026-10-30T07:26: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
+- neue Techpack/Spec-Dateien seit 2026-10-30T12:20: 0 | hochgeladen 0 | schon als Datei vorhanden 0 | ohne Produkt 0 | Limit-Rest 0
 
-## Mensch entscheidet (41)
+## Mensch entscheidet (42)
 - 1a13103fd472a81b_1.json: ORPHAN_DOC 62092211
 - 1a1538b5bb3f6600_1.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
 - 1a1538b5bb3f6600_2.json: AMBIGUOUS_DOC passt zu mehreren Orders: PO-ALPHA-PAK-KUNDE_X-LAGER-2026-05-11, PO-ALPHA-PAK-KUNDE_X-CH-2026-05-11, PO-ALPHA-PAK-KUNDE_X-DE-2026-05-08
@@ -352,3 +337,4 @@ Per overrides.json: NOTE = nur Notiz an vorhandene PO, CREATE = neue PO, SKIP = 
 - Ereignis nicht zuordenbar: Fadel Abdullah (Smilodox) asks Eason when the goods will be ready for pickup based on the  (mehrdeutig: PO-LIEFERANT_W-26071-DE-EA-2, PO-LIEFERANT_W-2026-04-29)
 - Ereignis nicht zuordenbar: Balance payment will be arranged by the end of this week. (keine Order gefunden)
 - Ereignis nicht zuordenbar: Vendor clarified that photo samples will be dispatched by the end of next week, not this w (mehrdeutig: 26 laufende Orders von Lieferant A)
+- Ereignis nicht zuordenbar: Wendy announced that she will send the embroidery swatch together with the riding vest bag (keine Order gefunden)
